@@ -75,7 +75,8 @@ public class ConSysApiMqttService extends AbstractMqttServiceModule<ConSysApiMqt
 
                         resourceEventPublisher = new ResourceEventPublisher(
                             mqttServer, config.nodeId, csApiBaseUrl,
-                            eventBus, db, idEncoders, getLogger());
+                            eventBus, db, idEncoders, getLogger(),
+                            config.obsBatchIntervalSeconds);
                         resourceEventPublisher.start();
                         getLogger().info("CloudEvents resource event publisher started on nodeId '{}'", config.nodeId);
                     }

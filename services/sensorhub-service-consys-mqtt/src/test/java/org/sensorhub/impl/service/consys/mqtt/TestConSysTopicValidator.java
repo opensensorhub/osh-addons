@@ -90,6 +90,7 @@ public class TestConSysTopicValidator
             { "systems/abc123/deployments/dep001",                                           SYSTEM        },
             { "systems/abc123/datastreams/ds001",                                            DATASTREAM    },
             { "systems/abc123/controlstreams/cs001",                                         CONTROLSTREAM },
+            { "systems/abc123/datastreams/ds001/observations",                               OBSERVATION   },  // batch-event collection topic
             { "systems/abc123/datastreams/ds001/observations/obs001",                        OBSERVATION   },
             { "systems/abc123/controlstreams/cs001/commands/cmd001",                         COMMAND       },
             { "systems/abc123/controlstreams/cs001/commands/cmd001/status/st001",            COMMAND       },
@@ -120,8 +121,10 @@ public class TestConSysTopicValidator
             { "systems/abc123/datastreams/+",                                                DATASTREAM    },  // concrete system + wildcard datastream
             { "systems/abc123/datastreams/ds001/observations/+",                             OBSERVATION   },
             { "systems/abc123/datastreams/+/observations/+",                                 OBSERVATION   },
+            { "systems/abc123/datastreams/+/observations",                                   OBSERVATION   },  // batch obs across all datastreams of a system
             { "systems/03ie1mkrr9r0/datastreams/+",                                          DATASTREAM    },  // alphanumeric system ID
             { "systems/03ie1mkrr9r0/datastreams/+/observations/+",                           OBSERVATION   },
+            { "systems/03ie1mkrr9r0/datastreams/+/observations",                             OBSERVATION   },  // batch obs collection w/ wildcard ds
             { "deployments/+",                                                               DEPLOYMENT    },
             { "procedures/+",                                                                PROCEDURE     },
             { "properties/+",                                                                PROPERTY      },

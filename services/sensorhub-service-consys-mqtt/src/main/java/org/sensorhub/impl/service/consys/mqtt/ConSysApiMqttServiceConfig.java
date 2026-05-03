@@ -35,4 +35,12 @@ public class ConSysApiMqttServiceConfig extends ServiceConfig
              "Set to null or blank to use the HTTP endpoint path as prefix instead.")
     public String nodeId = "api";
 
+    @DisplayInfo(label="Observation batch interval (s)",
+        desc="Interval in seconds at which per-datastream observation summary CloudEvents " +
+             "are published over MQTT (OGC CS API Part 3 Batch Resource Events). " +
+             "Each summary CloudEvent carries the count of observations and the timerange of " +
+             "the window. Lower values reduce latency; higher values reduce broker traffic on " +
+             "high-rate datastreams. Clamped to a minimum of 1.")
+    public int obsBatchIntervalSeconds = 30;
+
 }

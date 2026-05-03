@@ -23,7 +23,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
 import java.util.concurrent.Flow;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import org.sensorhub.api.command.CommandStreamAddedEvent;
 import org.sensorhub.api.command.CommandStreamChangedEvent;
 import org.sensorhub.api.command.CommandStreamDisabledEvent;
@@ -39,6 +42,7 @@ import org.sensorhub.api.data.DataStreamDisabledEvent;
 import org.sensorhub.api.data.DataStreamEnabledEvent;
 import org.sensorhub.api.data.DataStreamEvent;
 import org.sensorhub.api.data.DataStreamRemovedEvent;
+import org.sensorhub.api.data.IObsData;
 import org.sensorhub.api.data.ObsEvent;
 import org.sensorhub.api.database.IObsSystemDatabase;
 import org.sensorhub.api.datastore.obs.DataStreamFilter;
@@ -88,15 +92,21 @@ public class ResourceEventPublisher
     final IObsSystemDatabase db;
     final IdEncoders idEncoders;
     final Logger log;
+    final int batchIntervalSeconds;
 
     /** Subscriptions to OSH system/datastream/commandstream lifecycle events. */
     final List<Flow.Subscription> activeSubscriptions = new ArrayList<>();
 
     /**
-     * Per-datastream ObsEvent subscriptions, keyed by datastream internal ID.
-     * Each subscription publishes observation CloudEvents to MQTT as new obs arrive.
+     * Per-datastream observation batching state, keyed by datastream internal ID.
+     * Each entry holds a counter, the start of the current window, and the precomputed
+     * topic/URL strings. Observations are accumulated in {@link #recordObsBatch} and
+     * flushed by the scheduler in {@link #flushAllBatches}.
      */
-    final Map<BigId, Flow.Subscription> obsSubscriptions = new ConcurrentHashMap<>();
+    final Map<BigId, ObsBatchState> obsBatches = new ConcurrentHashMap<>();
+
+    /** Single-thread scheduler that drives periodic batch flushes. */
+    ScheduledExecutorService scheduler;
 
 
     public ResourceEventPublisher(
@@ -106,7 +116,8 @@ public class ResourceEventPublisher
         IEventBus eventBus,
         IObsSystemDatabase db,
         IdEncoders idEncoders,
-        Logger log)
+        Logger log,
+        int batchIntervalSeconds)
     {
         this.mqttServer = mqttServer;
         this.nodeId = nodeId;
@@ -115,6 +126,8 @@ public class ResourceEventPublisher
         this.db = db;
         this.idEncoders = idEncoders;
         this.log = log;
+        // Defensive clamp: scheduler refuses zero/negative periods.
+        this.batchIntervalSeconds = Math.max(1, batchIntervalSeconds);
     }
 
 
@@ -137,21 +150,49 @@ public class ResourceEventPublisher
                 e.getValue().getSystemID().getInternalID(),
                 e.getValue().getSystemID().getUniqueID(),
                 e.getValue().getOutputName()));
+
+        // Schedule the periodic batch flusher. The first run fires after one full
+        // interval so the initial window collects a full batch.
+        scheduler = Executors.newSingleThreadScheduledExecutor(r -> {
+            var t = new Thread(r, "consys-mqtt-obs-batch-flusher");
+            t.setDaemon(true);
+            return t;
+        });
+        scheduler.scheduleAtFixedRate(this::flushAllBatches,
+            batchIntervalSeconds, batchIntervalSeconds, TimeUnit.SECONDS);
+        log.info("Observation batch CloudEvents publisher started; interval = {}s", batchIntervalSeconds);
     }
 
 
     /**
-     * Cancel all active event bus subscriptions.
+     * Cancel all active event bus subscriptions and stop the batch flusher.
+     * Pending (un-flushed) observations in the current window are dropped — stop
+     * is intended to be predictable and quick rather than to drain in-flight state.
      */
     public void stop()
     {
+        if (scheduler != null)
+        {
+            scheduler.shutdownNow();
+            try
+            {
+                if (!scheduler.awaitTermination(5, TimeUnit.SECONDS))
+                    log.warn("Batch flusher did not terminate within 5s");
+            }
+            catch (InterruptedException e)
+            {
+                Thread.currentThread().interrupt();
+            }
+            scheduler = null;
+        }
+
         for (var sub : activeSubscriptions)
             sub.cancel();
         activeSubscriptions.clear();
 
-        for (var sub : obsSubscriptions.values())
-            sub.cancel();
-        obsSubscriptions.clear();
+        for (var state : obsBatches.values())
+            state.subscription.cancel();
+        obsBatches.clear();
     }
 
 
@@ -321,9 +362,9 @@ public class ResourceEventPublisher
         }
         else if (event instanceof DataStreamRemovedEvent)
         {
-            var sub = obsSubscriptions.remove(event.getDataStreamID());
-            if (sub != null)
-                sub.cancel();
+            var state = obsBatches.remove(event.getDataStreamID());
+            if (state != null)
+                state.subscription.cancel();
         }
     }
 
@@ -370,18 +411,19 @@ public class ResourceEventPublisher
 
     /**
      * Subscribe to {@link ObsEvent}s on the given datastream's data channel and
-     * publish a CloudEvent to MQTT for each arriving observation.
+     * accumulate counts for periodic batch CloudEvent publishing per OGC CS API
+     * Part 3 §"Batch Resource Events".
      *
-     * <p>The MQTT topic uses the observation phenomenon time (epoch-ms) as the
-     * observation ID segment since the internal database ID is not yet assigned
-     * when {@link ObsEvent} is published (events are fired before DB storage).</p>
+     * <p>Observations are not published one-by-one; they are counted into a
+     * per-datastream window and the scheduler in {@link #flushAllBatches} emits
+     * one summary CloudEvent per topic per interval.</p>
      *
      * <p>If a subscription for this datastream already exists the call is a no-op.</p>
      */
     private void subscribeToObsEvents(BigId dsId, BigId sysId, String sysUID, String outputName)
     {
         // Guard against duplicate subscriptions (e.g. startup scan racing with DataStreamAddedEvent)
-        if (obsSubscriptions.containsKey(dsId))
+        if (obsBatches.containsKey(dsId))
             return;
 
         var encodedSysId    = idEncoders.getSystemIdEncoder().encodeID(sysId);
@@ -389,6 +431,7 @@ public class ResourceEventPublisher
         var ancestorSysIds  = getAncestorIds(sysId).stream()
             .map(id -> idEncoders.getSystemIdEncoder().encodeID(id))
             .toList();
+        var parentUrl       = csApiBaseUrl + "/systems/" + encodedSysId + "/datastreams/" + encodedDsId;
 
         var obsTopicId = EventUtils.getDataStreamDataTopicID(sysUID, outputName);
 
@@ -399,8 +442,10 @@ public class ResourceEventPublisher
                 @Override
                 public void onSubscribe(Flow.Subscription subscription)
                 {
-                    // Atomically register; cancel if a duplicate raced ahead
-                    if (obsSubscriptions.putIfAbsent(dsId, subscription) != null)
+                    // Atomically register; cancel if a duplicate raced ahead.
+                    var state = new ObsBatchState(
+                        subscription, encodedSysId, encodedDsId, parentUrl, ancestorSysIds);
+                    if (obsBatches.putIfAbsent(dsId, state) != null)
                         subscription.cancel();
                     else
                         subscription.request(Long.MAX_VALUE);
@@ -409,31 +454,7 @@ public class ResourceEventPublisher
                 @Override
                 public void onNext(ObsEvent event)
                 {
-                    for (var obs : event.getObservations())
-                    {
-                        // Use phenomenon time as a stable, unique-enough ID since the
-                        // internal obs ID is not yet assigned at event publication time.
-                        var obsId      = String.valueOf(obs.getPhenomenonTime().toEpochMilli());
-                        var obsPath    = "/systems/" + encodedSysId + "/datastreams/" + encodedDsId + "/observations/";
-                        var subjectUrl = csApiBaseUrl + obsPath + obsId;
-                        var parentUrl  = csApiBaseUrl + "/systems/" + encodedSysId + "/datastreams/" + encodedDsId;
-
-                        // Direct parent topic
-                        publishCloudEvent(
-                            nodeId + obsPath + obsId,
-                            CloudEventsTypes.TYPE_OBS_CREATE,
-                            subjectUrl, event.getTimeStamp(), parentUrl);
-
-                        // Ancestor system topics (recursive per spec)
-                        for (var ancestorSysId : ancestorSysIds)
-                        {
-                            publishCloudEvent(
-                                nodeId + "/systems/" + ancestorSysId + "/datastreams/" + encodedDsId + "/observations/" + obsId,
-                                CloudEventsTypes.TYPE_OBS_CREATE,
-                                subjectUrl, event.getTimeStamp(),
-                                csApiBaseUrl + "/systems/" + ancestorSysId + "/datastreams/" + encodedDsId);
-                        }
-                    }
+                    recordObsBatch(dsId, event.getObservations());
                 }
 
                 @Override
@@ -512,5 +533,175 @@ public class ResourceEventPublisher
         {
             log.error("Failed to publish CloudEvent to MQTT topic '{}'", topic, e);
         }
+    }
+
+
+    /**
+     * Drain every per-datastream window and publish one batch CloudEvent per
+     * (datastream + ancestor system) topic for any window that received at least
+     * one observation since the previous flush. Empty windows are skipped — no
+     * zero-count events are emitted.
+     */
+    void flushAllBatches()
+    {
+        var flushEnd = Instant.now();
+        for (var entry : obsBatches.entrySet())
+        {
+            try
+            {
+                flushOne(entry.getValue(), flushEnd);
+            }
+            catch (Exception e)
+            {
+                log.error("Error flushing obs batch for datastream {}", entry.getValue().encodedDsId, e);
+            }
+        }
+    }
+
+
+    /**
+     * Add the given observation array to the batching state for {@code dsId}.
+     * Empty arrays are a no-op. The earliest phenomenon time across the array
+     * is used as the candidate window start.
+     */
+    void recordObsBatch(BigId dsId, IObsData[] obsArr)
+    {
+        if (obsArr.length == 0)
+            return;
+
+        Instant earliest = obsArr[0].getPhenomenonTime();
+        for (int i = 1; i < obsArr.length; i++)
+        {
+            var t = obsArr[i].getPhenomenonTime();
+            if (t.isBefore(earliest))
+                earliest = t;
+        }
+
+        var state = obsBatches.get(dsId);
+        if (state != null)
+            state.recordObs(obsArr.length, earliest);
+    }
+
+
+    private static final String OBSERVATIONS_PATH = "/observations";
+
+
+    private void flushOne(ObsBatchState state, Instant flushEnd)
+    {
+        var snap = state.snapAndReset();
+        if (snap == null)
+            return;
+
+        // Spec: subject is the canonical URL of the resource collection.
+        var subjectUrl = state.parentUrl + OBSERVATIONS_PATH;
+
+        // Direct parent topic
+        publishBatchObsCloudEvent(
+            nodeId + "/systems/" + state.encodedSysId + "/datastreams/" + state.encodedDsId + OBSERVATIONS_PATH,
+            subjectUrl, state.parentUrl,
+            snap.windowStart(), flushEnd, snap.count());
+
+        // Ancestor system topics (recursive — same propagation as the per-obs path used)
+        for (var ancestorSysId : state.ancestorSysIds)
+        {
+            var ancestorParent = csApiBaseUrl + "/systems/" + ancestorSysId + "/datastreams/" + state.encodedDsId;
+            publishBatchObsCloudEvent(
+                nodeId + "/systems/" + ancestorSysId + "/datastreams/" + state.encodedDsId + OBSERVATIONS_PATH,
+                subjectUrl, ancestorParent,
+                snap.windowStart(), flushEnd, snap.count());
+        }
+    }
+
+
+    /**
+     * Serialize and publish a Batch Resource Event CloudEvent v1.0 JSON message
+     * to MQTT, per OGC CS API Part 3 §"Batch Resource Events". The {@code data}
+     * field carries {@code {timerange:[start,end], count:N}}.
+     */
+    private void publishBatchObsCloudEvent(String topic, String subject, String parentId,
+                                           Instant windowStart, Instant windowEnd, long count)
+    {
+        try
+        {
+            var sw = new StringWriter();
+            try (var w = new JsonWriter(sw))
+            {
+                w.beginObject();
+                w.name("specversion").value(CloudEventsTypes.SPECVERSION);
+                w.name("id").value(UUID.randomUUID().toString());
+                w.name("type").value(CloudEventsTypes.TYPE_OBS_CREATE);
+                w.name("source").value(csApiBaseUrl);
+                w.name("subject").value(subject);
+                w.name("time").value(windowEnd.toString());
+                if (parentId != null)
+                    w.name("parentid").value(parentId);
+                w.name("datacontenttype").value("application/json");
+                w.name("data").beginObject();
+                w.name("timerange").beginArray()
+                    .value(windowStart.toString())
+                    .value(windowEnd.toString())
+                    .endArray();
+                w.name("count").value(count);
+                w.endObject();
+                w.endObject();
+            }
+            var bytes = sw.toString().getBytes(StandardCharsets.UTF_8);
+            mqttServer.publish(topic, ByteBuffer.wrap(bytes));
+            log.debug("Published batch CloudEvent count={} to MQTT topic '{}'", count, topic);
+        }
+        catch (Exception e)
+        {
+            log.error("Failed to publish batch CloudEvent to MQTT topic '{}'", topic, e);
+        }
+    }
+
+
+    /**
+     * Per-datastream batching state. The {@code count} and {@code windowStart}
+     * fields are mutated by both observation arrivals and the scheduled flusher,
+     * so all reads/writes of those two fields go through the synchronized
+     * methods here.
+     */
+    static final class ObsBatchState
+    {
+        final Flow.Subscription subscription;
+        final String encodedSysId;
+        final String encodedDsId;
+        final String parentUrl;
+        final List<String> ancestorSysIds;
+
+        // Guarded by `this`.
+        long count;
+        Instant windowStart;
+
+        ObsBatchState(Flow.Subscription subscription, String encodedSysId,
+                      String encodedDsId, String parentUrl, List<String> ancestorSysIds)
+        {
+            this.subscription = subscription;
+            this.encodedSysId = encodedSysId;
+            this.encodedDsId = encodedDsId;
+            this.parentUrl = parentUrl;
+            this.ancestorSysIds = ancestorSysIds;
+        }
+
+        synchronized void recordObs(int n, Instant earliestPhenomenonTime)
+        {
+            count += n;
+            if (windowStart == null || earliestPhenomenonTime.isBefore(windowStart))
+                windowStart = earliestPhenomenonTime;
+        }
+
+        /** Snapshot and reset; returns null when the window held no observations. */
+        synchronized Snapshot snapAndReset()
+        {
+            if (count == 0)
+                return null;
+            var snap = new Snapshot(count, windowStart);
+            count = 0;
+            windowStart = null;
+            return snap;
+        }
+
+        record Snapshot(long count, Instant windowStart) {}
     }
 }

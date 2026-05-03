@@ -19,7 +19,6 @@ import java.io.OutputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.ByteBuffer;
-import java.security.AccessControlException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -451,7 +450,7 @@ public class ConSysApiMqttConnector implements IMqttHandler
                 throw new ImplSpecificException(e.getMessage());
                 
             case FORBIDDEN:
-                throw new AccessControlException("Forbidden");
+                throw new SecurityException("Forbidden");
                 
             default:
                 throw new IllegalStateException("Internal error", e);

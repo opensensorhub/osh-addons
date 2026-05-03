@@ -109,6 +109,10 @@ public final class ConSysTopicValidator
         TopicPattern.of(CONTROLSTREAM, "systems/{id}/controlstreams/{id}"),
         TopicPattern.of(DEPLOYMENT,    "deployments/{id}/subdeployments/{id}"),
 
+        // 5-segment collection pattern — Batch Resource Events publish to the
+        // observations collection URL (no terminal obs id), per CS API Part 3.
+        TopicPattern.of(OBSERVATION,   "systems/{id}/datastreams/{id}/observations"),
+
         // 6-segment patterns
         TopicPattern.of(OBSERVATION,   "systems/{id}/datastreams/{id}/observations/{id}"),
         TopicPattern.of(COMMAND,       "systems/{id}/controlstreams/{id}/commands/{id}"),
