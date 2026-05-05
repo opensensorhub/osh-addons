@@ -17,10 +17,6 @@ public class ConnectionConfig {
     "for most cases.")
     public HostType host = HostType.UNSPECIFIED;
 
-    @DisplayInfo(label = "Host Override", desc = "(Optional) Override the host listening for an RTMP connection request."
-    + "\nHost must be set to OVERRIDE.")
-    public String hostOverride = "";
-
     @DisplayInfo.Required
     @DisplayInfo(label = "Port", desc = "Port listening for an RTMP connection request.")
     @DisplayInfo.ValueRange(min = 1, max = 65535)
@@ -30,6 +26,6 @@ public class ConnectionConfig {
     @DisplayInfo(label = "Path", desc = "(Optional) Path to listen for an RTMP connection request. I.e. everything in the URL " +
     "after the port.")
     public String path = "";
-    
+
      */
 }

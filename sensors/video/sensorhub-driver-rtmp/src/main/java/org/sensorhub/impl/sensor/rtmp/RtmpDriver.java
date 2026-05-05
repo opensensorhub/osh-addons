@@ -82,6 +82,7 @@ public class RtmpDriver extends AbstractSensorModule<RtmpConfig> {
         StringBuilder sb = new StringBuilder("rtmp://");
 
 
+        /*
         if (connectionConfig.host == HostType.OVERRIDE) {
             if (connectionConfig.hostOverride == null || connectionConfig.hostOverride.isBlank()) {
                 throw new SensorException("Domain override is not set");
@@ -90,6 +91,10 @@ public class RtmpDriver extends AbstractSensorModule<RtmpConfig> {
         } else {
             sb.append(connectionConfig.host.host);
         }
+
+         */
+
+        sb.append(connectionConfig.host.host);
 
         sb.append(":").append(connectionConfig.port);
 
