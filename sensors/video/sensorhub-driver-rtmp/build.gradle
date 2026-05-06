@@ -10,7 +10,7 @@ dependencies {
 // add info to OSGi manifest
 osgi {
   manifest {
-    attributes('Bundle-Vendor': 'Botts Innovative Research, Inc.')
+    attributes('Bundle-Vendor': 'GeoRobotix Innovative Research, LLC.')
     attributes('Bundle-Activator': 'org.sensorhub.impl.sensor.rtmp.Activator')
   }
 }
@@ -21,8 +21,8 @@ ext.pom >>= {
     developer {
       id 'kyle-fitzp'
       name 'Kyle Fitzpatrick'
-      organization 'GeoRobotix Inc.'
-      organizationUrl 'http://www.georobotix.com'
+      organization 'GeoRobotix Innovative Research, LLC.'
+      organizationUrl 'https://georobotix.us'
     }
   }
 }
