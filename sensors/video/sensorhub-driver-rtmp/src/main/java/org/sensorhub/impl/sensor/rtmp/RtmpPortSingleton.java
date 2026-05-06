@@ -46,10 +46,10 @@ public final class RtmpPortSingleton {
      * identifier of the module currently using the port
      */
     public synchronized String addConnection(int url, String moduleUid) {
-        if (instance.urls.containsKey(url)) {
+        if (urls.containsKey(url)) {
             return urls.get(url);
         } else {
-            instance.urls.put(url, moduleUid);
+            urls.put(url, moduleUid);
             return null;
         }
     }
@@ -60,6 +60,6 @@ public final class RtmpPortSingleton {
      * @param url RTMP listener port to release
      */
     public synchronized void removeConnection(int url) {
-        instance.urls.remove(url);
+        urls.remove(url);
     }
 }
