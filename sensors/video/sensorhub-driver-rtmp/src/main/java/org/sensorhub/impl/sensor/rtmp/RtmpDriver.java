@@ -63,7 +63,16 @@ public class RtmpDriver extends AbstractSensorModule<RtmpConfig> {
     int connectionPort = -1;
     String connectionUrl = "";
     //String path = "";
+
+    /**
+     * Indicates whether the driver has successfully connected to an RTMP stream at least once since starting.
+     */
     volatile boolean hasConnected = false;
+
+    /**
+     * Indicates whether the driver is currently connected to an RTMP stream.
+     */
+    volatile boolean isConnected = false;
 
     /**
      * Initializes the driver configuration and generated identifiers.
@@ -311,6 +320,7 @@ public class RtmpDriver extends AbstractSensorModule<RtmpConfig> {
             clearStatus();
             reportStatus("RTMP stream for " + connectionUrl + " opened.");
             hasConnected = true;
+            isConnected = true;
             mpegts.processStream();
             /*
             executorService.submit(() -> {
@@ -346,6 +356,7 @@ public class RtmpDriver extends AbstractSensorModule<RtmpConfig> {
 
         if (!mpegts.isStreamOpened()) {
             reportStatus("RTMP stream " + connectionUrl + " lost connection. Reconnecting...");
+            isConnected = false;
             createMpegTsProcessor();
             startStream();
         }
@@ -426,6 +437,7 @@ public class RtmpDriver extends AbstractSensorModule<RtmpConfig> {
      * closes the stream, and clears the processor reference.
      */
     private void stopStream() {
+        isConnected = false;
         synchronized (mpegTsProcessor) {
             var mpegts = mpegTsProcessor.get();
             if (mpegts != null) {
@@ -487,6 +499,6 @@ public class RtmpDriver extends AbstractSensorModule<RtmpConfig> {
      */
     @Override
     public boolean isConnected() {
-        return isStarted() && mpegTsProcessor.get() != null && mpegTsProcessor.get().isStreamOpened();
+        return isConnected;
     }
 }
