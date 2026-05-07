@@ -18,7 +18,9 @@ package org.sensorhub.process.geoloc;
 import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.Quantity;
 import net.opengis.swe.v20.Vector;
+import org.sensorhub.algo.vecmath.Vect3d;
 import org.sensorhub.api.processing.OSHProcessInfo;
+import org.sensorhub.api.sensor.PositionConfig;
 import org.vast.process.ExecutableProcessImpl;
 import org.vast.process.ProcessException;
 import org.vast.swe.SWEConstants;
@@ -60,7 +62,9 @@ public class LLToLLA extends ExecutableProcessImpl
             .description("Default altitude value appended to produce LLA output")
             .uom("m")
             .build();
-        defaultAlt.getData().setDoubleValue(0.0);
+        var altData = defaultAlt.createDataBlock();
+        altData.setDoubleValue(0.0);
+        defaultAlt.setData(altData);
         paramData.add("defaultAltitude", defaultAlt);
 
         // create LLA output (3D: lat, lon, alt)
