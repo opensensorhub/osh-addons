@@ -1,6 +1,6 @@
 description = 'NDBC Buoy Data Archive'
 ext.details = 'Connector to retrieve historical observations from NDBC datasets'
-version = '0.2.0'
+version = '0.2.1'
 
 dependencies {
   implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
@@ -11,7 +11,7 @@ dependencies {
 osgi {
   manifest {
     attributes('Bundle-Vendor': 'Botts Innovative Research Inc.')
-    attributes('Bundle-Activator': 'org.sensorhub.impl.ndbc.Activator')
+    attributes('Bundle-Activator': 'org.sensorhub.impl.sensor.ndbc.Activator')
   }
 }
 

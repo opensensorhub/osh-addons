@@ -1,14 +1,14 @@
 /***************************** BEGIN LICENSE BLOCK ***************************
 
-The contents of this file are subject to the Mozilla Public License, v. 2.0.
-If a copy of the MPL was not distributed with this file, You can obtain one
-at http://mozilla.org/MPL/2.0/.
+ The contents of this file are subject to the Mozilla Public License, v. 2.0.
+ If a copy of the MPL was not distributed with this file, You can obtain one
+ at http://mozilla.org/MPL/2.0/.
 
-Software distributed under the License is distributed on an "AS IS" basis,
-WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
-for the specific language governing rights and limitations under the License.
+ Software distributed under the License is distributed on an "AS IS" basis,
+ WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+ for the specific language governing rights and limitations under the License.
 
-Copyright (C) 2012-2017 Sensia Software LLC. All Rights Reserved.
+ Copyright (C) 2021 Botts Innovative Research, Inc. All Rights Reserved.
 
  ******************************* END LICENSE BLOCK ***************************/
 
@@ -32,7 +32,7 @@ import net.opengis.sensorml.v20.PhysicalSystem;
 
 
 /**
- * @author tcook
+ * @author Tony Cook, Lee Butler
  * @since Oct 1, 2017
  * 
  */
@@ -160,6 +160,9 @@ public class BuoySensor extends AbstractSensorModule<BuoyConfig>
 	@Override
 	public boolean isConnected()
 	{
+		// The driver is polling, so it fetches data periodically. 
+		// Should that mean that the driver is always "disconnected" or always "connected" 
+		// unless there is a failure with the polling thread without recovery? (NG)
 		return false;
 	}
 	

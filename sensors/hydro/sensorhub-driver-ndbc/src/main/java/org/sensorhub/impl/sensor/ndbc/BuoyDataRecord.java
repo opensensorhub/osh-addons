@@ -9,6 +9,7 @@
 
  Copyright (C) 2023 Botts Innovative Research, Inc. All Rights Reserved.
  ******************************* END LICENSE BLOCK ***************************/
+
 package org.sensorhub.impl.sensor.ndbc;
 
 /**
