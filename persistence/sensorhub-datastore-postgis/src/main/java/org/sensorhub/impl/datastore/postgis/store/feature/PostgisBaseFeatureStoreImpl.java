@@ -479,7 +479,7 @@ public abstract class PostgisBaseFeatureStoreImpl
             // TODO: need to implements other subclass of feature
             if(featureKey instanceof PostgisFeatureKey) {
                 var parentId = ((PostgisFeatureKey)featureKey).getParentID();
-                this.addOrUpdate(featureKey, BigId.fromLong(idScope,parentId), value);
+                this.addOrUpdate(featureKey, parentId == 0 ? BigId.NONE : BigId.fromLong(idScope,parentId), value);
             } else {
                 this.addOrUpdate(featureKey, null, value);
             }
