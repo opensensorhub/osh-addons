@@ -51,6 +51,7 @@ public abstract class Codec<I extends Pointer, O extends Pointer> implements Aut
     protected AVCodecContext codec_ctx;
     protected AVCodec codec;
     protected final Queue<O> outQueue = new ArrayDeque<>(10);
+    protected final int maxOutQueue = 10;
     private final AtomicBoolean isProcessing = new AtomicBoolean(false); // Set false to indicate packets should no longer be accepted
     final Object contextLock = new Object();
     Class<I> inputClass;
@@ -93,6 +94,16 @@ public abstract class Codec<I extends Pointer, O extends Pointer> implements Aut
                     //throw t; // will kill this task but not spawn a new thread silently
                 }
             });
+        }
+    }
+
+    protected boolean addOutFrame(O outFrame) {
+        if (outQueue.size() < maxOutQueue) {
+            outQueue.add(outFrame);
+            return true;
+        } else {
+            deallocateOutputPacket(outFrame);
+            return false;
         }
     }
 

@@ -69,7 +69,7 @@ public class SwScaler extends Codec<AVFrame, AVFrame> {
             outputPacket.height(outHeight);
             av_frame_get_buffer(outputPacket, 0);
             sws_scale_frame(swsContext, outputPacket, inputPacket);
-            outQueue.add(outputPacket);
+            addOutFrame(outputPacket);
         }
     }
 

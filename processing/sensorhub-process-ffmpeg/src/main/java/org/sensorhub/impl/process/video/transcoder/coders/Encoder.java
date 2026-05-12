@@ -87,7 +87,7 @@ public class Encoder extends Codec<AVFrame, AVPacket> {
 
             while (avcodec_receive_packet(codec_ctx, outputPacket) >= 0) {
                 if (!outputPacket.isNull()) {
-                    outQueue.add(outputPacket);
+                    addOutFrame(outputPacket);
                 }
                 outputPacket = av_packet_alloc();
             }

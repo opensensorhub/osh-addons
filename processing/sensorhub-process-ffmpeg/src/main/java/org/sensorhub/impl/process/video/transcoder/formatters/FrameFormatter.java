@@ -102,7 +102,7 @@ public class FrameFormatter implements AVByteFormatter<AVFrame> {
         BytePointer dst = newFrame.data(0);
         int linesize = newFrame.linesize(0);
 
-        int bytesPerPixel = av_get_bits_per_pixel(av_pix_fmt_desc_get(pixFmt)) / 8;
+        int bytesPerPixel = (av_get_bits_per_pixel(av_pix_fmt_desc_get(pixFmt)) + 7) / 8;
 
         int rowBytes = width * bytesPerPixel;
 
@@ -121,7 +121,7 @@ public class FrameFormatter implements AVByteFormatter<AVFrame> {
         newFrame.format(pixFmt);
         newFrame.width(width);
         newFrame.height(height);
-        int ret = av_frame_get_buffer(newFrame, 32);
+        int ret = av_frame_get_buffer(newFrame, 0);
         if (ret < 0) {
             av_frame_free(newFrame);
             throw new IllegalStateException("Could not allocate AVFrame buffer, ffmpeg error: " + ret);
