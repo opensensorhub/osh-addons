@@ -20,9 +20,8 @@ public class PacketFormatter implements AVByteFormatter<AVPacket> {
     @Override
     public AVPacket convertInput(byte[] inputData) {
         AVPacket newPacket = av_packet_alloc();
-        av_new_packet(newPacket, inputData.length);
-        newPacket.data().position(0);
-        newPacket.data().put(inputData.clone(), 0, inputData.length);
+        //av_new_packet(newPacket, inputData.length);
+        av_packet_from_data(newPacket, inputData, inputData.length);
         return newPacket;
     }
 

@@ -18,8 +18,8 @@ public enum CodecEnum {
     VP9(AV_CODEC_ID_VP9),
     MPEG2(AV_CODEC_ID_MPEG2TS),
     MPEG4(AV_CODEC_ID_MPEG4),
-    RGB(AV_PIX_FMT_RGB24),
-    YUV(AV_PIX_FMT_YUV420P);
+    RGB24(AV_PIX_FMT_RGB24),
+    YUV420P(AV_PIX_FMT_YUV420P);
 
     int ffmpegId;
 

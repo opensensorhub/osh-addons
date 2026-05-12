@@ -1,22 +1,14 @@
 package org.sensorhub.impl.process.video.transcoder.coders;
 
-import org.bytedeco.ffmpeg.avcodec.AVCodec;
 import org.bytedeco.ffmpeg.avcodec.AVPacket;
 import org.bytedeco.ffmpeg.avutil.AVFrame;
-import org.bytedeco.javacpp.PointerPointer;
 import org.sensorhub.impl.process.video.transcoder.helpers.CodecInfo;
 import org.sensorhub.impl.process.video.transcoder.helpers.CodecOptions;
-import org.sensorhub.impl.process.video.transcoder.helpers.FullCodecEnum;
-import org.sensorhub.impl.process.video.transcoder.helpers.FullPixelEnum;
-
-import java.util.ArrayDeque;
-import java.util.HashMap;
-import java.util.Queue;
 
 import static org.bytedeco.ffmpeg.global.avcodec.*;
 import static org.bytedeco.ffmpeg.global.avutil.*;
 
-public class Decoder extends Coder<AVPacket, AVFrame> {
+public class Decoder extends Codec<AVPacket, AVFrame> {
 
     public Decoder(CodecInfo inFormatInfo, CodecInfo outFormatInfo, CodecOptions options) {
         super(inFormatInfo, outFormatInfo, AVPacket.class, AVFrame.class, options);
@@ -25,22 +17,23 @@ public class Decoder extends Coder<AVPacket, AVFrame> {
     @Override
     protected void initContext() {
         synchronized (contextLock) {
-            codec = avcodec_find_decoder(inputFormat.codec().ffmpegId);
+            codec = avcodec_find_decoder(inputFormat.codec.ffmpegId);
             codec_ctx = avcodec_alloc_context3(codec);
-            codec_ctx.codec_id(inputFormat.codec().ffmpegId);
-            codec_ctx.pix_fmt(outputFormat.pixelFmt().ffmpegId);
+            codec_ctx.codec_id(inputFormat.codec.ffmpegId);
+            setCodecPixFmt(codec_ctx, outputFormat.pixelFmt);
+            //codec_ctx.pix_fmt(outputFormat.pixelFmt().ffmpegId);
         }
     }
 
     @Override
-    protected void deallocateInputPacket(AVPacket packet) {
+    public void deallocateInputPacket(AVPacket packet) {
         if (packet != null) {
             av_packet_free(packet);
         }
     }
 
     @Override
-    protected void deallocateOutputPacket(AVFrame packet) {
+    public void deallocateOutputPacket(AVFrame packet) {
         if (packet != null) {
             av_frame_free(packet);
         }
@@ -56,10 +49,12 @@ public class Decoder extends Coder<AVPacket, AVFrame> {
     }
 
     @Override
-    protected void processInputPacket(AVPacket inputPacket) {
+    protected synchronized void processInputPacket(AVPacket inputPacket) {
         if (inputPacket != null && !inputPacket.isNull()) {
-            if (avcodec_send_packet(codec_ctx, inputPacket) < 0) {
-                logger.warn("Error sending packet to decoder");
+            int ret;
+            if ((ret = avcodec_send_packet(codec_ctx, inputPacket)) < 0) {
+                //logger.warn("Error sending packet to decoder");
+                //logFFmpeg(ret);
                 //avcodec_flush_buffers(codec_ctx);
                 return;
             }

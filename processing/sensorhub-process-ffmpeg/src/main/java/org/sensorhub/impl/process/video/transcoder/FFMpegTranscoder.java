@@ -17,19 +17,14 @@ package org.sensorhub.impl.process.video.transcoder;
 import net.opengis.swe.v20.*;
 import org.bytedeco.ffmpeg.avcodec.AVPacket;
 import org.bytedeco.ffmpeg.avutil.AVFrame;
-import org.bytedeco.ffmpeg.global.avcodec;
-import org.bytedeco.ffmpeg.global.avutil;
 import org.bytedeco.javacpp.BytePointer;
-import org.bytedeco.javacpp.Pointer;
 import org.sensorhub.api.processing.OSHProcessInfo;
-import org.sensorhub.impl.process.video.transcoder.coders.Coder;
-import org.sensorhub.impl.process.video.transcoder.coders.Decoder;
-import org.sensorhub.impl.process.video.transcoder.coders.Encoder;
-import org.sensorhub.impl.process.video.transcoder.coders.SwScaler;
+import org.sensorhub.impl.process.video.transcoder.coders.*;
 import org.sensorhub.impl.process.video.transcoder.formatters.*;
 import org.sensorhub.impl.process.video.transcoder.helpers.CodecInfo;
 import org.sensorhub.impl.process.video.transcoder.helpers.CodecOptions;
 import org.sensorhub.impl.process.video.transcoder.helpers.FullCodecEnum;
+import org.sensorhub.impl.process.video.transcoder.helpers.FullPixelEnum;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.vast.data.DataBlockCompressed;
@@ -69,7 +64,7 @@ public class FFMpegTranscoder extends ExecutableProcessImpl
     Text inCodecParam;
     Text outCodecParam;
 
-    List<Coder> videoProcs;
+    List<Codec> videoProcs;
     AVByteFormatter inputFormatter, outputFormatter;
 
     CodecOptions decOptions, encOptions;
@@ -157,25 +152,49 @@ public class FFMpegTranscoder extends ExecutableProcessImpl
      * Initializes all encoder/decoder/swscaler objects. These objects are added to the {@link FFMpegTranscoder#videoProcs}
      * queue in the order they should process the incoming data. At most, the flow will be Decoder -> SWScale -> Encoder.
      */
-    private void initCoders() {
+    private void initCodecs() {
         if (videoProcs != null) {
             videoProcs.clear();
         }
         videoProcs = new ArrayList<>();
 
+        Decoder decoder = null;
+        Encoder encoder = null;
+        SwScaler swScaler = null;
+        //FullPixelEnum decOutPixFmt = outCodec.pixelFmt;
+        //FullPixelEnum encInPixFmt = outCodec.pixelFmt;
+
         if (!isUncompressed(inCodec)) {
-            videoProcs.add(new Decoder(inCodec, outCodec, decOptions));
-        }
-        if (width != outWidth || height != outHeight || (isUncompressed(inCodec) && isUncompressed(outCodec))) {
-            //int inFmt = isUncompressed(inCodec) ? inCodec.getCodec().ffmpegId : AV_PIX_FMT_YUV420P;
-            //int outFmt = isUncompressed(outCodec) ? outCodec.getCodec().ffmpegId : AV_PIX_FMT_YUV420P;
-            videoProcs.add(new SwScaler(inCodec, outCodec, width, height, outWidth, outHeight));
+            decoder = new Decoder(inCodec, outCodec, decOptions);
+            outCodec.pixelFmt = decoder.init();
+            //videoProcs.add(decoder);
         }
         if (!isUncompressed(outCodec)) {
-            Encoder encoder = new Encoder(inCodec, outCodec, decOptions);
-            videoProcs.add(encoder);
+            encoder = new Encoder(inCodec, outCodec, encOptions);
+            inCodec.pixelFmt = encoder.init();
+            //videoProcs.add(encoder);
         }
 
+        logger.info("Input pixel format: {}, Output pixel format: {}", inCodec.pixelFmt, outCodec.pixelFmt);
+
+        if (inCodec.pixelFmt == null || outCodec.pixelFmt == null) { logger.warn("Pixel format is null"); }
+
+        if (width != outWidth || height != outHeight
+                || (isUncompressed(inCodec) && isUncompressed(outCodec))
+                || (inCodec.pixelFmt != outCodec.pixelFmt)) {
+
+            swScaler = new SwScaler(inCodec, outCodec, width, height, outWidth, outHeight);
+            swScaler.init();
+            //videoProcs.add(swScaler);
+        }
+
+        if (decoder != null) { videoProcs.add(decoder); }
+        if (swScaler != null) { videoProcs.add(swScaler); }
+        if (encoder != null) { videoProcs.add(encoder); }
+
+    }
+
+    private void initPipeline() {
         // Frame pipe between decoder, swscaler, encoder
         for (int i = 0; i < videoProcs.size() - 1; i++) {
             var nextProc = videoProcs.get(i + 1);
@@ -185,20 +204,24 @@ public class FFMpegTranscoder extends ExecutableProcessImpl
         }
 
         // Output
-        videoProcs.get(videoProcs.size() - 1).registerCallback(packet -> {
-            publishFrameData(outputFormatter.convertOutput(packet));
+        var finalProc = videoProcs.get(videoProcs.size() - 1);
+        finalProc.registerCallback(packet -> {
+            try {
+                publishFrameData(outputFormatter.convertOutput(packet));
+            } finally {
+                finalProc.deallocateOutputPacket(packet);
+            }
         });
-
     }
 
     /**
      * Invoked on process stop and init.
-     * Stop all {@link Coder} thread objects stored in {@link FFMpegTranscoder#videoProcs}.
+     * Stop all {@link Codec} thread objects stored in {@link FFMpegTranscoder#videoProcs}.
      */
     private void stopProcessing() throws InterruptedException {
         isInit.set(false);
         if (videoProcs != null) {
-            for (Coder codec : videoProcs) {
+            for (Codec codec : videoProcs) {
                 codec.close();
             }
             videoProcs.clear();
@@ -307,13 +330,14 @@ public class FFMpegTranscoder extends ExecutableProcessImpl
             setImgEncoding();
             initCodecOptions();
             initFormatters();
-            initCoders();
+            initCodecs();
+            initPipeline();
 
             imgOut.setData(new DataBlockCompressed());
         }
         catch (IllegalArgumentException e)
         {
-            reportError("Unsupported codec " + inCodecParam.getData().getStringValue() + ". Must be one of " + Arrays.toString(CodecEnum.values()));
+            reportError("Unsupported codec " + inCodecParam.getData().getStringValue() + ". Must be one of " + Arrays.toString(CodecEnum.values()), e);
         }
 
         super.init();
@@ -390,7 +414,7 @@ public class FFMpegTranscoder extends ExecutableProcessImpl
     private AVByteFormatter getFormatter(CodecInfo codec, @Nullable Integer width, @Nullable Integer height) throws ProcessException {
         try {
             if (isUncompressed(codec))
-                return new FrameFormatter(width, height, codec.pixelFmt().ffmpegId);
+                return new FrameFormatter(width, height, codec.pixelFmt.ffmpegId);
             else
                 return new PacketFormatter();
             /*
@@ -408,10 +432,10 @@ public class FFMpegTranscoder extends ExecutableProcessImpl
 
     /**
      * @param codec Video codec or uncompressed format.
-     * @return Is the codec {@link CodecEnum#RGB} or {@link CodecEnum#YUV}?
+     * @return Is the codec {@link FullCodecEnum#RAWVIDEO}?
      */
     private boolean isUncompressed(CodecInfo codec) {
-        return codec.codec() == FullCodecEnum.RAWVIDEO;
+        return codec.codec == FullCodecEnum.RAWVIDEO;
     }
 
     /**
@@ -487,7 +511,7 @@ public class FFMpegTranscoder extends ExecutableProcessImpl
     }
 
     private boolean isVideoProcChainReady() {
-        for (Coder proc : videoProcs) {
+        for (Codec proc : videoProcs) {
             if (!proc.isReady()) {
                 return false;
             }
@@ -510,7 +534,7 @@ public class FFMpegTranscoder extends ExecutableProcessImpl
         isInit.set(false);
 
         if (videoProcs != null) {
-            for (Coder proc : videoProcs) {
+            for (Codec proc : videoProcs) {
                 proc.close();
             }
         }

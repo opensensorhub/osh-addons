@@ -1,23 +1,15 @@
 package org.sensorhub.impl.process.video.transcoder.coders;
 
-import org.bytedeco.ffmpeg.avcodec.AVCodec;
-import org.bytedeco.ffmpeg.avcodec.AVPacket;
 import org.bytedeco.ffmpeg.avutil.AVFrame;
 import org.bytedeco.ffmpeg.swscale.SwsContext;
-import org.bytedeco.javacpp.BytePointer;
 import org.bytedeco.javacpp.DoublePointer;
-import org.bytedeco.javacpp.PointerPointer;
 import org.sensorhub.impl.process.video.transcoder.helpers.CodecInfo;
+import org.sensorhub.impl.process.video.transcoder.helpers.FullPixelEnum;
 
-import java.util.ArrayDeque;
-import java.util.HashMap;
-import java.util.Queue;
-
-import static org.bytedeco.ffmpeg.global.avcodec.*;
 import static org.bytedeco.ffmpeg.global.avutil.*;
 import static org.bytedeco.ffmpeg.global.swscale.*;
 
-public class SwScaler extends Coder<AVFrame, AVFrame> {
+public class SwScaler extends Codec<AVFrame, AVFrame> {
     long pts = 0;
     SwsContext swsContext;
     final int inWidth, inHeight, outWidth, outHeight;
@@ -32,8 +24,8 @@ public class SwScaler extends Coder<AVFrame, AVFrame> {
 
     @Override
     protected void initContext() {
-        swsContext = sws_getContext(inWidth, inHeight, inputFormat.pixelFmt().ffmpegId,
-                outWidth, outHeight, outputFormat.pixelFmt().ffmpegId,
+        swsContext = sws_getContext(inWidth, inHeight, inputFormat.pixelFmt.ffmpegId,
+                outWidth, outHeight, outputFormat.pixelFmt.ffmpegId,
                 SWS_BICUBIC, null, null, (DoublePointer) null);
     }
 
@@ -41,17 +33,19 @@ public class SwScaler extends Coder<AVFrame, AVFrame> {
     protected void initOptions() {} // no options for swscaler
 
     @Override
-    protected void openContext() {} // no codec to open
+    protected FullPixelEnum openContext() {
+        return outputFormat.pixelFmt;
+    } // no codec to open
 
     @Override
-    protected void deallocateInputPacket(AVFrame packet) {
+    public void deallocateInputPacket(AVFrame packet) {
         if (packet != null) {
             av_frame_free(packet);
         }
     }
 
     @Override
-    protected void deallocateOutputPacket(AVFrame packet) {
+    public void deallocateOutputPacket(AVFrame packet) {
         if (packet != null) {
             av_frame_free(packet);
         }
@@ -67,10 +61,14 @@ public class SwScaler extends Coder<AVFrame, AVFrame> {
     }
 
     @Override
-    protected void processInputPacket(AVFrame inputPacket) {
+    protected synchronized void processInputPacket(AVFrame inputPacket) {
         if (inputPacket != null) {
             AVFrame outputPacket = av_frame_alloc();
-            sws_scale_frame(swsContext, outPacket, inPacket);
+            outputPacket.format(outputFormat.pixelFmt.ffmpegId);
+            outputPacket.width(outWidth);
+            outputPacket.height(outHeight);
+            av_frame_get_buffer(outputPacket, 0);
+            sws_scale_frame(swsContext, outputPacket, inputPacket);
             outQueue.add(outputPacket);
         }
     }

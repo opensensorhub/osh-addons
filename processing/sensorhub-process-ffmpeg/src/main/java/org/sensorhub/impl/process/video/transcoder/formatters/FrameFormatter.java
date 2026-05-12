@@ -21,13 +21,14 @@ public class FrameFormatter implements AVByteFormatter<AVFrame> {
     private final int[] planeHeights;
     private final int[] planeSizes;
     private final int totalSize;
+    boolean isPlanar;
 
     public FrameFormatter(int width, int height, int pixFmt) {
         this.width = width;
         this.height = height;
         this.pixFmt = pixFmt;
         this.desc = avutil.av_pix_fmt_desc_get(pixFmt);
-        boolean isPlanar = (desc.flags() & AV_PIX_FMT_FLAG_PLANAR) == 0;
+        isPlanar = (desc.flags() & AV_PIX_FMT_FLAG_PLANAR) != 0;
 
         if (isPlanar) {
             this.planeCount = countPlanes(desc);
@@ -44,7 +45,7 @@ public class FrameFormatter implements AVByteFormatter<AVFrame> {
             planeSizes = new int[1];
             planeWidths[0] = width;
             planeHeights[0] = height;
-            planeSizes[0] = width * height;
+            planeSizes[0] = width * height * ((av_get_bits_per_pixel(desc) + 7) / 8);
         }
 
         totalSize = calcByteSize(planeSizes);
@@ -68,7 +69,7 @@ public class FrameFormatter implements AVByteFormatter<AVFrame> {
     public AVFrame convertInput(byte[] inputData) {
         AVFrame newFrame = generateFrame();
 
-        if ((desc.flags() & AV_PIX_FMT_FLAG_PLANAR) == 0)
+        if (isPlanar)
             setFrameDataPlanar(newFrame, inputData);
         else
             setFrameDataPacked(newFrame, inputData);
@@ -120,27 +121,41 @@ public class FrameFormatter implements AVByteFormatter<AVFrame> {
         newFrame.format(pixFmt);
         newFrame.width(width);
         newFrame.height(height);
-        av_frame_get_buffer(newFrame, 32);
+        int ret = av_frame_get_buffer(newFrame, 32);
+        if (ret < 0) {
+            av_frame_free(newFrame);
+            throw new IllegalStateException("Could not allocate AVFrame buffer, ffmpeg error: " + ret);
+        }
         return newFrame;
     }
 
     @Override
     public byte[] convertOutput(AVFrame outputFrame) {
+        if (outputFrame.format() != pixFmt) {
+            throw new IllegalArgumentException(
+                    "Unexpected frame pixel format: " + outputFrame.format() + ", expected " + pixFmt);
+        }
+
         byte[] out = new byte[totalSize];
         int offset = 0;
 
-        for (int plane = 0; plane < 3; plane++) {
-            int w = planeWidth(plane);
-            int h = planeHeight(plane);
-            int srcStride = outputFrame.linesize(plane);
+        if (isPlanar) {
+            for (int plane = 0; plane < planeCount; plane++) {
+                int w = planeWidth(plane);
+                int h = planeHeight(plane);
+                int srcStride = outputFrame.linesize(plane);
 
-            BytePointer src = outputFrame.data(plane).position(0);
+                BytePointer src = outputFrame.data(plane).position(0);
 
-            for (int y = 0; y < h; y++) {
-                src.position(y * srcStride);
-                src.get(out, offset, w);
-                offset += w;
+                for (int y = 0; y < h; y++) {
+                    src.position(y * srcStride);
+                    src.get(out, offset, w);
+                    offset += w;
+                }
             }
+        } else {
+            BytePointer src = outputFrame.data(0);
+            src.get(out, 0, totalSize);
         }
         return out;
     }
