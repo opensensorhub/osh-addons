@@ -2,6 +2,9 @@ package org.sensorhub.impl.process.video.transcoder.helpers;
 
 import org.bytedeco.ffmpeg.global.avcodec;
 
+import java.util.HashMap;
+import java.util.Map;
+
 public enum FullCodecEnum {
     H264(avcodec.AV_CODEC_ID_H264),
     HEVC(avcodec.AV_CODEC_ID_HEVC),
@@ -76,6 +79,19 @@ public enum FullCodecEnum {
     HAP(avcodec.AV_CODEC_ID_HAP);
 
     public int ffmpegId;
+
+    private static final Map<Integer, FullCodecEnum> BY_ID;
+
+    static {
+        BY_ID = new HashMap<>();
+        for (FullCodecEnum fmt : values()) {
+            BY_ID.put(fmt.ffmpegId, fmt);
+        }
+    }
+
+    public static FullCodecEnum fromId(int ffmpegId) {
+        return BY_ID.getOrDefault(ffmpegId, RAWVIDEO);
+    }
 
     FullCodecEnum(int ffmpegId)
     {

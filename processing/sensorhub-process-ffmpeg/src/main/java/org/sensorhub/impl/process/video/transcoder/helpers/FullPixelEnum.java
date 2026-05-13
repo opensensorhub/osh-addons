@@ -2,7 +2,11 @@ package org.sensorhub.impl.process.video.transcoder.helpers;
 
 import org.bytedeco.ffmpeg.global.avutil;
 
+import java.util.HashMap;
+import java.util.Map;
+
 public enum FullPixelEnum {
+
     NONE(avutil.AV_PIX_FMT_NONE),
 
     // --- Planar YUV ---
@@ -181,6 +185,18 @@ public enum FullPixelEnum {
     P416LE(avutil.AV_PIX_FMT_P416LE);
 
     public int ffmpegId;
+    private static final Map<Integer, FullPixelEnum> BY_ID;
+
+    static {
+        BY_ID = new HashMap<>();
+        for (FullPixelEnum fmt : values()) {
+            BY_ID.put(fmt.ffmpegId, fmt);
+        }
+    }
+
+    public static FullPixelEnum fromId(int ffmpegId) {
+        return BY_ID.getOrDefault(ffmpegId, NONE);
+    }
 
     FullPixelEnum(int ffmpegId)
     {

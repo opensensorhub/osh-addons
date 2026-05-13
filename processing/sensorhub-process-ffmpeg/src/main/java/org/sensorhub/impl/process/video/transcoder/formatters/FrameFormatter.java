@@ -47,7 +47,6 @@ public class FrameFormatter implements AVByteFormatter<AVFrame> {
             planeHeights[0] = height;
             planeSizes[0] = width * height * ((av_get_bits_per_pixel(desc) + 7) / 8);
         }
-
         totalSize = calcByteSize(planeSizes);
     }
 
@@ -85,12 +84,15 @@ public class FrameFormatter implements AVByteFormatter<AVFrame> {
             int h = planeHeights[p];
             int stride = newFrame.linesize(p);
 
-            BytePointer dst = newFrame.data(p).position(0);
+            BytePointer dst = newFrame.data(p)
+                    .capacity((long) stride * h)
+                    .position(0);
 
-            int rowBytes = w;
+            int bitsPerComponent = desc.comp(p < 1 ? 0 : 1).depth();
+            int rowBytes = w * ((bitsPerComponent + 7) / 8);
 
             for (int y = 0; y < h; y++) {
-                dst.position(y * stride);
+                dst.position((long) y * stride);
                 dst.put(inputData, offset + y * rowBytes, rowBytes);
             }
 
@@ -99,10 +101,12 @@ public class FrameFormatter implements AVByteFormatter<AVFrame> {
     }
 
     private void setFrameDataPacked(AVFrame newFrame, byte[] inputData) {
-        BytePointer dst = newFrame.data(0);
         int linesize = newFrame.linesize(0);
+        BytePointer dst = newFrame.data(0)
+                .capacity((long) linesize * height)
+                .position(0);
 
-        int bytesPerPixel = (av_get_bits_per_pixel(av_pix_fmt_desc_get(pixFmt)) + 7) / 8;
+        int bytesPerPixel = (av_get_bits_per_pixel(desc) + 7) / 8;
 
         int rowBytes = width * bytesPerPixel;
 
@@ -137,27 +141,51 @@ public class FrameFormatter implements AVByteFormatter<AVFrame> {
         }
 
         byte[] out = new byte[totalSize];
-        int offset = 0;
 
         if (isPlanar) {
-            for (int plane = 0; plane < planeCount; plane++) {
-                int w = planeWidth(plane);
-                int h = planeHeight(plane);
-                int srcStride = outputFrame.linesize(plane);
-
-                BytePointer src = outputFrame.data(plane).position(0);
-
-                for (int y = 0; y < h; y++) {
-                    src.position(y * srcStride);
-                    src.get(out, offset, w);
-                    offset += w;
-                }
-            }
+            getFrameDataPlanar(outputFrame, out);
         } else {
-            BytePointer src = outputFrame.data(0);
-            src.get(out, 0, totalSize);
+            getFrameDataPacked(outputFrame, out);
         }
         return out;
+    }
+
+    private void getFrameDataPlanar(AVFrame outputFrame, byte[] out) {
+        int offset = 0;
+        for (int plane = 0; plane < planeCount; plane++) {
+            int w = planeWidth(plane);
+            int h = planeHeight(plane);
+            int srcStride = outputFrame.linesize(plane);
+
+            BytePointer src = outputFrame.data(plane)
+                    .capacity((long) srcStride * h)
+                    .position(0);
+
+            int bitsPerComponent = desc.comp(plane < 1 ? 0 : 1).depth();
+            int rowBytes = w * ((bitsPerComponent + 7) / 8);
+
+            for (int y = 0; y < h; y++) {
+                src.position((long) y * srcStride);
+                src.get(out, offset, rowBytes);
+                offset += rowBytes;
+            }
+        }
+    }
+
+    private void getFrameDataPacked(AVFrame outputFrame, byte[] out) {
+        int bytesPerPixel = (av_get_bits_per_pixel(desc) + 7) / 8;
+        int rowBytes = width * bytesPerPixel;
+        int linesize = outputFrame.linesize(0);
+
+        BytePointer src = outputFrame.data(0)
+                .capacity((long) linesize * height);
+
+        int offset = 0;
+        for (int y = 0; y < height; y++) {
+            src.position((long) y * linesize)
+                    .get(out, offset, rowBytes);
+            offset += rowBytes;
+        }
     }
 
     private int planeWidth(int plane) {
@@ -196,7 +224,8 @@ public class FrameFormatter implements AVByteFormatter<AVFrame> {
         }
 
         for (int p = 0; p < planeSizes.length; p++) {
-            planeSizes[p] = planeWidths[p] * planeHeights[p];
+            int bytesPerSample = (desc.comp(p == 0 ? 0 : 1).depth() + 7) / 8;
+            planeSizes[p] = planeWidths[p] * planeHeights[p] * bytesPerSample;
         }
     }
 }

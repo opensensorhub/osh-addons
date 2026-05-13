@@ -6,7 +6,7 @@ import java.util.ArrayDeque;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Queue;
-import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -24,7 +24,6 @@ import org.bytedeco.javacpp.Pointer;
 import org.bytedeco.javacpp.PointerPointer;
 import org.sensorhub.impl.process.video.transcoder.helpers.CodecInfo;
 import org.sensorhub.impl.process.video.transcoder.helpers.CodecOptions;
-import org.sensorhub.impl.process.video.transcoder.helpers.FullCodecEnum;
 import org.sensorhub.impl.process.video.transcoder.helpers.FullPixelEnum;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,14 +49,17 @@ public abstract class Codec<I extends Pointer, O extends Pointer> implements Aut
     CodecInfo outputFormat;
     protected AVCodecContext codec_ctx;
     protected AVCodec codec;
-    protected final Queue<O> outQueue = new ArrayDeque<>(10);
-    protected final int maxOutQueue = 10;
-    private final AtomicBoolean isProcessing = new AtomicBoolean(false); // Set false to indicate packets should no longer be accepted
+    protected final Queue<I> inQueue = new ConcurrentLinkedQueue<>();
+    protected final Queue<O> outQueue = new ConcurrentLinkedQueue<>();
+    protected final int maxQueue = 10;
+    private final AtomicBoolean isProcessing = new AtomicBoolean(false);
+    private final AtomicBoolean isAlive = new AtomicBoolean(false); // Set false to indicate packets should no longer be accepted
     final Object contextLock = new Object();
     Class<I> inputClass;
     Class<O> outputClass;
     CodecOptions options;
     AtomicBoolean isNotifying = new AtomicBoolean(false);
+    byte[] headers;
 
     public Codec(CodecInfo inFormatInfo, CodecInfo outFormatInfo, Class<I> inputClass, Class<O> outputClass, CodecOptions options) {
         super();
@@ -78,7 +80,7 @@ public abstract class Codec<I extends Pointer, O extends Pointer> implements Aut
         initContext();
         initOptions();
         var pixFmt = openContext();
-        isProcessing.set(true);
+        isAlive.set(true);
         return pixFmt;
     }
 
@@ -97,18 +99,24 @@ public abstract class Codec<I extends Pointer, O extends Pointer> implements Aut
         }
     }
 
-    protected boolean addOutFrame(O outFrame) {
-        if (outQueue.size() < maxOutQueue) {
-            outQueue.add(outFrame);
-            return true;
-        } else {
-            deallocateOutputPacket(outFrame);
-            return false;
+    protected void addOutPacket(O outPacket) {
+        while (outQueue.size() >= maxQueue) {
+            var packet = outQueue.poll();
+            deallocateOutputPacket(packet);
         }
+        outQueue.add(outPacket);
+    }
+
+    protected void addInPacket(I inPacket) {
+        while (inQueue.size() >= maxQueue) {
+            var packet = inQueue.poll();
+            deallocateInputPacket(packet);
+        }
+        inQueue.add(inPacket);
     }
 
     public boolean isReady() {
-        return isProcessing.get();
+        return isAlive.get();
     }
 
     public Class getOutputClass() {
@@ -124,10 +132,16 @@ public abstract class Codec<I extends Pointer, O extends Pointer> implements Aut
     protected FullPixelEnum openContext() {
         int ret;
         FullPixelEnum pixelFmt;
+
+        codec_ctx.flags(codec_ctx.flags() | AV_CODEC_FLAG_GLOBAL_HEADER);
+
         if ((ret = avcodec_open2(codec_ctx, codec, (PointerPointer<?>) null)) < 0) {
             logFFmpeg(ret);
             throw new IllegalStateException("Error opening codec " + codec.name().getString());
         }
+
+        headers = getExtradata(codec_ctx);
+
         try {
             var desc = av_pix_fmt_desc_get(codec_ctx.pix_fmt());
             pixelFmt = FullPixelEnum.valueOf(desc.name().getString().toUpperCase());
@@ -141,6 +155,15 @@ public abstract class Codec<I extends Pointer, O extends Pointer> implements Aut
         return pixelFmt;
     }
 
+    protected static byte[] getExtradata(AVCodecContext codecCtx) {
+        if (codecCtx.extradata() == null || codecCtx.extradata_size() == 0)
+            return null;
+
+        byte[] data = new byte[codecCtx.extradata_size()];
+        codecCtx.extradata().get(data);
+        return data;
+    }
+
     protected static void logFFmpeg(int retCode) {
         BytePointer buf = new BytePointer(AV_ERROR_MAX_STRING_SIZE);
         av_strerror(retCode, buf, buf.capacity());
@@ -152,7 +175,6 @@ public abstract class Codec<I extends Pointer, O extends Pointer> implements Aut
         PointerPointer<IntPointer> pixelFmts = new PointerPointer<>(1);
 
         avcodec_get_supported_config(codec_ctx, null, AV_CODEC_CONFIG_PIX_FORMAT, 0, pixelFmts, (IntPointer) null);
-
         IntPointer fmts = pixelFmts.get(IntPointer.class, 0);
         // If null, all formats are supported
         if (fmts == null || fmts.isNull()) {
@@ -173,12 +195,11 @@ public abstract class Codec<I extends Pointer, O extends Pointer> implements Aut
             }
             if (!found) {
                 logger.warn("Preferred pixel format for codec {} could not be found", codecString);
-                codec_ctx.pix_fmt(fmts.get(0));
+                IntPointer loss = new IntPointer(1);
+                int fmt = avcodec_find_best_pix_fmt_of_list(fmts, desiredFmt.ffmpegId, 0, loss);
+                codec_ctx.pix_fmt(fmt);
             }
         }
-
-        if (fmts != null)
-            fmts.deallocate();
         pixelFmts.deallocate();
     }
 
@@ -197,12 +218,12 @@ public abstract class Codec<I extends Pointer, O extends Pointer> implements Aut
         codec_ctx.width(options.width());
         codec_ctx.height(options.height());
 
+        codec_ctx.time_base(av_make_q(1, 90000));
+
         if (options.fps() > 0) {
             codec_ctx.framerate(av_make_q(options.fps(), 1));
-            codec_ctx.time_base(av_make_q(1, options.fps()));
         } else {
             codec_ctx.framerate(av_make_q(25, 1));
-            codec_ctx.time_base(av_make_q(1, 25));
         }
 
         if (inputFormat.codec.ffmpegId == AV_CODEC_ID_H264) {
@@ -227,27 +248,37 @@ public abstract class Codec<I extends Pointer, O extends Pointer> implements Aut
     protected abstract O cloneOutput(O packet);
     protected abstract void processInputPacket(I inputPacket);
 
-    // Take data from input queue and send to encoder/decoder
+
     public void submitInputPacket(I inputPacket) {
         synchronized (contextLock) {
-            if (inputPacket == null || !isProcessing.get()) {
+            if (!isAlive.get()) {
                 return;
             }
-            submitTask(() -> {
-                // Process the input
-                processInputPacket(inputPacket);
-                deallocateInputPacket(inputPacket);
+            if (inputPacket != null) {
+                addInPacket(inputPacket);
+            }
+            if (isProcessing.compareAndSet(false, true)) {
+                submitTask(() -> {
+                    // Process the input
+                    while (!inQueue.isEmpty()) {
+                        I inPacket = inQueue.poll();
+                        processInputPacket(inPacket);
+                        deallocateInputPacket(inPacket);
+                    }
 
-                if (!outQueue.isEmpty() && isNotifying.compareAndSet(false, true)) {
-                    outputExecutor.submit(() -> {
-                        while (!outQueue.isEmpty()) {
-                            var outputPacket = outQueue.poll();
-                            notifyCallbacks(outputPacket);
-                        }
-                        isNotifying.set(false);
-                    });
-                }
-            });
+                    if (!outQueue.isEmpty() && isNotifying.compareAndSet(false, true)) {
+                        outputExecutor.submit(() -> {
+                            while (!outQueue.isEmpty()) {
+                                O outputPacket = outQueue.poll();
+                                notifyCallbacks(outputPacket);
+                            }
+                            isNotifying.set(false);
+                        });
+                    }
+
+                    isProcessing.set(false);
+                });
+            }
         }
     }
 
@@ -280,7 +311,7 @@ public abstract class Codec<I extends Pointer, O extends Pointer> implements Aut
     @Override
     public void close() {
         synchronized (contextLock) {
-            if (isProcessing.compareAndSet(true, false)) {
+            if (isAlive.compareAndSet(true, false)) {
 
                 // Submit cleanup *before* shutdown so it is the last task to run
                 executor.submit(this::cleanup);

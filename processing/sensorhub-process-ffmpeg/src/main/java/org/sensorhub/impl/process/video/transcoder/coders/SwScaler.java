@@ -62,15 +62,22 @@ public class SwScaler extends Codec<AVFrame, AVFrame> {
 
     @Override
     protected synchronized void processInputPacket(AVFrame inputPacket) {
-        if (inputPacket != null) {
-            AVFrame outputPacket = av_frame_alloc();
-            outputPacket.format(outputFormat.pixelFmt.ffmpegId);
-            outputPacket.width(outWidth);
-            outputPacket.height(outHeight);
-            av_frame_get_buffer(outputPacket, 0);
-            sws_scale_frame(swsContext, outputPacket, inputPacket);
-            addOutFrame(outputPacket);
+        if (inputPacket == null) { return; }
+
+        // FFmpeg can be weird when it comes to decoder pixfmt. May need to change
+        // on the fly (usually first frame).
+        if (inputPacket.format() != inputFormat.pixelFmt.ffmpegId) {
+            inputFormat.pixelFmt = FullPixelEnum.fromId(inputPacket.format());
+            initContext();
         }
+
+        AVFrame outputPacket = av_frame_alloc();
+        outputPacket.format(outputFormat.pixelFmt.ffmpegId);
+        outputPacket.width(outWidth);
+        outputPacket.height(outHeight);
+        av_frame_get_buffer(outputPacket, 0);
+        sws_scale_frame(swsContext, outputPacket, inputPacket);
+        addOutPacket(outputPacket);
     }
 
     @Override

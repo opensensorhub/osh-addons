@@ -161,36 +161,33 @@ public class FFMpegTranscoder extends ExecutableProcessImpl
         Decoder decoder = null;
         Encoder encoder = null;
         SwScaler swScaler = null;
-        //FullPixelEnum decOutPixFmt = outCodec.pixelFmt;
-        //FullPixelEnum encInPixFmt = outCodec.pixelFmt;
 
         if (!isUncompressed(inCodec)) {
             decoder = new Decoder(inCodec, outCodec, decOptions);
-            outCodec.pixelFmt = decoder.init();
+            inCodec.pixelFmt = decoder.init();
+            if (inCodec.pixelFmt == null)
+                inCodec.pixelFmt = FullPixelEnum.YUV420P;
             //videoProcs.add(decoder);
         }
+
         if (!isUncompressed(outCodec)) {
             encoder = new Encoder(inCodec, outCodec, encOptions);
-            inCodec.pixelFmt = encoder.init();
+            outCodec.pixelFmt = encoder.init();
             //videoProcs.add(encoder);
         }
 
-        logger.info("Input pixel format: {}, Output pixel format: {}", inCodec.pixelFmt, outCodec.pixelFmt);
-
-        if (inCodec.pixelFmt == null || outCodec.pixelFmt == null) { logger.warn("Pixel format is null"); }
-
-        if (width != outWidth || height != outHeight
-                || (isUncompressed(inCodec) && isUncompressed(outCodec))
-                || (inCodec.pixelFmt != outCodec.pixelFmt)) {
-
-            swScaler = new SwScaler(inCodec, outCodec, width, height, outWidth, outHeight);
-            swScaler.init();
-            //videoProcs.add(swScaler);
-        }
+        // Always want swScaler. Decoder can output frames in a format different from what was set.
+        swScaler = new SwScaler(inCodec, outCodec, width, height, outWidth, outHeight);
+        swScaler.init();
+        //videoProcs.add(swScaler);
 
         if (decoder != null) { videoProcs.add(decoder); }
         if (swScaler != null) { videoProcs.add(swScaler); }
         if (encoder != null) { videoProcs.add(encoder); }
+
+        logger.info("Input pixel format: {}, Output pixel format: {}", inCodec.pixelFmt, outCodec.pixelFmt);
+
+        if (inCodec.pixelFmt == null || outCodec.pixelFmt == null) { logger.warn("Pixel format is null"); }
 
     }
 
@@ -329,8 +326,8 @@ public class FFMpegTranscoder extends ExecutableProcessImpl
 
             setImgEncoding();
             initCodecOptions();
-            initFormatters();
             initCodecs();
+            initFormatters();
             initPipeline();
 
             imgOut.setData(new DataBlockCompressed());
@@ -471,12 +468,15 @@ public class FFMpegTranscoder extends ExecutableProcessImpl
 
         ((DataBlockCompressed) imgOut.getData()).setUnderlyingObject(frameData.clone());
         // also copy frame timestamp
-        double ts;
+        double ts = System.currentTimeMillis() / 1000d;
+        /*
         if (inputTimeStamp != null && inputTimeStamp.getData() != null) {
             ts = inputTimeStamp.getData().getDoubleValue();
         } else {
             ts = System.currentTimeMillis();
         }
+
+         */
         outputTimeStamp.getData().setDoubleValue(ts);
         try {
             //logger.debug("Publishing");

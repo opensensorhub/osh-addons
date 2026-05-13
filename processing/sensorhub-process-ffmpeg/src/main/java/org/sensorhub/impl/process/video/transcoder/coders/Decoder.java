@@ -20,7 +20,7 @@ public class Decoder extends Codec<AVPacket, AVFrame> {
             codec = avcodec_find_decoder(inputFormat.codec.ffmpegId);
             codec_ctx = avcodec_alloc_context3(codec);
             codec_ctx.codec_id(inputFormat.codec.ffmpegId);
-            setCodecPixFmt(codec_ctx, outputFormat.pixelFmt);
+            //setCodecPixFmt(codec_ctx, outputFormat.pixelFmt);
             //codec_ctx.pix_fmt(outputFormat.pixelFmt().ffmpegId);
         }
     }
@@ -63,7 +63,7 @@ public class Decoder extends Codec<AVPacket, AVFrame> {
 
             while (avcodec_receive_frame(codec_ctx, outputPacket) >= 0) {
                 if (!outputPacket.isNull()) {
-                    addOutFrame(outputPacket);
+                    addOutPacket(outputPacket);
                 }
                 outputPacket = av_frame_alloc();
             }
