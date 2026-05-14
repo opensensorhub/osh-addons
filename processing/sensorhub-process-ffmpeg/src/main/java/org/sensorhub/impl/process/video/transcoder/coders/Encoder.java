@@ -96,15 +96,10 @@ public class Encoder extends Codec<AVFrame, AVPacket> {
     protected synchronized void processInputPacket(AVFrame inputPacket) {
         if (inputPacket != null && !inputPacket.isNull()) {
             int ret;
-            /*
-            long timeStamp = pts;
-            // pts += 1/fps * 1/timebase
-            // fps must be <= 1/timebase
-            pts += (framerateDen * timebaseDen) / (framerateNum * timebaseNum);
-            inputPacket.pts(timeStamp);
-            inputPacket.pkt_dts(timeStamp);
-
-             */
+            if (inputPacket.format() != codec_ctx.pix_fmt()) {
+                throw new IllegalArgumentException("AVFrame pixel format: " + FullPixelEnum.fromId(inputPacket.format())
+                        + " incompatible with codec pixel format: " + FullPixelEnum.fromId(codec_ctx.pix_fmt()));
+            }
 
             if (frameSinceGop++ >= GOP_SIZE) {
                 frameSinceGop = 0;
