@@ -2,7 +2,6 @@ package org.sensorhub.impl.process.video.transcoder.coders;
 
 import static org.bytedeco.ffmpeg.global.avutil.*;
 
-import java.util.ArrayDeque;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Queue;
@@ -28,10 +27,46 @@ import org.sensorhub.impl.process.video.transcoder.helpers.FullPixelEnum;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Consumes AVPackets/AVFrames and produces AVPackets/AVFrames. Asynchronously submit packets to the codec with
+ * {@link #submitInputPacket(Pointer input)}. Listen for output by submitting a {@link CodecCallback} (typically a lambda)
+ * to {@link #registerCallback(CodecCallback callback)}. If transcoding, use callbacks to connect the output of one
+ * {@link #Codec} instance to the {@link #submitInputPacket(Pointer input)} method of the next.
+ *
+ * <br><br>AVPacket/AVFrame ownership is transferred to the consumer/listener. The consumer shall be responsible for
+ * deallocating AVPackets/AVFrames by passing them to the {@link #deallocateOutputPacket(Pointer packet)} method of the
+ * codec which most recently produced them. ONLY deallocate AVPackets/AVFrames that are not in use by a
+ * {@link #Codec}. {@link #submitInputPacket(Pointer input)} will automatically deallocate its input.
+ * 
+ * <br><br>Codec/Callback Sample:
+ * <pre>
+ * {@code
+ * // Packet pipe between decoder, swscaler, encoder
+ *         for (int i = 0; i < codecList.size() - 1; i++) {
+ *             var nextCodec = codecList.get(i + 1);
+ *             codecList.get(i).registerCallback(packet -> {
+ *                 nextCodec.submitInputPacket(packet);
+ *             });
+ *         }
+ *
+ *         // Output
+ *         var finalProc = codecList.get(codecList.size() - 1);
+ *         finalProc.registerCallback(packet -> {
+ *             try {
+ *                 publishFrameData(outputFormatter.convertOutput(packet));
+ *             } finally {
+ *                 finalProc.deallocateOutputPacket(packet);
+ *             }
+ *         });
+ * }
+ * </pre>
+ * @param <I> Input class (either AVFrame or AVPacket)
+ * @param <O> Output class (either AVFrame or AVPacket)
+ */
 public abstract class Codec<I extends Pointer, O extends Pointer> implements AutoCloseable {
 
 
-    public interface CoderCallback<O extends Pointer> {
+    public interface CodecCallback<O extends Pointer> {
         // The recipient does not need to deallocate the output; this is done automatically
         public abstract void onPacket(O packet);
     }
@@ -43,7 +78,7 @@ public abstract class Codec<I extends Pointer, O extends Pointer> implements Aut
     private final ExecutorService executor = Executors.newSingleThreadExecutor(
             r -> new Thread(r, "ffmpeg-codec-thread-" + codecNum));
     private final ExecutorService outputExecutor = Executors.newSingleThreadExecutor(r -> new Thread(r, "ffmpeg-codec-output-thread-" + codecNum));
-    private final Map<CoderCallback<O>, ExecutorService> callbackMap = new HashMap<>();
+    private final Map<CodecCallback<O>, ExecutorService> callbackMap = new HashMap<>();
 
     CodecInfo inputFormat;
     CodecInfo outputFormat;
@@ -292,7 +327,7 @@ public abstract class Codec<I extends Pointer, O extends Pointer> implements Aut
         deallocateOutputPacket(outputPacket);
     }
 
-    public void registerCallback(CoderCallback<O> callback) {
+    public void registerCallback(CodecCallback<O> callback) {
         if (!callbackMap.containsKey(callback)) {
             callbackMap.put(callback, Executors.newSingleThreadExecutor(r -> new Thread(r, "ffmpeg-codec-" + codecNum + "-callback-thread")));
         } else {
@@ -300,7 +335,7 @@ public abstract class Codec<I extends Pointer, O extends Pointer> implements Aut
         }
     }
 
-    public void unregisterCallback(CoderCallback<O> callback) {
+    public void unregisterCallback(CodecCallback<O> callback) {
         callbackMap.remove(callback);
     }
 
