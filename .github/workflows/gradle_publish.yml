@@ -33,7 +33,7 @@ jobs:
               CHANGED=${{ inputs.run_specific }}
             fi
           else #merge to master, detect specific changes
-            CHANGED=$(grep -F -o -f <(echo "$CHANGED") <(git diff --name-only HEAD~ HEAD))
+            CHANGED=$(grep -F -o -f <(echo "$CHANGED") <(git diff --name-only HEAD~ HEAD) | sort -u)
           fi
           
           CHANGED=$(echo -n "$CHANGED" | base64 -w 0)
