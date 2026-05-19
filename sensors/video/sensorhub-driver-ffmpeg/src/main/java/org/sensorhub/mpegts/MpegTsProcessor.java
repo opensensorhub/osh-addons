@@ -14,12 +14,14 @@ package org.sensorhub.mpegts;
 import org.bytedeco.ffmpeg.avcodec.AVCodecParameters;
 import org.bytedeco.ffmpeg.avcodec.AVPacket;
 import org.bytedeco.ffmpeg.avformat.AVFormatContext;
+import org.bytedeco.ffmpeg.avformat.AVIOInterruptCB;
 import org.bytedeco.ffmpeg.avformat.AVInputFormat;
 import org.bytedeco.ffmpeg.avutil.AVDictionary;
 import org.bytedeco.ffmpeg.avutil.AVRational;
 import org.bytedeco.ffmpeg.global.avcodec;
 import org.bytedeco.ffmpeg.global.avformat;
 import org.bytedeco.ffmpeg.global.avutil;
+import org.bytedeco.javacpp.Pointer;
 import org.bytedeco.javacpp.PointerPointer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,8 +33,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.bytedeco.ffmpeg.global.avdevice.avdevice_register_all;
-import static org.bytedeco.ffmpeg.global.avformat.av_find_input_format;
-import static org.bytedeco.ffmpeg.global.avformat.av_read_frame;
+import static org.bytedeco.ffmpeg.global.avformat.*;
 
 /**
  * The class provides a wrapper to bytedeco.org JavaCpp-Platform.
@@ -97,6 +98,13 @@ public class MpegTsProcessor extends Thread {
      * Context used by underlying FFmpeg library to decode stream.
      */
     private AVFormatContext avFormatContext;
+
+    /**
+     * Callbacks allow some blocking AVFormatContext operations to terminate early on
+     * stream close. These are global for GC purposes; do not directly modify.
+     */
+    private AVIOInterruptCB.Callback_Pointer callbackPointer;
+    private AVIOInterruptCB interruptCallback;
 
     /**
      * Flag indicating if processing of the transport stream should be terminated.
@@ -186,7 +194,17 @@ public class MpegTsProcessor extends Thread {
         avformat.avformat_network_init();
 
         // Create a new AV Format Context for I/O
-        avFormatContext = new AVFormatContext(null);
+        avFormatContext = avformat_alloc_context();
+
+        // Allow for context to be interrupted after attempt to stop stream
+        interruptCallback = avFormatContext.interrupt_callback();
+        callbackPointer = new AVIOInterruptCB.Callback_Pointer() {
+            @Override
+            public int call(Pointer opaque) {
+                return terminateProcessing.get() ? 1 : 0;
+            }
+        };
+        interruptCallback.callback(callbackPointer);
 
         AVInputFormat inputFormat = null;
 
@@ -526,11 +544,8 @@ public class MpegTsProcessor extends Thread {
      */
     public void stopProcessingStream() {
         logger.debug("stopProcessingStream");
-
-        if (streamOpened) {
-            loop = false;
-            terminateProcessing.set(true);
-        }
+        loop = false;
+        terminateProcessing.set(true);
     }
 
     /**

@@ -1,0 +1,28 @@
+description = 'RTMP Video Driver'
+ext.details = 'Driver to listen for and demux RTMP video streams'
+version = '1.0.0'
+
+dependencies {
+  implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
+  implementation project(':sensorhub-driver-ffmpeg')
+}
+
+// add info to OSGi manifest
+osgi {
+  manifest {
+    attributes('Bundle-Vendor': 'GeoRobotix Innovative Research')
+    attributes('Bundle-Activator': 'org.sensorhub.impl.sensor.rtmp.Activator')
+  }
+}
+
+// add info to maven pom
+ext.pom >>= {
+  developers {
+    developer {
+      id 'kyle-fitzp'
+      name 'Kyle Fitzpatrick'
+      organization 'GeoRobotix Innovative Research'
+      organizationUrl 'https://georobotix.us'
+    }
+  }
+}
