@@ -13,6 +13,9 @@ package org.sensorhub.impl.sensor.nmeaais;
 
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
+import org.sensorhub.impl.sensor.nmeaais.Outputs.NmeaAisOutputPosition;
+import org.sensorhub.impl.sensor.nmeaais.ReportTypes.PositionReport;
+import org.vast.ogc.om.MovingFeature;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
@@ -26,8 +29,8 @@ import java.nio.charset.StandardCharsets;
  * and performing initialization and shutdown for the driver and its outputs.
  */
 public class NmeaAisDriver extends AbstractSensorModule<NmeaAisConfig> {
-    static final String UID_PREFIX = "urn:osh:sensor:shipxplorer:";
-    static final String XML_PREFIX = "shipXplorer";
+    static final String UID_PREFIX = "urn:osh:sensor:nmea:ais:";
+    static final String XML_PREFIX = "nmea:ais:";
 
     // GLOBAL VARIABLES FOR SENSOR OPERATION
     NmeaAisHandler nmeaAisHandler;
@@ -109,6 +112,39 @@ public class NmeaAisDriver extends AbstractSensorModule<NmeaAisConfig> {
     @Override
     public boolean isConnected() {
         return socket != null && !socket.isClosed();
+    }
+
+    /**
+     * Registers an AIS vessel as a Feature of Interest (FOI) keyed by its MMSI.
+     * Subsequent calls with the same MMSI are no-ops; the existing FOI UID is returned.
+     */
+
+    /**
+     * Registers an AIS vessel as a Feature of Interest (FOI) keyed by its MMSI.
+     * Subsequent calls with the same MMSI are no-ops; the existing FOI UID is returned.
+     */
+    public String addFoi(String mmsi) {
+        String foiUID = UID_PREFIX + "foi:" + mmsi;
+
+        if (!foiMap.containsKey(foiUID)) {
+            MovingFeature foi = new MovingFeature();
+            foi.setId(mmsi);
+            foi.setUniqueIdentifier(foiUID);
+            foi.setName("Vessel " + mmsi);
+            foi.setDescription("AIS vessel with MMSI " + mmsi);
+            addFoi(foi);
+            getLogger().debug("New AIS vessel added as FOI: {}", foiUID);
+        }
+
+        return foiUID;
+    }
+
+    /**
+     * Forwards a decoded position report to the position output for publishing.
+     * Called by {@link NmeaAisHandler} — keeps the handler decoupled from the Outputs package.
+     */
+    void publishPositionReport(String nmeaAisMsg, PositionReport report) {
+        nmeaAisOutputPosition.setData(nmeaAisMsg, report);
     }
 
 }

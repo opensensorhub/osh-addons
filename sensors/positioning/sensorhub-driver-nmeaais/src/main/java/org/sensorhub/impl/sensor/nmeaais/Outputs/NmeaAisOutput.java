@@ -1,10 +1,11 @@
-package org.sensorhub.impl.sensor.nmeaais;
+package org.sensorhub.impl.sensor.nmeaais.Outputs;
 
 import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.DataEncoding;
 import net.opengis.swe.v20.DataRecord;
 import org.sensorhub.impl.sensor.VarRateSensorOutput;
+import org.sensorhub.impl.sensor.nmeaais.NmeaAisDriver;
 import org.vast.swe.SWEBuilders;
 import org.vast.swe.SWEHelper;
 import org.vast.swe.helper.GeoPosHelper;
@@ -93,7 +94,7 @@ public class NmeaAisOutput extends VarRateSensorOutput<NmeaAisDriver> {
 
         aisRecord = recordBuilder.build();
 
-        aisRecordSize = aisRecord.getNumFields()-1;
+        aisRecordSize = 9; // 9 leaf fields in nmeaAisMsg sub-record (flat indices 0–8)
 
         dataEncoding = geoFac.newTextEncoding(",", "\n");
     }
