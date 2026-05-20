@@ -1,10 +1,9 @@
 description = 'NDBC Buoy Data Archive'
-ext.details = 'Connector to retrieve historical observations from NDBC datasets'
-version = '0.2.1'
+ext.details = 'Connector to retrieve realtime observations from NDBC datasets'
+version = '0.2.2'
 
 dependencies {
   implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
-  embeddedImpl 'org.jsoup:jsoup:1.11.2'
 }
 
 // add info to OSGi manifest
