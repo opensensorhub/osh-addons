@@ -1,0 +1,38 @@
+/***************************** BEGIN LICENSE BLOCK ***************************
+
+ The contents of this file are subject to the Mozilla Public License, v. 2.0.
+ If a copy of the MPL was not distributed with this file, You can obtain one
+ at http://mozilla.org/MPL/2.0/.
+
+ Software distributed under the License is distributed on an "AS IS" basis,
+ WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+ for the specific language governing rights and limitations under the License.
+
+ Copyright (C) 2026 GeoRobotix Innovative Research. All Rights Reserved.
+
+ ******************************* END LICENSE BLOCK ***************************/
+
+package org.sensorhub.impl.sensor.adsb;
+
+import org.sensorhub.api.config.DisplayInfo;
+import org.sensorhub.api.sensor.PositionConfig;
+import org.sensorhub.api.sensor.SensorConfig;
+import org.sensorhub.impl.comm.TCPCommProviderConfig;
+
+
+public class AdsbConfig extends SensorConfig {
+    @DisplayInfo.Required
+    @DisplayInfo(desc = "Serial number or unique identifier for this ADS-B receiver")
+    public String serialNumber = "adsb001";
+
+    @DisplayInfo(desc = "Communication settings to connect to the dump1090 SBS output (default: localhost:30003)")
+    public TCPCommProviderConfig commSettings;
+
+    @DisplayInfo(desc = "ADS-B Receiver Location")
+    public PositionConfig positionConfig = new PositionConfig();
+
+    @Override
+    public PositionConfig.LLALocation getLocation(){return positionConfig.location;}
+    @Override
+    public PositionConfig.EulerOrientation getOrientation(){ return positionConfig.orientation;}
+}
