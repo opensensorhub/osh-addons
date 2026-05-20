@@ -1,32 +1,50 @@
 package org.sensorhub.impl.sensor.nmeaais.outputs;
 
 import net.opengis.swe.v20.DataBlock;
+import net.opengis.swe.v20.DataComponent;
+import net.opengis.swe.v20.DataEncoding;
+import net.opengis.swe.v20.DataRecord;
 import org.sensorhub.api.data.DataEvent;
+import org.sensorhub.impl.sensor.VarRateSensorOutput;
 import org.sensorhub.impl.sensor.nmeaais.NmeaAisDriver;
 import org.sensorhub.impl.sensor.nmeaais.reportschemas.PositionReportClassB;
+import org.vast.swe.SWEBuilders;
 import org.vast.swe.SWEHelper;
 import org.vast.swe.helper.GeoPosHelper;
 
-public class NmeaAisOutputPositionClassB extends NmeaAisOutput implements NmeaAisOutputInterface<PositionReportClassB> {
-    private static final String OUTPUT_NAME = "nmeaAisOutputPositionClassB";
-    private static final String OUTPUT_LABEL = "Position Report Class B";
-    private static final String OUTPUT_DESCRIPTION = "Class B AIS Position Report";
-    private static final String OUTPUT_DEFINITION = SWEHelper.getPropertyUri("NmeaAisOutputPositionClassB");
+public class NmeaAisOutputPositionClassB extends VarRateSensorOutput<NmeaAisDriver> implements NmeaAisReportInterface<PositionReportClassB> {
+    private DataRecord aisReportRecord;
+    private DataEncoding dataEncoding;
 
     private final Object processingLock = new Object();
 
     public NmeaAisOutputPositionClassB(NmeaAisDriver nmeaAisDriver) {
-        super(OUTPUT_NAME, nmeaAisDriver);
+        super("nmeaAisOutputPositionClassB", nmeaAisDriver,1.0);
     }
 
     /**
-     * Initializes the data structure for the output, defining the fields, their ordering, and data types.
+     * Initializes the data structure for the output.
+     *
+     * Flat index map:
+     *   0  = messageId        1  = repeat           2  = mmsi
+     *   3  = sog              4  = positionAccuracy
+     *   5  = latitude  (lat component of location vector)
+     *   6  = longitude (lon component of location vector)
+     *   7  = cog              8  = heading          9  = timeStamp
+     *   10 = unitFlag         11 = displayFlag      12 = dscFlag
+     *   13 = bandFlag         14 = message22Flag    15 = modeFlag
+     *   16 = raimFlag         17 = commStateFlag    18 = commState
+     *   19 = bits
      */
     public void doInit() {
         GeoPosHelper geoFac = new GeoPosHelper();
         SWEHelper sweFactory = new SWEHelper();
 
-        aisRecord = createRecordBuilder(OUTPUT_NAME, OUTPUT_LABEL, OUTPUT_DESCRIPTION, OUTPUT_DEFINITION)
+        SWEBuilders.DataRecordBuilder recordBuilder = sweFactory.createRecord()
+                .name("nmeaAisOutputPositionClassB")
+                .label("Position Report Class B")
+                .description("Class B AIS Position Report")
+                .definition(SWEHelper.getPropertyUri("NmeaAisOutputPositionClassB"))
                 .addField("messageId", sweFactory.createQuantity()
                         .label("Message Id")
                         .description("Identifier for this message 1, 2 or 3")
@@ -112,49 +130,38 @@ public class NmeaAisOutputPositionClassB extends NmeaAisOutput implements NmeaAi
                 .addField("bits", sweFactory.createQuantity()
                         .label("Number of Bits")
                         .description("Number of Bits")
-                        .definition(SWEHelper.getPropertyUri("bits")))
-                .build();
-        aisRecordSize = 9;
+                        .definition(SWEHelper.getPropertyUri("bits")));
 
+        aisReportRecord = recordBuilder.build();
         dataEncoding = geoFac.newTextEncoding(",", "\n");
     }
 
-    /**
-     * Sets the data for the output and publishes it.
-     */
     @Override
-    public void setData(String nmeaAisMsg, PositionReportClassB report) {
+    public void setData(PositionReportClassB report) {
         synchronized (processingLock) {
-            setAisMsgData(nmeaAisMsg);
+            DataBlock dataBlock = latestRecord == null ? aisReportRecord.createDataBlock() : latestRecord.renew();
 
-            DataBlock dataBlock = latestRecord == null ? aisRecord.createDataBlock() : latestRecord.renew();
+            dataBlock.setIntValue(0,  report.messageId);
+            dataBlock.setIntValue(1,  report.repeat);
+            dataBlock.setStringValue(2,  report.mmsi);
+            dataBlock.setDoubleValue(3,  report.sog);
+            dataBlock.setIntValue(4,  report.posAccuracy);
+            dataBlock.setDoubleValue(5,  report.latitude);
+            dataBlock.setDoubleValue(6,  report.longitude);
+            dataBlock.setDoubleValue(7,  report.cog);
+            dataBlock.setIntValue(8,  report.heading);
+            dataBlock.setIntValue(9,  report.timeStamp);
+            dataBlock.setIntValue(10, report.unitFlag);
+            dataBlock.setIntValue(11, report.displayFlag);
+            dataBlock.setIntValue(12, report.dscFlag);
+            dataBlock.setIntValue(13, report.bandFlag);
+            dataBlock.setIntValue(14, report.message22Flag);
+            dataBlock.setIntValue(15, report.modeFlag);
+            dataBlock.setIntValue(16, report.raimFlag);
+            dataBlock.setIntValue(17, report.commStateFlag);
+            dataBlock.setIntValue(18, report.commState);
+            dataBlock.setIntValue(19, report.bits);
 
-            // NMEA envelope fields (flat indices 0–8)
-            populateNmeaAisDataStructure(dataBlock);
-
-            // Decoded payload fields (flat indices 10–25)
-            dataBlock.setIntValue(aisRecordSize+1,  report.messageId);
-            dataBlock.setIntValue(aisRecordSize + 2, report.repeat);
-            dataBlock.setStringValue(aisRecordSize + 3, report.mmsi);
-            dataBlock.setDoubleValue(aisRecordSize + 4, report.sog);
-            dataBlock.setIntValue(aisRecordSize + 5, report.posAccuracy);
-            dataBlock.setDoubleValue(aisRecordSize + 6, report.latitude);
-            dataBlock.setDoubleValue(aisRecordSize + 7, report.longitude);
-            dataBlock.setDoubleValue(aisRecordSize + 8, report.cog);
-            dataBlock.setIntValue(aisRecordSize + 9, report.heading);
-            dataBlock.setIntValue(aisRecordSize + 10, report.timeStamp);
-            dataBlock.setIntValue(aisRecordSize + 11, report.unitFlag);
-            dataBlock.setIntValue(aisRecordSize + 12, report.displayFlag);
-            dataBlock.setIntValue(aisRecordSize + 13, report.dscFlag);
-            dataBlock.setIntValue(aisRecordSize + 14, report.bandFlag);
-            dataBlock.setIntValue(aisRecordSize + 15, report.message22Flag);
-            dataBlock.setIntValue(aisRecordSize + 16, report.modeFlag);
-            dataBlock.setIntValue(aisRecordSize + 17, report.raimFlag);
-            dataBlock.setIntValue(aisRecordSize + 18, report.commStateFlag);
-            dataBlock.setIntValue(aisRecordSize + 19, report.commState);
-            dataBlock.setIntValue(aisRecordSize + 20, report.bits);
-
-            // Register the vessel as a FOI keyed by MMSI
             String foiUID = parentSensor.addFoi(report.mmsi);
 
             latestRecord = dataBlock;
@@ -162,5 +169,15 @@ public class NmeaAisOutputPositionClassB extends NmeaAisOutput implements NmeaAi
             updateSamplingPeriod(latestRecordTime);
             eventHandler.publish(new DataEvent(latestRecordTime, NmeaAisOutputPositionClassB.this, foiUID, dataBlock));
         }
+    }
+
+    @Override
+    public DataComponent getRecordDescription() {
+        return aisReportRecord;
+    }
+
+    @Override
+    public DataEncoding getRecommendedEncoding() {
+        return dataEncoding;
     }
 }

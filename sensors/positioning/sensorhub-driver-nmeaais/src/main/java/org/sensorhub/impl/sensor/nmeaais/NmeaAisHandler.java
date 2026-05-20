@@ -68,14 +68,16 @@ public class NmeaAisHandler {
     }
 
     public void parsePayload(String payload) {
+        nmeaAisDriver.publishRawMessage(this.nmeaAisMsg);
+
         int messageId = extractBits(payload, 0, 6);
         if (messageId == 1 || messageId == 2 || messageId == 3) {
             PositionReportClassA report = parsePositionAReport(payload);
-            nmeaAisDriver.publishPositionAReport(nmeaAisMsg, report);
+            nmeaAisDriver.publishPositionAReport(report);
         }
-        if (messageId == 18){
+        if (messageId == 18) {
             PositionReportClassB report = parsePositionBReport(payload);
-            nmeaAisDriver.publishPositionBReport(nmeaAisMsg, report);
+            nmeaAisDriver.publishPositionBReport(report);
         }
     }
 

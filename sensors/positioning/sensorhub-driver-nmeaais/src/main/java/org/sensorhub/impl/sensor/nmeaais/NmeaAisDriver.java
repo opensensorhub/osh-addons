@@ -13,6 +13,7 @@ package org.sensorhub.impl.sensor.nmeaais;
 
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
+import org.sensorhub.impl.sensor.nmeaais.outputs.NmeaAidOutputRawMessages;
 import org.sensorhub.impl.sensor.nmeaais.outputs.NmeaAisOutputPositionClassA;
 import org.sensorhub.impl.sensor.nmeaais.outputs.NmeaAisOutputPositionClassB;
 import org.sensorhub.impl.sensor.nmeaais.reportschemas.PositionReportClassA;
@@ -36,6 +37,7 @@ public class NmeaAisDriver extends AbstractSensorModule<NmeaAisConfig> {
 
     // GLOBAL VARIABLES FOR SENSOR OPERATION
     NmeaAisHandler nmeaAisHandler;
+    NmeaAidOutputRawMessages nmeaAidOutputRawMessages;
     NmeaAisOutputPositionClassA nmeaAisOutputPositionClassA;
     NmeaAisOutputPositionClassB nmeaAisOutputPositionClassB;
 
@@ -58,6 +60,10 @@ public class NmeaAisDriver extends AbstractSensorModule<NmeaAisConfig> {
         generateXmlID(XML_PREFIX, config.serialNumber);
 
         // INITIALIZE OUTPUT
+        nmeaAidOutputRawMessages = new NmeaAidOutputRawMessages(this);
+        addOutput(nmeaAidOutputRawMessages, false);
+        nmeaAidOutputRawMessages.doInit();
+
         nmeaAisOutputPositionClassA = new NmeaAisOutputPositionClassA(this);
         addOutput(nmeaAisOutputPositionClassA, false);
         nmeaAisOutputPositionClassA.doInit();
@@ -150,14 +156,23 @@ public class NmeaAisDriver extends AbstractSensorModule<NmeaAisConfig> {
     }
 
     /**
+     * Publishes a raw NMEA AIS sentence to the messages output.
+     * Called by {@link NmeaAisHandler} for every parsed message regardless of type.
+     */
+    void publishRawMessage(String nmeaAisMsg) {
+        nmeaAidOutputRawMessages.setData(nmeaAisMsg);
+    }
+
+    /**
      * Forwards a decoded position report to the position output for publishing.
      * Called by {@link NmeaAisHandler} — keeps the handler decoupled from the Outputs package.
      */
-    void publishPositionAReport(String nmeaAisMsg, PositionReportClassA report) {
-        nmeaAisOutputPositionClassA.setData(nmeaAisMsg, report);
+    void publishPositionAReport(PositionReportClassA report) {
+        nmeaAisOutputPositionClassA.setData(report);
     }
-    void publishPositionBReport(String nmeaAisMsg, PositionReportClassB report) {
-        nmeaAisOutputPositionClassB.setData(nmeaAisMsg, report);
+
+    void publishPositionBReport(PositionReportClassB report) {
+        nmeaAisOutputPositionClassB.setData(report);
     }
 
 }
