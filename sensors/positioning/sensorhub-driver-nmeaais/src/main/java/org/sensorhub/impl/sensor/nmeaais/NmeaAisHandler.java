@@ -1,5 +1,6 @@
 package org.sensorhub.impl.sensor.nmeaais;
 
+import org.sensorhub.impl.sensor.nmeaais.reportschemas.MessageIdDescriptions;
 import org.sensorhub.impl.sensor.nmeaais.reportschemas.PositionReportClassA;
 import org.sensorhub.impl.sensor.nmeaais.reportschemas.PositionReportClassB;
 
@@ -9,6 +10,7 @@ import java.util.Map;
 public class NmeaAisHandler {
     String nmeaAisMsg;
     String rawPayload;
+    MessageIdDescriptions reportDescription = new MessageIdDescriptions();
 
     private final NmeaAisDriver nmeaAisDriver;
 
@@ -81,10 +83,17 @@ public class NmeaAisHandler {
         }
     }
 
+    private String getReportDescription(int messageId) {
+        if (messageId < 1 || messageId > reportDescription.descriptions.length) {
+            return "Unknown message type " + messageId;
+        }
+        return reportDescription.descriptions[messageId - 1];
+    }
+
     public PositionReportClassA parsePositionAReport(String payload) {
         PositionReportClassA report = new PositionReportClassA();
-
         report.messageId   = extractBits(payload, 0, 6);
+        report.description = getReportDescription(report.messageId);
         report.repeat      = extractBits(payload, 6, 2);
         report.mmsi        = String.format("%09d", extractBits(payload, 8, 30));
         report.navStatus   = extractBits(payload, 38, 4);
@@ -108,6 +117,7 @@ public class NmeaAisHandler {
     public PositionReportClassB parsePositionBReport(String payload) {
         PositionReportClassB report = new PositionReportClassB();
         report.messageId   = extractBits(payload, 0, 6);
+        report.description = getReportDescription(report.messageId);
         report.repeat      = extractBits(payload, 6, 2);
         report.mmsi        = String.format("%09d", extractBits(payload, 8, 30));
         report.sog         = extractBits(payload, 46, 10) / 10.0; // 38-46 are spare

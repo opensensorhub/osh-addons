@@ -13,7 +13,7 @@ package org.sensorhub.impl.sensor.nmeaais;
 
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
-import org.sensorhub.impl.sensor.nmeaais.outputs.NmeaAidOutputRawMessages;
+import org.sensorhub.impl.sensor.nmeaais.outputs.NmeaAisOutputRawMessages;
 import org.sensorhub.impl.sensor.nmeaais.outputs.NmeaAisOutputPositionClassA;
 import org.sensorhub.impl.sensor.nmeaais.outputs.NmeaAisOutputPositionClassB;
 import org.sensorhub.impl.sensor.nmeaais.reportschemas.PositionReportClassA;
@@ -37,7 +37,7 @@ public class NmeaAisDriver extends AbstractSensorModule<NmeaAisConfig> {
 
     // GLOBAL VARIABLES FOR SENSOR OPERATION
     NmeaAisHandler nmeaAisHandler;
-    NmeaAidOutputRawMessages nmeaAidOutputRawMessages;
+    NmeaAisOutputRawMessages nmeaAisOutputRawMessages;
     NmeaAisOutputPositionClassA nmeaAisOutputPositionClassA;
     NmeaAisOutputPositionClassB nmeaAisOutputPositionClassB;
 
@@ -60,9 +60,9 @@ public class NmeaAisDriver extends AbstractSensorModule<NmeaAisConfig> {
         generateXmlID(XML_PREFIX, config.serialNumber);
 
         // INITIALIZE OUTPUT
-        nmeaAidOutputRawMessages = new NmeaAidOutputRawMessages(this);
-        addOutput(nmeaAidOutputRawMessages, false);
-        nmeaAidOutputRawMessages.doInit();
+        nmeaAisOutputRawMessages = new NmeaAisOutputRawMessages(this);
+        addOutput(nmeaAisOutputRawMessages, false);
+        nmeaAisOutputRawMessages.doInit();
 
         nmeaAisOutputPositionClassA = new NmeaAisOutputPositionClassA(this);
         addOutput(nmeaAisOutputPositionClassA, false);
@@ -160,14 +160,14 @@ public class NmeaAisDriver extends AbstractSensorModule<NmeaAisConfig> {
      * Called by {@link NmeaAisHandler} for every parsed message regardless of type.
      */
     void publishRawMessage(String nmeaAisMsg) {
-        nmeaAidOutputRawMessages.setData(nmeaAisMsg);
+        nmeaAisOutputRawMessages.setData(nmeaAisMsg);
     }
 
     /**
      * Forwards a decoded position report to the position output for publishing.
      * Called by {@link NmeaAisHandler} — keeps the handler decoupled from the Outputs package.
      */
-    void publishPositionAReport(PositionReportClassA report) {
+    void publishPositionAReport( PositionReportClassA report) {
         nmeaAisOutputPositionClassA.setData(report);
     }
 

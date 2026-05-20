@@ -49,6 +49,10 @@ public class NmeaAisOutputPositionClassB extends VarRateSensorOutput<NmeaAisDriv
                         .label("Message Id")
                         .description("Identifier for this message 1, 2 or 3")
                         .definition(SWEHelper.getPropertyUri("MessageId")))
+                .addField("reportDescription", sweFactory.createText()
+                        .label("Report Description")
+                        .description("Describes the report based on the Message Id provided")
+                        .definition(SWEHelper.getPropertyUri("ReportDescription")))
                 .addField("repeat", sweFactory.createQuantity()
                         .label("Repeat Indicator")
                         .description("Used by the repeater to indicate how many times a message has been repeated. See Section 4.6.1, Annex 2; 0-3; 0 = default; 3 = do not repeat any more.")
@@ -142,25 +146,26 @@ public class NmeaAisOutputPositionClassB extends VarRateSensorOutput<NmeaAisDriv
             DataBlock dataBlock = latestRecord == null ? aisReportRecord.createDataBlock() : latestRecord.renew();
 
             dataBlock.setIntValue(0,  report.messageId);
-            dataBlock.setIntValue(1,  report.repeat);
-            dataBlock.setStringValue(2,  report.mmsi);
-            dataBlock.setDoubleValue(3,  report.sog);
-            dataBlock.setIntValue(4,  report.posAccuracy);
-            dataBlock.setDoubleValue(5,  report.latitude);
-            dataBlock.setDoubleValue(6,  report.longitude);
-            dataBlock.setDoubleValue(7,  report.cog);
-            dataBlock.setIntValue(8,  report.heading);
-            dataBlock.setIntValue(9,  report.timeStamp);
-            dataBlock.setIntValue(10, report.unitFlag);
-            dataBlock.setIntValue(11, report.displayFlag);
-            dataBlock.setIntValue(12, report.dscFlag);
-            dataBlock.setIntValue(13, report.bandFlag);
-            dataBlock.setIntValue(14, report.message22Flag);
-            dataBlock.setIntValue(15, report.modeFlag);
-            dataBlock.setIntValue(16, report.raimFlag);
-            dataBlock.setIntValue(17, report.commStateFlag);
-            dataBlock.setIntValue(18, report.commState);
-            dataBlock.setIntValue(19, report.bits);
+            dataBlock.setStringValue(1,  report.description);
+            dataBlock.setIntValue(2,  report.repeat);
+            dataBlock.setStringValue(3,  report.mmsi);
+            dataBlock.setDoubleValue(4,  report.sog);
+            dataBlock.setIntValue(5,  report.posAccuracy);
+            dataBlock.setDoubleValue(6,  report.latitude);
+            dataBlock.setDoubleValue(7,  report.longitude);
+            dataBlock.setDoubleValue(8,  report.cog);
+            dataBlock.setIntValue(9,  report.heading);
+            dataBlock.setIntValue(10,  report.timeStamp);
+            dataBlock.setIntValue(11, report.unitFlag);
+            dataBlock.setIntValue(12, report.displayFlag);
+            dataBlock.setIntValue(13, report.dscFlag);
+            dataBlock.setIntValue(14, report.bandFlag);
+            dataBlock.setIntValue(15, report.message22Flag);
+            dataBlock.setIntValue(16, report.modeFlag);
+            dataBlock.setIntValue(17, report.raimFlag);
+            dataBlock.setIntValue(18, report.commStateFlag);
+            dataBlock.setIntValue(19, report.commState);
+            dataBlock.setIntValue(20, report.bits);
 
             String foiUID = parentSensor.addFoi(report.mmsi);
 

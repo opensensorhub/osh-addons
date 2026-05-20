@@ -13,13 +13,13 @@ import org.vast.swe.helper.GeoPosHelper;
 
 import java.util.Objects;
 
-public class NmeaAidOutputRawMessages extends VarRateSensorOutput<NmeaAisDriver> {
+public class NmeaAisOutputRawMessages extends VarRateSensorOutput<NmeaAisDriver> {
     private DataRecord aisReportRecord;
     private DataEncoding dataEncoding;
 
     private final Object processingLock = new Object();
 
-    public NmeaAidOutputRawMessages(NmeaAisDriver nmeaAisDriver) {
+    public NmeaAisOutputRawMessages(NmeaAisDriver nmeaAisDriver) {
         super("nmeaAisOutputRawMessages", nmeaAisDriver, 1.);
     }
 
@@ -118,7 +118,7 @@ public class NmeaAidOutputRawMessages extends VarRateSensorOutput<NmeaAisDriver>
             latestRecord = dataBlock;
             latestRecordTime = System.currentTimeMillis();
             updateSamplingPeriod(latestRecordTime);
-            eventHandler.publish(new DataEvent(latestRecordTime, NmeaAidOutputRawMessages.this, dataBlock));
+            eventHandler.publish(new DataEvent(latestRecordTime, NmeaAisOutputRawMessages.this, dataBlock));
         }
     }
 

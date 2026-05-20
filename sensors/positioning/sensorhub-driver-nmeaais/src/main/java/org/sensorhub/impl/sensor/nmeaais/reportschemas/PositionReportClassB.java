@@ -5,6 +5,7 @@ package org.sensorhub.impl.sensor.nmeaais.reportschemas;
  */
 public class PositionReportClassB {
     public int  messageId;
+    public String description;
     public int repeat;
     public String mmsi;
     public double sog;

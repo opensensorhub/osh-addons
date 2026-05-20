@@ -5,6 +5,7 @@ package org.sensorhub.impl.sensor.nmeaais.reportschemas;
  */
 public class PositionReportClassA {
     public int    messageId;     // 1, 2, or 3
+    public String description;
     public int    repeat;        // 0–3
     public String mmsi;          // 9-digit MMSI, zero-padded
     public int    navStatus;     // 0–15
