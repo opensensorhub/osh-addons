@@ -1,6 +1,7 @@
 package org.sensorhub.impl.sensor.nmeaais;
 
-import org.sensorhub.impl.sensor.nmeaais.ReportTypes.PositionReport;
+import org.sensorhub.impl.sensor.nmeaais.reportschemas.PositionReportClassA;
+import org.sensorhub.impl.sensor.nmeaais.reportschemas.PositionReportClassB;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -69,13 +70,17 @@ public class NmeaAisHandler {
     public void parsePayload(String payload) {
         int messageId = extractBits(payload, 0, 6);
         if (messageId == 1 || messageId == 2 || messageId == 3) {
-            PositionReport report = parsePositionReport(payload);
-            nmeaAisDriver.publishPositionReport(nmeaAisMsg, report);
+            PositionReportClassA report = parsePositionAReport(payload);
+            nmeaAisDriver.publishPositionAReport(nmeaAisMsg, report);
+        }
+        if (messageId == 18){
+            PositionReportClassB report = parsePositionBReport(payload);
+            nmeaAisDriver.publishPositionBReport(nmeaAisMsg, report);
         }
     }
 
-    public PositionReport parsePositionReport(String payload) {
-        PositionReport report = new PositionReport();
+    public PositionReportClassA parsePositionAReport(String payload) {
+        PositionReportClassA report = new PositionReportClassA();
 
         report.messageId   = extractBits(payload, 0, 6);
         report.repeat      = extractBits(payload, 6, 2);
@@ -91,7 +96,33 @@ public class NmeaAisHandler {
         report.timeStamp   = extractBits(payload, 137, 6);
         report.smi         = extractBits(payload, 143, 2);
         report.spare       = extractBits(payload, 145, 3);
-        report.raim        = extractBits(payload, 148, 1);
+        report.raimFlag    = extractBits(payload, 148, 1);
+        report.commState   = extractBits(payload, 149, 19);
+        report.bits        = payload.length() * 6;
+
+        return report;
+    }
+
+    public PositionReportClassB parsePositionBReport(String payload) {
+        PositionReportClassB report = new PositionReportClassB();
+        report.messageId   = extractBits(payload, 0, 6);
+        report.repeat      = extractBits(payload, 6, 2);
+        report.mmsi        = String.format("%09d", extractBits(payload, 8, 30));
+        report.sog         = extractBits(payload, 46, 10) / 10.0; // 38-46 are spare
+        report.posAccuracy = extractBits(payload, 56, 1);
+        report.longitude   = signExtend(extractBits(payload, 57, 28), 28) / 600000.0;
+        report.latitude    = signExtend(extractBits(payload, 85, 27), 27) / 600000.0;
+        report.cog         = extractBits(payload, 112, 12) / 10.0;
+        report.heading     = extractBits(payload, 124, 9);
+        report.timeStamp   = extractBits(payload, 133, 6);
+        report.unitFlag    = extractBits(payload, 141, 1); //139-140 are Spare
+        report.displayFlag = extractBits(payload, 142, 1);
+        report.dscFlag     = extractBits(payload, 143, 1);
+        report.bandFlag    = extractBits(payload, 144, 1);
+        report.message22Flag    = extractBits(payload, 145, 1);
+        report.modeFlag    = extractBits(payload, 146, 1);
+        report.raimFlag    = extractBits(payload, 147, 1);
+        report.commStateFlag    = extractBits(payload, 148, 1);
         report.commState   = extractBits(payload, 149, 19);
         report.bits        = payload.length() * 6;
 

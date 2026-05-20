@@ -1,4 +1,4 @@
-package org.sensorhub.impl.sensor.nmeaais.Outputs;
+package org.sensorhub.impl.sensor.nmeaais.outputs;
 
 import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataComponent;
@@ -35,16 +35,19 @@ public class NmeaAisOutput extends VarRateSensorOutput<NmeaAisDriver> {
     }
 
     /**
-     * Initializes the data structure for the output, defining the fields, their ordering, and data types.
+     * Returns a {@link SWEBuilders.DataRecordBuilder} pre-populated with the record metadata
+     * and the {@code nmeaAisMsg} sub-record (flat indices 0–8). Subclasses can chain additional
+     * fields onto this builder before calling {@code .build()} once, avoiding a per-field
+     * {@code .build()} call on an already-constructed {@code DataRecord}.
      */
-    void doInit(String outputName, String outputLabel, String outputDescription, String outputDefinition) {
-        // Get an instance of SWE Factory suitable to build components
-        GeoPosHelper geoFac = new GeoPosHelper();
+    protected SWEBuilders.DataRecordBuilder createRecordBuilder(
+            String outputName,
+            String outputLabel,
+            String outputDescription,
+            String outputDefinition
+    ) {
         SWEHelper sweFactory = new SWEHelper();
-        // Create the data record description
-
-        // Create the data record description
-        SWEBuilders.DataRecordBuilder recordBuilder = sweFactory.createRecord()
+        return sweFactory.createRecord()
                 .name(outputName)
                 .label(outputLabel)
                 .description(outputDescription)
@@ -53,7 +56,7 @@ public class NmeaAisOutput extends VarRateSensorOutput<NmeaAisDriver> {
                         .label("NMEA AIS Message Info")
                         .description("Data Record for the general NMEA AIS message")
                         .definition(SWEHelper.getPropertyUri("NmeaAisMsg"))
-                        .addField("sampleTime", geoFac.createTime()
+                        .addField("sampleTime", sweFactory.createTime()
                                 .asSamplingTimeIsoUTC()
                                 .label("Sample Time")
                                 .description("Time of data collection")
@@ -78,6 +81,10 @@ public class NmeaAisOutput extends VarRateSensorOutput<NmeaAisDriver> {
                                 .label("AIS Channel")
                                 .description("AIS channel used: A (161.975 MHz) or B (162.025 MHz)")
                                 .definition(SWEHelper.getPropertyUri("Channel")))
+                        .addField("frequency", sweFactory.createText()
+                                .label("AIS Channel Frequency")
+                                .description("AIS channel used: A (161.975 MHz) or B (162.025 MHz)")
+                                .definition(SWEHelper.getPropertyUri("Frequency")))
                         .addField("rawPayload", sweFactory.createText()
                                 .label("Raw PayLoad")
                                 .description("Encoded AIS payload")
@@ -91,12 +98,15 @@ public class NmeaAisOutput extends VarRateSensorOutput<NmeaAisDriver> {
                                 .description("NMEA checksum (hex)")
                                 .definition(SWEHelper.getPropertyUri("CheckSum")))
                 );
+    }
 
-        aisRecord = recordBuilder.build();
-
-        aisRecordSize = 9; // 9 leaf fields in nmeaAisMsg sub-record (flat indices 0–8)
-
-        dataEncoding = geoFac.newTextEncoding(",", "\n");
+    /**
+     * Initializes the data structure for the output, defining the fields, their ordering, and data types.
+     */
+    void doInit(String outputName, String outputLabel, String outputDescription, String outputDefinition) {
+        aisRecord = createRecordBuilder(outputName, outputLabel, outputDescription, outputDefinition).build();
+        aisRecordSize = aisRecord.getNumFields()-1; // 9 leaf fields in nmeaAisMsg sub-record (flat indices 0–8)
+        dataEncoding = new GeoPosHelper().newTextEncoding(",", "\n");
     }
 
 
@@ -136,9 +146,10 @@ public class NmeaAisOutput extends VarRateSensorOutput<NmeaAisDriver> {
         dataBlock.setIntValue(3, fragmentNumber);
         dataBlock.setStringValue(4, sequentialId);
         dataBlock.setStringValue(5, channel);
-        dataBlock.setStringValue(6, rawPayload);
-        dataBlock.setIntValue(7, fillBits);
-        dataBlock.setStringValue(8, checkSum);
+        dataBlock.setDoubleValue(6, channelFreq);
+        dataBlock.setStringValue(7, rawPayload);
+        dataBlock.setIntValue(8, fillBits);
+        dataBlock.setStringValue(9, checkSum);
     }
 
 }

@@ -13,8 +13,10 @@ package org.sensorhub.impl.sensor.nmeaais;
 
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
-import org.sensorhub.impl.sensor.nmeaais.Outputs.NmeaAisOutputPosition;
-import org.sensorhub.impl.sensor.nmeaais.ReportTypes.PositionReport;
+import org.sensorhub.impl.sensor.nmeaais.outputs.NmeaAisOutputPositionClassA;
+import org.sensorhub.impl.sensor.nmeaais.outputs.NmeaAisOutputPositionClassB;
+import org.sensorhub.impl.sensor.nmeaais.reportschemas.PositionReportClassA;
+import org.sensorhub.impl.sensor.nmeaais.reportschemas.PositionReportClassB;
 import org.vast.ogc.om.MovingFeature;
 import java.io.IOException;
 import java.net.DatagramPacket;
@@ -34,9 +36,14 @@ public class NmeaAisDriver extends AbstractSensorModule<NmeaAisConfig> {
 
     // GLOBAL VARIABLES FOR SENSOR OPERATION
     NmeaAisHandler nmeaAisHandler;
-    NmeaAisOutputPosition nmeaAisOutputPosition;
+    NmeaAisOutputPositionClassA nmeaAisOutputPositionClassA;
+    NmeaAisOutputPositionClassB nmeaAisOutputPositionClassB;
 
     static final int MAX_PACKET_SIZE = 4096;
+
+//    static final String test1 = "!AIVDM,1,1,,A,15NfK=PP00qm21jCarCv4?wf20S4,0*13";
+//    static final String test2 = "!AIVDM,1,1,,B,35NNm0dP@Vqm19HCbhs<HqaN01bP,0*23";
+//    static final String test3 = "!AIVDM,1,1,,A,B52gRs@0anMQ6o4tQ@HUcwk1hD04,0*35";
 
     DatagramSocket socket;
     volatile boolean started;
@@ -51,9 +58,13 @@ public class NmeaAisDriver extends AbstractSensorModule<NmeaAisConfig> {
         generateXmlID(XML_PREFIX, config.serialNumber);
 
         // INITIALIZE OUTPUT
-        nmeaAisOutputPosition = new NmeaAisOutputPosition(this);
-        addOutput(nmeaAisOutputPosition, false);
-        nmeaAisOutputPosition.doInit();
+        nmeaAisOutputPositionClassA = new NmeaAisOutputPositionClassA(this);
+        addOutput(nmeaAisOutputPositionClassA, false);
+        nmeaAisOutputPositionClassA.doInit();
+
+        nmeaAisOutputPositionClassB = new NmeaAisOutputPositionClassB(this);
+        addOutput(nmeaAisOutputPositionClassB, false);
+        nmeaAisOutputPositionClassB.doInit();
 
         // Initialize Parser
         nmeaAisHandler = new NmeaAisHandler(this);
@@ -63,7 +74,6 @@ public class NmeaAisDriver extends AbstractSensorModule<NmeaAisConfig> {
     @Override
     public void doStart() throws SensorHubException {
         super.doStart();
-
         try {
             // SO_REUSEADDR allows binding to a port that another process (e.g. AIS-Catcher) is also sending to,
             // preventing "Address already in use" when multiple consumers subscribe to the same UDP feed.
@@ -143,8 +153,11 @@ public class NmeaAisDriver extends AbstractSensorModule<NmeaAisConfig> {
      * Forwards a decoded position report to the position output for publishing.
      * Called by {@link NmeaAisHandler} — keeps the handler decoupled from the Outputs package.
      */
-    void publishPositionReport(String nmeaAisMsg, PositionReport report) {
-        nmeaAisOutputPosition.setData(nmeaAisMsg, report);
+    void publishPositionAReport(String nmeaAisMsg, PositionReportClassA report) {
+        nmeaAisOutputPositionClassA.setData(nmeaAisMsg, report);
+    }
+    void publishPositionBReport(String nmeaAisMsg, PositionReportClassB report) {
+        nmeaAisOutputPositionClassB.setData(nmeaAisMsg, report);
     }
 
 }
