@@ -20,6 +20,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import net.opengis.sensorml.v20.IdentifierList;
 import net.opengis.sensorml.v20.Term;
 import org.sensorhub.api.sensor.SensorException;
@@ -27,7 +29,6 @@ import org.sensorhub.impl.comm.RobustHTTPConnection;
 import org.sensorhub.impl.module.RobustConnection;
 import org.sensorhub.impl.security.ClientAuth;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
-import org.sensorhub.impl.sensor.rtpcam.RTPVideoOutput;
 import org.sensorhub.impl.sensor.rtpcam.RTSPClient;
 import org.sensorhub.api.common.SensorHubException;
 import org.vast.sensorML.SMLFactory;
@@ -55,8 +56,9 @@ public class AxisCameraDriver extends AbstractSensorModule < AxisCameraConfig > 
     public final String VAPIX_API_BASE_URL = "/axis-cgi";
 
     RobustConnection connection;
-    AxisVideoOutput mjpegVideoOutput;
-    RTPVideoOutput < AxisCameraDriver > h264VideoOutput;
+    AxisVideoStream mjpegVideoStream;
+    AxisVideoStream h264VideoStream;
+    AxisVideoStream h265VideoStream;
     AxisPtzOutput ptzPosOutput;
     AxisVideoControl videoControlInterface;
     AxisPtzControl ptzControlInterface;
@@ -72,6 +74,7 @@ public class AxisCameraDriver extends AbstractSensorModule < AxisCameraConfig > 
     boolean ptzSupported = false;
     boolean mjpegSupported = false;
     boolean h264Supported = false;
+    boolean h265Supported = false;
     boolean mpeg4Supported = false;
 
     public AxisCameraDriver() {
@@ -102,8 +105,9 @@ public class AxisCameraDriver extends AbstractSensorModule < AxisCameraConfig > 
     protected void doInit() throws SensorHubException {
         // reset internal state in case init() was already called
         super.doInit();
-        mjpegVideoOutput = null;
-        h264VideoOutput = null;
+        mjpegVideoStream = null;
+        h264VideoStream = null;
+        h265VideoStream = null;
         ptzPosOutput = null;
         ptzControlInterface = null;
         ptzSupported = false;
@@ -132,9 +136,12 @@ public class AxisCameraDriver extends AbstractSensorModule < AxisCameraConfig > 
                             if (tokens[1].trim().equalsIgnoreCase("yes"))
                                 ptzSupported = true;
                         } else if (tokens[0].trim().equalsIgnoreCase("root.Properties.Image.Format")) {
-                            mpeg4Supported = tokens[1].toLowerCase().contains("mpeg4");
-                            h264Supported = tokens[1].toLowerCase().contains("h264");
-                            mjpegSupported = tokens[1].toLowerCase().contains("mjpeg");
+                            String formats = tokens[1].toLowerCase();
+                            mpeg4Supported = formats.contains("mpeg4");
+                            h264Supported = formats.contains("h264");
+                            // Axis VAPIX reports HEVC as either "h265" or "hevc" depending on firmware.
+                            h265Supported = formats.contains("h265") || formats.contains("hevc");
+                            mjpegSupported = formats.contains("mjpeg");
                         } else if (tokens[0].trim().equalsIgnoreCase("root.Brand.ProdFullName"))
                             longName = tokens[1];
                         else if (tokens[0].trim().equalsIgnoreCase("root.Brand.ProdShortName"))
@@ -162,11 +169,15 @@ public class AxisCameraDriver extends AbstractSensorModule < AxisCameraConfig > 
                 if (!h264Supported && config.enableH264)
                     throw new IOException("Cannot connect to RTSP server - H264 not supported");
 
+                if (!h265Supported && config.enableH265)
+                    throw new IOException("Cannot connect to RTSP server - H265 not supported");
+
                 if (vapixVersion != 2 && vapixVersion != 3)
                     throw new IOException("Unsupported VAPIX API for this camera. VAPIX API version returned: " + vapixVersion);
 
-                // check connection to RTSP server
-                if (h264Supported && config.enableH264) {
+                // check connection to RTSP server (used for both H.264 and H.265 paths)
+                boolean rtspWanted = (h264Supported && config.enableH264) || (h265Supported && config.enableH265);
+                if (rtspWanted) {
                     try {
 
                         RTSPClient rtspClient = new RTSPClient(
@@ -206,20 +217,28 @@ public class AxisCameraDriver extends AbstractSensorModule < AxisCameraConfig > 
             throw new SensorException("Cannot connect to MJPEG stream - MJPEG not supported");
         }
 
-        // add MJPEG video output
+        // add MJPEG video output (HTTP via FFmpeg)
         if (mjpegSupported && config.enableMJPEG) {
             String outputName = videoOutName + videoOutNum++;
-            mjpegVideoOutput = new AxisVideoOutput(this, outputName);
-            mjpegVideoOutput.init();
-            addOutput(mjpegVideoOutput, false);
+            mjpegVideoStream = new AxisVideoStream(this, outputName, buildMjpegUrl(), "-timeout 3000000");
+            mjpegVideoStream.init();
+            addOutput(mjpegVideoStream.getOutput(), false);
         }
 
-        // add H264 video output
+        // add H.264 video output (RTSP via FFmpeg)
         if (h264Supported && config.enableH264) {
             String outputName = videoOutName + videoOutNum++;
-            h264VideoOutput = new RTPVideoOutput<>(outputName, this);
-            h264VideoOutput.init(config.video.resolution.getWidth(), config.video.resolution.getHeight());
-            addOutput(h264VideoOutput, false);
+            h264VideoStream = new AxisVideoStream(this, outputName, buildRtspUrl("h264"), "-rtsp_transport tcp -stimeout 3000000");
+            h264VideoStream.init();
+            addOutput(h264VideoStream.getOutput(), false);
+        }
+
+        // add H.265 video output (RTSP via FFmpeg)
+        if (h265Supported && config.enableH265) {
+            String outputName = videoOutName + videoOutNum++;
+            h265VideoStream = new AxisVideoStream(this, outputName, buildRtspUrl("h265"), "-rtsp_transport tcp -stimeout 3000000");
+            h265VideoStream.init();
+            addOutput(h265VideoStream.getOutput(), false);
         }
 
         if (ptzSupported) {
@@ -241,12 +260,15 @@ public class AxisCameraDriver extends AbstractSensorModule < AxisCameraConfig > 
         // wait for valid connection to camera
         connection.waitForConnection();
 
-        // start video output
-        if (mjpegVideoOutput != null)
-            mjpegVideoOutput.start();
+        // start video outputs
+        if (mjpegVideoStream != null)
+            mjpegVideoStream.start();
 
-        if (h264VideoOutput != null)
-            h264VideoOutput.start(config.video, config.rtsp, config.connection.connectTimeout);
+        if (h264VideoStream != null)
+            h264VideoStream.start();
+
+        if (h265VideoStream != null)
+            h265VideoStream.start();
 
         // if PTZ supported
         if (ptzSupported) {
@@ -340,11 +362,14 @@ public class AxisCameraDriver extends AbstractSensorModule < AxisCameraConfig > 
         if (ptzControlInterface != null)
             ptzControlInterface.stop();
 
-        if (mjpegVideoOutput != null)
-            mjpegVideoOutput.stop();
+        if (mjpegVideoStream != null)
+            mjpegVideoStream.stop();
 
-        if (h264VideoOutput != null)
-            h264VideoOutput.stop();
+        if (h264VideoStream != null)
+            h264VideoStream.stop();
+
+        if (h265VideoStream != null)
+            h265VideoStream.stop();
 
         if (videoControlInterface != null)
             videoControlInterface.stop();
@@ -358,5 +383,54 @@ public class AxisCameraDriver extends AbstractSensorModule < AxisCameraConfig > 
     protected String getHostUrl() {
         setAuth();
         return hostUrl;
+    }
+
+
+    /**
+     * Builds the FFmpeg-compatible MJPEG-over-HTTP URL, inlining credentials
+     * if the user/password are configured (FFmpeg cannot consult
+     * {@link ClientAuth} the way the Java {@code URL} opener can).
+     */
+    protected String buildMjpegUrl() {
+        String userInfo = buildUserInfo(config.http.user, config.http.password);
+        return "http://" + userInfo + config.http.remoteHost + ":" + config.http.remotePort + "/mjpg/video.mjpg";
+    }
+
+
+    /**
+     * Builds the FFmpeg-compatible RTSP URL for the requested codec. The base
+     * path is taken from {@code config.rtsp.videoPath}; the {@code videocodec}
+     * query parameter is rewritten to the requested codec so the same
+     * configuration field can serve both H.264 and H.265 streams.
+     *
+     * @param codec one of {@code "h264"}, {@code "h265"}, or {@code "jpeg"}.
+     */
+    protected String buildRtspUrl(String codec) {
+        String userInfo = buildUserInfo(config.rtsp.user, config.rtsp.password);
+        String path = config.rtsp.videoPath == null ? DEFAULT_RTSP_VIDEO_PATH : config.rtsp.videoPath;
+        if (path.toLowerCase().contains("videocodec=")) {
+            path = path.replaceAll("(?i)videocodec=[a-z0-9]+", "videocodec=" + codec);
+        } else {
+            path = path + (path.contains("?") ? "&" : "?") + "videocodec=" + codec;
+        }
+        if (!path.startsWith("/"))
+            path = "/" + path;
+        return "rtsp://" + userInfo + config.rtsp.remoteHost + ":" + config.rtsp.remotePort + path;
+    }
+
+
+    /**
+     * Returns a URL userinfo segment ({@code "user:pass@"}) with both components
+     * URL-encoded, or the empty string if no credentials are configured.
+     */
+    private static String buildUserInfo(String user, String password) {
+        if (user == null || user.isEmpty())
+            return "";
+        StringBuilder sb = new StringBuilder();
+        sb.append(URLEncoder.encode(user, StandardCharsets.UTF_8));
+        if (password != null && !password.isEmpty())
+            sb.append(':').append(URLEncoder.encode(password, StandardCharsets.UTF_8));
+        sb.append('@');
+        return sb.toString();
     }
 }
