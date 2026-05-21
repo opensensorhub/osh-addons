@@ -45,7 +45,16 @@ public class AxisCameraConfig extends SensorConfig {
     @DisplayInfo(label="HTTP", desc="HTTP configuration")
     public HTTPConfig http = new HTTPConfig();
     
-    @DisplayInfo(label="RTP/RTSP", desc="RTP/RTSP configuration (Remote host is obtained from HTTP configuration)")
+    /**
+     * RTP/RTSP configuration (Remote host is obtained from HTTP configuration)
+     *
+     * <p> {@code localUdpPort} of {@link RTSPConfig} is no longer honored by
+     * this driver. FFmpeg chooses its own client ports during RTSP SETUP (or
+     * uses TCP interleaved via {@code -rtsp_transport tcp}). The field is
+     * retained only for backward-compatibility </p>
+     */
+
+    @DisplayInfo(label="RTP/RTSP", desc="RTP/RTSP configuration")
     public RTSPConfig rtsp = new RTSPConfig();
     
     @DisplayInfo(label="Connection Options")
@@ -62,7 +71,10 @@ public class AxisCameraConfig extends SensorConfig {
     
     @DisplayInfo(label="Enable H264", desc="Enable H264 encoded video output (accessible through RTSP)")
     public boolean enableH264;
-    
+
+    @DisplayInfo(label="Enable H265", desc="Enable H265 (HEVC) encoded video output (accessible through RTSP)")
+    public boolean enableH265;
+
     @DisplayInfo(label="Enable MJPEG", desc="Enable MJPEG encoded video output (accessible through HTTP)")
     public boolean enableMJPEG;
 
