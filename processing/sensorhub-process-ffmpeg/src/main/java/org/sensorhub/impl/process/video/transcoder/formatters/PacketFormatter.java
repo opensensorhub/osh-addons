@@ -10,7 +10,7 @@ import static org.bytedeco.ffmpeg.global.avcodec.*;
 import static org.bytedeco.ffmpeg.global.avutil.*;
 import static org.bytedeco.ffmpeg.global.swscale.*;
 
-public class PacketFormatter extends AVByteFormatter<AVPacket> {
+public class PacketFormatter implements AVByteFormatter<AVPacket> {
 
     /**
      * Converts an array of bytes from compressed video into an {@link AVPacket}.
@@ -22,7 +22,8 @@ public class PacketFormatter extends AVByteFormatter<AVPacket> {
         AVPacket newPacket = av_packet_alloc();
         av_new_packet(newPacket, inputData.length);
         newPacket.data().position(0);
-        newPacket.data().put(inputData.clone(), 0, inputData.length);
+        newPacket.data().limit(inputData.length);
+        newPacket.data().put(inputData);
         return newPacket;
     }
 

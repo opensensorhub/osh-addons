@@ -7,7 +7,7 @@ import static org.bytedeco.ffmpeg.global.avcodec.*;
 import static org.bytedeco.ffmpeg.global.avutil.*;
 import static org.bytedeco.ffmpeg.global.swscale.*;
 
-public class RgbFormatter extends AVByteFormatter<AVFrame> {
+public class RgbFormatter implements AVByteFormatter<AVFrame> {
 
     protected final int width, height, size;
     protected final int pixFormat;
