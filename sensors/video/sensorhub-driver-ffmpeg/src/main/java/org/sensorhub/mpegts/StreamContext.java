@@ -154,10 +154,16 @@ public class StreamContext {
         setCodecName(codec.name().getString());
         setCodecId(codec.id());
 
-        if (isInjectingExtradata && codecId == avcodec.AV_CODEC_ID_H264) {
+        if (isInjectingExtradata) {
             BytePointer extra = params.extradata();
             int extraLen = params.extradata_size();
-            extraData = getAnnexBExtradata(extra, extraLen);
+            if (codecId == avcodec.AV_CODEC_ID_H264) {
+                extraData = getAnnexBExtradata(extra, extraLen);
+            } else if (codecId == avcodec.AV_CODEC_ID_HEVC) {
+                extraData = getHvccAnnexBExtradata(extra, extraLen);
+            } else {
+                extraData = null;
+            }
         } else {
             extraData = null;
         }
@@ -178,7 +184,9 @@ public class StreamContext {
         byte[] dataBuffer = new byte[avPacket.size()];
         avPacket.data().get(dataBuffer);
 
-        // Add extradata if the packet has an h264 keyframe
+        // Prepend cached parameter sets ahead of every keyframe so late-join
+        // decoders have the VPS/SPS/PPS they need. Applies to both H.264 (SPS/PPS)
+        // and HEVC (VPS/SPS/PPS) when extradata injection is enabled.
         if (extraData != null && (avPacket.flags() & avcodec.AV_PKT_FLAG_KEY) != 0) {
             getDataBufferListener().onDataBuffer(new DataBufferRecord(avPacket.pts() * getStreamTimeBase(), extraData));
         }
@@ -187,8 +195,9 @@ public class StreamContext {
     }
 
     /**
-     * Converts the given extradata from AVCC format to Annex B format.
-     * If the data is already in Annex B format, it is returned directly.
+     * Converts the given H.264 extradata from AVCC format (AVCDecoderConfigurationRecord,
+     * ISO/IEC 14496-15 §5.2.4.1) to Annex B format. If the data is already in Annex B format,
+     * it is returned directly.
      *
      * @param extradata A BytePointer containing the codec extradata. Must not be null.
      * @param size The size of the extradata in bytes.
@@ -234,5 +243,67 @@ public class StreamContext {
             logger.error("Error extracting SPS and PPS from AVCC extradata", e);
         }
         return out.toByteArray();
+    }
+
+    /**
+     * Converts HEVC extradata from HVCC format (HEVCDecoderConfigurationRecord,
+     * ISO/IEC 14496-15 §8.3.3.1.2) to Annex B format. Walks the {@code numOfArrays}
+     * table and emits every contained NAL (typically VPS=32, SPS=33, PPS=34) prefixed
+     * with the 4-byte 0x00000001 start code so that downstream pipelines can decode
+     * without out-of-band parameter sets.
+     * <p>
+     * If the data is already in Annex B format, it is returned directly.
+     *
+     * @param extradata A BytePointer containing the codec extradata. Must not be null.
+     * @param size The size of the extradata in bytes.
+     * @return A byte array containing the Annex B formatted VPS/SPS/PPS NALs, or
+     *         {@code null} if the data is invalid, too short, or cannot be parsed.
+     */
+    private byte[] getHvccAnnexBExtradata(BytePointer extradata, int size) {
+        // HVCC has a 22-byte fixed header followed by numOfArrays (1 byte),
+        // so the minimum useful size is 23 bytes.
+        if (extradata == null || size < 23) return null;
+
+        byte[] data = new byte[size];
+        extradata.get(data);
+
+        // If already Annex B, pass straight through.
+        if (data[0] == 0x00 && data[1] == 0x00 && (data[2] == 0x01 || (data[2] == 0x00 && data[3] == 0x01))) {
+            return data;
+        }
+
+        // configurationVersion must be 1 per ISO/IEC 14496-15.
+        if ((data[0] & 0xFF) != 1) {
+            logger.warn("Unsupported HVCC configurationVersion: {}", data[0] & 0xFF);
+            return null;
+        }
+
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        try {
+            int pos = 22;
+            int numOfArrays = data[pos++] & 0xFF;
+
+            for (int i = 0; i < numOfArrays; i++) {
+                if (pos + 3 > data.length) return null;
+
+                pos++;
+                int numNalus = ((data[pos++] & 0xFF) << 8) | (data[pos++] & 0xFF);
+
+                for (int j = 0; j < numNalus; j++) {
+                    if (pos + 2 > data.length) return null;
+                    int nalLen = ((data[pos++] & 0xFF) << 8) | (data[pos++] & 0xFF);
+                    if (nalLen <= 0 || pos + nalLen > data.length) return null;
+                    out.write(new byte[]{0x00, 0x00, 0x00, 0x01});
+                    out.write(data, pos, nalLen);
+                    pos += nalLen;
+                }
+            }
+        } catch (Exception e) {
+            logger.error("Error extracting VPS/SPS/PPS from HVCC extradata", e);
+            return null;
+        }
+
+        byte[] result = out.toByteArray();
+        return result.length == 0 ? null : result;
     }
 }
