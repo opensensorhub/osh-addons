@@ -262,6 +262,10 @@ subprojects {
       dep.exclude group: 'org.vast.opengis'
     }
     
+    if(project.buildType && project.buildType.equals('dev')) {
+      p.setVersion(p.version + '-SNAPSHOT')
+    }
+    
     p.osgi {
       manifest {
         // main info
