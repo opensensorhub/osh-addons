@@ -21,8 +21,8 @@ import net.opengis.swe.v20.DataEncoding;
 import net.opengis.swe.v20.DataRecord;
 import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
+import org.sensorhub.utils.aero.AeroHelper;
 import org.vast.swe.SWEHelper;
-import org.vast.swe.helper.GeoPosHelper;
 
 public class AirNavADSBOutput extends AbstractSensorOutput<AirNavADSBSensor> {
     private static final String SENSOR_OUTPUT_NAME = "adsbOutput";
@@ -39,47 +39,42 @@ public class AirNavADSBOutput extends AbstractSensorOutput<AirNavADSBSensor> {
     }
 
     protected void init() {
-        GeoPosHelper sweFactory = new GeoPosHelper();
+        AeroHelper aeroHelper = new AeroHelper();
 
-        dataStruct = sweFactory.createRecord()
+        dataStruct = aeroHelper.createRecord()
                 .name(SENSOR_OUTPUT_NAME)
                 .label(SENSOR_OUTPUT_LABEL)
                 .description(SENSOR_OUTPUT_DESCRIPTION)
-                .addField("sampleTime", sweFactory.createTime()
+                .addField("sampleTime", aeroHelper.createTime()
                         .asSamplingTimeIsoUTC()
                         .label("Sample Time")
                         .description("Time of data collection"))
-                .addField("icaoAddress", sweFactory.createText()
-                        .label("ICAO Address")
-                        .definition(SWEHelper.getPropertyUri("aero/ICAOAddress"))
-                        .description("Unique 24-bit ICAO aircraft identifier expressed in hexadecimal"))
-                .addField("callsign", sweFactory.createText()
-                        .label("Callsign")
-                        .definition(SWEHelper.getPropertyUri("aero/Callsign"))
-                        .description("8 Character ATC callsign or flight number broadcast by the aircraft"))
-                .addField("location", sweFactory.createLocationVectorLLA())
-                .addField("groundSpeed", sweFactory.createQuantity()
-                        .label("Ground Speed")
-                        .definition(SWEHelper.getPropertyUri("aero/GroundSpeed"))
-                        .description("Horizontal speed over the ground")
-                        .uomCode("[kn_i]"))
-                .addField("heading", sweFactory.createQuantity()
-                        .label("Heading")
-                        .definition(SWEHelper.getPropertyUri("aero/Heading"))
-                        .description("Direction relative to true north")
-                        .uom("deg"))
-                .addField("verticalRate", sweFactory.createQuantity()
-                        .label("Vertical Rate")
-                        .definition(SWEHelper.getPropertyUri("aero/VerticalRate"))
-                        .description("Rate of climb or descent")
-                        .uom("ft/min"))
-                .addField("squawk", sweFactory.createText()
+                .addField("aircraftType", aeroHelper.createAircraftType())
+                .addField("callsign", aeroHelper.createCallSign())
+                .addField("pos", aeroHelper.createAircraftLocation())
+                .addField("alt_baro", aeroHelper.createBaroAlt())
+                .addField("gs", aeroHelper.createGroundSpeed())
+                .addField("heading", aeroHelper.createTrueHeading())
+                .addField("alt_rate", aeroHelper.createVerticalRate())
+                .addField("squawk", aeroHelper.createText()
                         .label("Squawk Code")
-                        .definition(SWEHelper.getPropertyUri("aero/SquawkCode"))
+                        .definition(SWEHelper.getPropertyUri( "SquawkCode"))
                         .description("4-digit octal ATC transponder code"))
+                .addField("alert", aeroHelper.createBoolean()
+                        .label("Alert Flag")
+                        .definition(SWEHelper.getPropertyUri("AlertFlag"))
+                        .description("Indicates squawk code has changed"))
+                .addField("emergency", aeroHelper.createBoolean()
+                        .label("Emergency Flag")
+                        .definition(SWEHelper.getPropertyUri("EmergencyFlag"))
+                        .description("Indicates aircraft is in emergency status"))
+                .addField("isOnGround", aeroHelper.createBoolean()
+                        .label("Is On Ground")
+                        .definition(SWEHelper.getPropertyUri("IsOnGround"))
+                        .description("Indicates aircraft is on the ground"))
                 .build();
 
-        dataEncoding = sweFactory.newTextEncoding(",", "\n");
+        dataEncoding = aeroHelper.newTextEncoding(",", "\n");
     }
 
     protected synchronized void publishAircraftState(AircraftState state) {
@@ -103,6 +98,9 @@ public class AirNavADSBOutput extends AbstractSensorOutput<AirNavADSBSensor> {
         dataBlock.setDoubleValue(idx++, Double.isNaN(state.heading) ? 0.0 : state.heading);
         dataBlock.setDoubleValue(idx++, Double.isNaN(state.verticalRate) ? 0.0 : state.verticalRate);
         dataBlock.setStringValue(idx++, state.squawk != null ? state.squawk : "");
+        dataBlock.setBooleanValue(idx++, state.alert);
+        dataBlock.setBooleanValue(idx++, state.emergency);
+        dataBlock.setBooleanValue(idx++, state.isOnGround);
 
         latestRecord = dataBlock;
         latestRecordTime = System.currentTimeMillis();

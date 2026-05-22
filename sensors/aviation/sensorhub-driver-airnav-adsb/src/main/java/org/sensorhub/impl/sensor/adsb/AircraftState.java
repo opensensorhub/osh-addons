@@ -10,6 +10,9 @@ public class AircraftState {
     double heading = Double.NaN;
     double verticalRate = Double.NaN;
     String squawk;
+    boolean alert;
+    boolean emergency;
+    boolean isOnGround;
     long lastUpdateTime;
 
     boolean hasPosition() {

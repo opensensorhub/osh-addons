@@ -53,6 +53,7 @@ public class AirNavADSBSensor extends AbstractSensorModule<AdsbConfig>
     private final ConcurrentHashMap<String, AircraftState> aircraftMap = new ConcurrentHashMap<>();
     private final AtomicBoolean started = new AtomicBoolean(false);
     private Thread workerThread;
+    private Process dump1090Process;
     String modelNumber;
 
 
@@ -95,16 +96,6 @@ public class AirNavADSBSensor extends AbstractSensorModule<AdsbConfig>
                 identifierList.addIdentifier(term);
 
             }
-
-            ContactList contactList = smlFac.newContactList();
-            sensorDescription.addContacts(contactList);
-
-            SMLHelper smlHelper = new SMLHelper();
-            CIResponsibleParty contact = smlHelper.DEFAULT_GMD_FACTORY.newCIResponsibleParty();
-            contact.setOrganisationName("AirNav Systems");
-            contact.getContactInfo().getOnlineResource().setLinkage("https://www.airnavsystems.com");
-            contactList.addContact(contact);
-
         }
     }
 
@@ -120,6 +111,8 @@ public class AirNavADSBSensor extends AbstractSensorModule<AdsbConfig>
 
     @Override
     protected void doStart() throws SensorHubException {
+        startDump1090();
+
         if (commProvider == null) {
             try {
                 if (config.commSettings == null)
@@ -232,6 +225,52 @@ public class AirNavADSBSensor extends AbstractSensorModule<AdsbConfig>
             default:
                 break;
         }
+        if (fields.length > 18 && !fields[18].trim().isEmpty())
+            state.alert = "-1".equals(fields[18].trim());
+        if (fields.length > 19 && !fields[19].trim().isEmpty())
+            state.emergency = "-1".equals(fields[19].trim());
+        if (fields.length > 21 && !fields[21].trim().isEmpty())
+            state.isOnGround = "-1".equals(fields[21].trim());
+    }
+
+    private void startDump1090() throws SensorHubException {
+        try {
+            var cmd = new ProcessBuilder(
+                "dump1090",
+                "--net",
+                "--device-index", String.valueOf(0),
+                "--quiet"
+            );
+            cmd.redirectErrorStream(true);
+            dump1090Process = cmd.start();
+
+            Thread.sleep(2000);
+
+            if (!dump1090Process.isAlive())
+                throw new SensorHubException("dump1090 exited immediately — check the path and RTL-SDR device");
+
+            getLogger().info("Started dump1090 (pid {})", dump1090Process.pid());
+        } catch (IOException e) {
+            throw new SensorHubException("Failed to start dump1090", e);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new SensorHubException("Interrupted while waiting for dump1090 to start", e);
+        }
+    }
+
+    private void stopDump1090() {
+        if (dump1090Process != null) {
+            dump1090Process.destroy();
+            try {
+                if (!dump1090Process.waitFor(5, TimeUnit.SECONDS))
+                    dump1090Process.destroyForcibly();
+            } catch (InterruptedException e) {
+                dump1090Process.destroyForcibly();
+                Thread.currentThread().interrupt();
+            }
+            getLogger().info("Stopped dump1090");
+            dump1090Process = null;
+        }
     }
 
     @Override
@@ -265,6 +304,7 @@ public class AirNavADSBSensor extends AbstractSensorModule<AdsbConfig>
             msgIn = null;
         }
 
+        stopDump1090();
         aircraftMap.clear();
     }
 
@@ -277,12 +317,15 @@ public class AirNavADSBSensor extends AbstractSensorModule<AdsbConfig>
     String addFoi(String aircraftId, String callsign, Point point) {
         String foiUID = SENSOR_UID_PREFIX + aircraftId;
 
-
         if (!foiMap.containsKey(foiUID)) {
             MovingFeature foi = new MovingFeature();
             foi.setId(aircraftId);
             foi.setUniqueIdentifier(foiUID);
-            foi.setName(callsign);
+
+            if (callsign != null && !callsign.isEmpty())
+                foi.setName(callsign);
+            else
+                foi.setName(aircraftId);
             foi.setDescription("Aircraft " + aircraftId);
             foi.setGeometry(point);
 

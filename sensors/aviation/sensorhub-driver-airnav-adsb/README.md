@@ -46,29 +46,49 @@ sudo usermod -aG plugdev $USER
 rtl_test -t
 ```
 
-### Start dump1090
-Start `dump1090` with the SBS-1 TCP output enabled on port `30003`.
+[//]: # (````### Start dump1090)
 
-FlightAware dump109-fa
-```bash
-dump1090-fa --net-sbs-port 30003
-```
-Generic dump109
-```bash
-dump1090 --net-sbs-port 30003
-```
-The driver consumes the SBS-1 TCP stream format produced by `dump1090`.
+[//]: # (Start `dump1090` with the SBS-1 TCP output enabled on port `30003`.)
 
-### Verify the SBS port is open:
-```bash
-nc localhost 30003
-```
-You should see comma-delimited SBS-1 Messages
-```
-MSG,3,1,1,A12345,1,2024/01/01,12:00:00.000,2024/01/01,12:00:00.000,,35000,,,33.1234,-97.5678,,,0,0,0,0
-```
-Aircraft messages are only outputted when aircraft are in reception range. Make sure you place the antenna outside, 
-and have a good line of sight.
+[//]: # ()
+[//]: # (FlightAware dump109-fa)
+
+[//]: # (```bash)
+
+[//]: # (dump1090-fa --net-sbs-port 30003)
+
+[//]: # (```)
+
+[//]: # (Generic dump109)
+
+[//]: # (```bash)
+
+[//]: # (dump1090 --net-sbs-port 30003)
+
+[//]: # (```)
+
+[//]: # (The driver consumes the SBS-1 TCP stream format produced by `dump1090`.)
+
+[//]: # ()
+[//]: # (### Verify the SBS port is open:)
+
+[//]: # (```bash)
+
+[//]: # (nc localhost 30003)
+
+[//]: # (```)
+
+[//]: # (You should see comma-delimited SBS-1 Messages)
+
+[//]: # (```)
+
+[//]: # (MSG,3,1,1,A12345,1,2024/01/01,12:00:00.000,2024/01/01,12:00:00.000,,35000,,,33.1234,-97.5678,,,0,0,0,0)
+
+[//]: # (```)
+
+[//]: # (Aircraft messages are only outputted when aircraft are in reception range. Make sure you place the antenna outside, )
+
+[//]: # (and have a good line of sight.````)
 
 ### OSH Driver Config
 1. Add a TCP Comm Module
