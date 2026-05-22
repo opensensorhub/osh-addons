@@ -12,15 +12,23 @@
 package org.sensorhub.impl.sensor.nmeaais;
 
 import dk.dma.ais.message.AisMessage18;
+import dk.dma.ais.message.AisMessage19;
+import dk.dma.ais.message.AisMessage21;
+import dk.dma.ais.message.AisMessage4;
+import dk.dma.ais.message.AisMessage5;
 import dk.dma.ais.message.AisPositionMessage;
 import dk.dma.ais.reader.AisReader;
 import dk.dma.ais.reader.AisReaders;
 import org.sensorhub.api.comm.ICommProvider;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
+import org.sensorhub.impl.sensor.nmeaais.outputs.NmeaAisOutputAidNavigation;
+import org.sensorhub.impl.sensor.nmeaais.outputs.NmeaAisOutputBaseStation;
 import org.sensorhub.impl.sensor.nmeaais.outputs.NmeaAisOutputRawMessages;
 import org.sensorhub.impl.sensor.nmeaais.outputs.NmeaAisOutputPositionClassA;
 import org.sensorhub.impl.sensor.nmeaais.outputs.NmeaAisOutputPositionClassB;
+import org.sensorhub.impl.sensor.nmeaais.outputs.NmeaAisOutputStaticDataClassB;
+import org.sensorhub.impl.sensor.nmeaais.outputs.NmeaAisOutputStaticVoyage;
 import org.vast.ogc.om.MovingFeature;
 
 import java.io.IOException;
@@ -43,6 +51,10 @@ public class NmeaAisDriver extends AbstractSensorModule<NmeaAisConfig> {
     NmeaAisOutputRawMessages nmeaAisOutputRawMessages;
     NmeaAisOutputPositionClassA nmeaAisOutputPositionClassA;
     NmeaAisOutputPositionClassB nmeaAisOutputPositionClassB;
+    NmeaAisOutputBaseStation nmeaAisOutputBaseStation;
+    NmeaAisOutputStaticVoyage nmeaAisOutputStaticVoyage;
+    NmeaAisOutputStaticDataClassB nmeaAisOutputStaticDataClassB;
+    NmeaAisOutputAidNavigation nmeaAisOutputAidNavigation;
 
     ICommProvider<?> commProvider;
     AisReader aisReader;
@@ -69,6 +81,22 @@ public class NmeaAisDriver extends AbstractSensorModule<NmeaAisConfig> {
         nmeaAisOutputPositionClassB = new NmeaAisOutputPositionClassB(this);
         addOutput(nmeaAisOutputPositionClassB, false);
         nmeaAisOutputPositionClassB.doInit();
+
+        nmeaAisOutputBaseStation = new NmeaAisOutputBaseStation(this);
+        addOutput(nmeaAisOutputBaseStation, false);
+        nmeaAisOutputBaseStation.doInit();
+
+        nmeaAisOutputStaticVoyage = new NmeaAisOutputStaticVoyage(this);
+        addOutput(nmeaAisOutputStaticVoyage, false);
+        nmeaAisOutputStaticVoyage.doInit();
+
+        nmeaAisOutputStaticDataClassB = new NmeaAisOutputStaticDataClassB(this);
+        addOutput(nmeaAisOutputStaticDataClassB, false);
+        nmeaAisOutputStaticDataClassB.doInit();
+
+        nmeaAisOutputAidNavigation = new NmeaAisOutputAidNavigation(this);
+        addOutput(nmeaAisOutputAidNavigation, false);
+        nmeaAisOutputAidNavigation.doInit();
 
         // Initialize Handler
         nmeaAisHandler = new NmeaAisHandler(this);
@@ -208,9 +236,47 @@ public class NmeaAisDriver extends AbstractSensorModule<NmeaAisConfig> {
     }
 
     /**
-     * Forwards a decoded Class B position report to the position output for publishing.
+     * Forwards a decoded Class B standard position report (type 18) for publishing.
      */
     void publishPositionBReport(AisMessage18 report, String description) {
         nmeaAisOutputPositionClassB.setData(report, description);
+    }
+
+    /**
+     * Forwards a decoded Class B extended position report (type 19) for publishing.
+     */
+    void publishPositionBExtReport(AisMessage19 report, String description) {
+        nmeaAisOutputPositionClassB.setData(report, description);
+    }
+
+    /**
+     * Forwards a decoded base station report (types 4 and 11) to the base station output for publishing.
+     */
+    void publishBaseStationReport(AisMessage4 report, String description) {
+        nmeaAisOutputBaseStation.setData(report, description);
+    }
+
+    /**
+     * Forwards a decoded static and voyage data report (type 5) to the static/voyage output for publishing.
+     */
+    void publishStaticVoyageReport(AisMessage5 report, String description) {
+        nmeaAisOutputStaticVoyage.setData(report, description);
+    }
+
+    /**
+     * Forwards a decoded aid-to-navigation report (type 21) to the aid nav output for publishing.
+     */
+    void publishAidNavReport(AisMessage21 report, String description) {
+        nmeaAisOutputAidNavigation.setData(report, description);
+    }
+
+    /**
+     * Publishes a combined type 24 Part A + Part B record to the Class B static data output.
+     */
+    void publishStaticDataClassBReport(int mmsi, int repeat, String name, String callSign,
+                                       int shipType, int dimBow, int dimStern, int dimPort,
+                                       int dimStarboard, String vendorId, String description) {
+        nmeaAisOutputStaticDataClassB.setData(mmsi, repeat, name, callSign, shipType,
+                dimBow, dimStern, dimPort, dimStarboard, vendorId, description);
     }
 }
