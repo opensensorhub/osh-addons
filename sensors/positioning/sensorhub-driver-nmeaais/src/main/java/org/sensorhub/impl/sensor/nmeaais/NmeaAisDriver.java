@@ -11,6 +11,7 @@
  ******************************* END LICENSE BLOCK ***************************/
 package org.sensorhub.impl.sensor.nmeaais;
 
+import org.sensorhub.api.comm.ICommProvider;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
 import org.sensorhub.impl.sensor.nmeaais.outputs.NmeaAisOutputRawMessages;
@@ -19,11 +20,9 @@ import org.sensorhub.impl.sensor.nmeaais.outputs.NmeaAisOutputPositionClassB;
 import org.sensorhub.impl.sensor.nmeaais.reportschemas.PositionReportClassA;
 import org.sensorhub.impl.sensor.nmeaais.reportschemas.PositionReportClassB;
 import org.vast.ogc.om.MovingFeature;
+
 import java.io.IOException;
-import java.net.DatagramPacket;
-import java.net.DatagramSocket;
-import java.net.InetSocketAddress;
-import java.nio.charset.StandardCharsets;
+import java.io.InputStream;
 
 /**
  * Driver implementation for the sensor.
@@ -41,13 +40,7 @@ public class NmeaAisDriver extends AbstractSensorModule<NmeaAisConfig> {
     NmeaAisOutputPositionClassA nmeaAisOutputPositionClassA;
     NmeaAisOutputPositionClassB nmeaAisOutputPositionClassB;
 
-    static final int MAX_PACKET_SIZE = 4096;
-
-//    static final String test1 = "!AIVDM,1,1,,A,15NfK=PP00qm21jCarCv4?wf20S4,0*13";
-//    static final String test2 = "!AIVDM,1,1,,B,35NNm0dP@Vqm19HCbhs<HqaN01bP,0*23";
-//    static final String test3 = "!AIVDM,1,1,,A,B52gRs@0anMQ6o4tQ@HUcwk1hD04,0*35";
-
-    DatagramSocket socket;
+    ICommProvider<?> commProvider;
     volatile boolean started;
 
     //  INITIALIZE
@@ -76,34 +69,51 @@ public class NmeaAisDriver extends AbstractSensorModule<NmeaAisConfig> {
         nmeaAisHandler = new NmeaAisHandler(this);
     }
 
-
     @Override
     public void doStart() throws SensorHubException {
         super.doStart();
+
+        // Init comm provider — recreated here so it picks up any config changes made via the UI
+        if (commProvider == null) {
+            if (config.commSettings == null)
+                throw new SensorHubException("No communication settings specified");
+            try {
+                var moduleReg = getParentHub().getModuleRegistry();
+                commProvider = (ICommProvider<?>) moduleReg.loadSubModule(config.commSettings, true);
+                commProvider.start();
+            } catch (Exception e) {
+                commProvider = null;
+                throw e;
+            }
+        }
+
+        // Get input stream — read byte-by-byte to avoid BufferedReader's large internal buffer,
+        // which would delay output until ~100 UDP packets accumulate before returning any lines.
+        final InputStream inputStream;
         try {
-            // SO_REUSEADDR allows binding to a port that another process (e.g. AIS-Catcher) is also sending to,
-            // preventing "Address already in use" when multiple consumers subscribe to the same UDP feed.
-            socket = new DatagramSocket(null);
-            socket.setReuseAddress(true);
-            socket.bind(new InetSocketAddress(config.udpPort));
-            getLogger().info("Listening for AIS data on UDP port {}", config.udpPort);
+            inputStream = commProvider.getInputStream();
+            getLogger().info("Connected to AIS data stream");
         } catch (IOException e) {
-            throw new SensorHubException("Cannot bind UDP socket on port " + config.udpPort, e);
+            throw new SensorHubException("Error opening AIS input stream", e);
         }
 
         Thread t = new Thread(() -> {
-            byte[] buf = new byte[MAX_PACKET_SIZE];
-            DatagramPacket packet = new DatagramPacket(buf, buf.length);
-            while (started) {
-                try {
-                    socket.receive(packet);
-                    String aisNmeaMsg = new String(packet.getData(), 0, packet.getLength(), StandardCharsets.US_ASCII).trim();
-                    nmeaAisHandler.handleNmeaAisMessage(aisNmeaMsg);
-
-                } catch (IOException e) {
-                    if (started)
-                        getLogger().error("Error reading AIS UDP packet", e);
+            StringBuilder sb = new StringBuilder();
+            try {
+                int b;
+                while (started && (b = inputStream.read()) != -1) {
+                    if (b == '\n') {
+                        String line = sb.toString().trim();
+                        sb.setLength(0);
+                        if (!line.isEmpty())
+                            nmeaAisHandler.handleNmeaAisMessage(line);
+                    } else if (b != '\r') {
+                        sb.append((char) b);
+                    }
                 }
+            } catch (IOException e) {
+                if (started)
+                    getLogger().error("Error reading AIS data stream", e);
             }
         });
 
@@ -117,9 +127,9 @@ public class NmeaAisDriver extends AbstractSensorModule<NmeaAisConfig> {
     public void doStop() throws SensorHubException {
         started = false;
 
-        if (socket != null) {
-            socket.close();
-            socket = null;
+        if (commProvider != null) {
+            commProvider.stop();
+            commProvider = null;
         }
 
         super.doStop();
@@ -127,13 +137,8 @@ public class NmeaAisDriver extends AbstractSensorModule<NmeaAisConfig> {
 
     @Override
     public boolean isConnected() {
-        return socket != null && !socket.isClosed();
+        return commProvider != null;
     }
-
-    /**
-     * Registers an AIS vessel as a Feature of Interest (FOI) keyed by its MMSI.
-     * Subsequent calls with the same MMSI are no-ops; the existing FOI UID is returned.
-     */
 
     /**
      * Registers an AIS vessel as a Feature of Interest (FOI) keyed by its MMSI.
@@ -167,12 +172,11 @@ public class NmeaAisDriver extends AbstractSensorModule<NmeaAisConfig> {
      * Forwards a decoded position report to the position output for publishing.
      * Called by {@link NmeaAisHandler} — keeps the handler decoupled from the Outputs package.
      */
-    void publishPositionAReport( PositionReportClassA report) {
+    void publishPositionAReport(PositionReportClassA report) {
         nmeaAisOutputPositionClassA.setData(report);
     }
 
     void publishPositionBReport(PositionReportClassB report) {
         nmeaAisOutputPositionClassB.setData(report);
     }
-
 }

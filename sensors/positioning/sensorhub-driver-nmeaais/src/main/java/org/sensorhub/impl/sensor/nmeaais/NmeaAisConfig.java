@@ -11,6 +11,7 @@
  ******************************* END LICENSE BLOCK ***************************/
 package org.sensorhub.impl.sensor.nmeaais;
 
+import org.sensorhub.api.comm.CommProviderConfig;
 import org.sensorhub.api.config.DisplayInfo;
 import org.sensorhub.api.sensor.SensorConfig;
 
@@ -26,8 +27,6 @@ public class NmeaAisConfig extends SensorConfig {
     @DisplayInfo(desc = "Serial number or unique identifier")
     public String serialNumber = "myShipXplorer";
 
-    @DisplayInfo.Required
-    @DisplayInfo(label = "UDP Port", desc = "Local port to receive AIS NMEA sentences from AIS-Catcher (default: 10110)")
-    public int udpPort = 10110;
-
+    @DisplayInfo(desc = "Communication settings for receiving AIS NMEA sentences (e.g. UDP, TCP, serial)")
+    public CommProviderConfig<?> commSettings;
 }
