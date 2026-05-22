@@ -1,5 +1,6 @@
 package org.sensorhub.impl.sensor.nmeaais.outputs;
 
+import dk.dma.ais.message.*;
 import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.DataEncoding;
@@ -7,12 +8,11 @@ import net.opengis.swe.v20.DataRecord;
 import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.impl.sensor.VarRateSensorOutput;
 import org.sensorhub.impl.sensor.nmeaais.NmeaAisDriver;
-import org.sensorhub.impl.sensor.nmeaais.reportschemas.PositionReportClassA;
 import org.vast.swe.SWEBuilders;
 import org.vast.swe.SWEHelper;
 import org.vast.swe.helper.GeoPosHelper;
 
-public class NmeaAisOutputPositionClassA extends VarRateSensorOutput<NmeaAisDriver> implements NmeaAisReportInterface<PositionReportClassA> {
+public class NmeaAisOutputPositionClassA extends VarRateSensorOutput<NmeaAisDriver> implements NmeaAisReportInterface<AisPositionMessage> {
     private DataRecord aisReportRecord;
     private DataEncoding dataEncoding;
 
@@ -61,7 +61,7 @@ public class NmeaAisOutputPositionClassA extends VarRateSensorOutput<NmeaAisDriv
                         .label("Repeat Indicator")
                         .description("Used by the repeater to indicate how many times a message has been repeated. See Section 4.6.1, Annex 2; 0-3; 0 = default; 3 = do not repeat any more.")
                         .definition(SWEHelper.getPropertyUri("repeat")))
-                .addField("mmsi", sweFactory.createText()
+                .addField("mmsi", sweFactory.createQuantity()
                         .label("MMSI Number")
                         .description("MMSI Number")
                         .definition(SWEHelper.getPropertyUri("Mmsi")))
@@ -128,40 +128,35 @@ public class NmeaAisOutputPositionClassA extends VarRateSensorOutput<NmeaAisDriv
                 .addField("commState", sweFactory.createQuantity()
                         .label("Communication State")
                         .description("visit https://www.navcen.uscg.gov/ais-class-a-reports#CommState")
-                        .definition(SWEHelper.getPropertyUri("CommState")))
-                .addField("bits", sweFactory.createQuantity()
-                        .label("Number of Bits")
-                        .description("Number of Bits")
-                        .definition(SWEHelper.getPropertyUri("bits")));
+                        .definition(SWEHelper.getPropertyUri("CommState")));
 
         aisReportRecord = recordBuilder.build();
         dataEncoding = geoFac.newTextEncoding(",", "\n");
     }
 
     @Override
-    public void setData(PositionReportClassA report) {
+    public void setData(AisPositionMessage report, String description) {
         synchronized (processingLock) {
             DataBlock dataBlock = latestRecord == null ? aisReportRecord.createDataBlock() : latestRecord.renew();
 
-            dataBlock.setIntValue(0,  report.messageId);
-            dataBlock.setStringValue(1,  report.description);
-            dataBlock.setIntValue(2,  report.repeat);
-            dataBlock.setStringValue(3,  report.mmsi);
-            dataBlock.setIntValue(4,  report.navStatus);
-            dataBlock.setIntValue(5,  report.rot);
-            dataBlock.setDoubleValue(6,  report.sog);
-            dataBlock.setIntValue(7,  report.posAccuracy);
-            dataBlock.setDoubleValue(8,  report.latitude);
-            dataBlock.setDoubleValue(9,  report.longitude);
-            dataBlock.setDoubleValue(10,  report.cog);
-            dataBlock.setIntValue(11, report.heading);
-            dataBlock.setIntValue(12, report.timeStamp);
-            dataBlock.setIntValue(13, report.smi);
-            dataBlock.setIntValue(14, report.raimFlag);
-            dataBlock.setIntValue(15, report.commState);
-            dataBlock.setIntValue(16, report.bits);
+            dataBlock.setIntValue(0,  report.getMsgId());
+            dataBlock.setStringValue(1, description);
+            dataBlock.setIntValue(2,  report.getRepeat());
+            dataBlock.setIntValue(3,  report.getUserId());
+            dataBlock.setIntValue(4,  report.getNavStatus());
+            dataBlock.setIntValue(5,  report.getRot());
+            dataBlock.setDoubleValue(6,  report.getSog() / 10.0);
+            dataBlock.setIntValue(7,  report.getPosAcc());
+            dataBlock.setDoubleValue(8,  report.getPos().getLatitudeDouble());
+            dataBlock.setDoubleValue(9,  report.getPos().getLongitudeDouble());
+            dataBlock.setDoubleValue(10,  report.getCog() / 10.0);
+            dataBlock.setIntValue(11, report.getTrueHeading());
+            dataBlock.setIntValue(12, report.getUtcSec());
+            dataBlock.setIntValue(13, report.getSpecialManIndicator());
+            dataBlock.setIntValue(14, report.getRaim());
+            dataBlock.setIntValue(15, report.getSyncState());
 
-            String foiUID = parentSensor.addFoi(report.mmsi);
+            String foiUID = parentSensor.addFoi(report.getUserId());
 
             latestRecord = dataBlock;
             latestRecordTime = System.currentTimeMillis();

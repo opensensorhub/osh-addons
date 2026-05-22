@@ -1,4 +1,4 @@
-package org.sensorhub.impl.sensor.nmeaais.reportschemas;
+package org.sensorhub.impl.sensor.nmeaais.helpers;
 
 public class MessageIdDescriptions {
 

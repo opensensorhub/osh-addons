@@ -11,18 +11,22 @@
  ******************************* END LICENSE BLOCK ***************************/
 package org.sensorhub.impl.sensor.nmeaais;
 
+import dk.dma.ais.message.AisMessage18;
+import dk.dma.ais.message.AisPositionMessage;
+import dk.dma.ais.reader.AisReader;
+import dk.dma.ais.reader.AisReaders;
 import org.sensorhub.api.comm.ICommProvider;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
 import org.sensorhub.impl.sensor.nmeaais.outputs.NmeaAisOutputRawMessages;
 import org.sensorhub.impl.sensor.nmeaais.outputs.NmeaAisOutputPositionClassA;
 import org.sensorhub.impl.sensor.nmeaais.outputs.NmeaAisOutputPositionClassB;
-import org.sensorhub.impl.sensor.nmeaais.reportschemas.PositionReportClassA;
-import org.sensorhub.impl.sensor.nmeaais.reportschemas.PositionReportClassB;
 import org.vast.ogc.om.MovingFeature;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.PipedInputStream;
+import java.io.PipedOutputStream;
 
 /**
  * Driver implementation for the sensor.
@@ -41,6 +45,7 @@ public class NmeaAisDriver extends AbstractSensorModule<NmeaAisConfig> {
     NmeaAisOutputPositionClassB nmeaAisOutputPositionClassB;
 
     ICommProvider<?> commProvider;
+    AisReader aisReader;
     volatile boolean started;
 
     //  INITIALIZE
@@ -65,7 +70,7 @@ public class NmeaAisDriver extends AbstractSensorModule<NmeaAisConfig> {
         addOutput(nmeaAisOutputPositionClassB, false);
         nmeaAisOutputPositionClassB.doInit();
 
-        // Initialize Parser
+        // Initialize Handler
         nmeaAisHandler = new NmeaAisHandler(this);
     }
 
@@ -87,8 +92,6 @@ public class NmeaAisDriver extends AbstractSensorModule<NmeaAisConfig> {
             }
         }
 
-        // Get input stream — read byte-by-byte to avoid BufferedReader's large internal buffer,
-        // which would delay output until ~100 UDP packets accumulate before returning any lines.
         final InputStream inputStream;
         try {
             inputStream = commProvider.getInputStream();
@@ -97,7 +100,25 @@ public class NmeaAisDriver extends AbstractSensorModule<NmeaAisConfig> {
             throw new SensorHubException("Error opening AIS input stream", e);
         }
 
-        Thread t = new Thread(() -> {
+        // DatagramInputStream only overrides the single-byte read(), so BufferedReader
+        // (used internally by AisReader) would buffer ~8192 bytes before returning any
+        // lines (~100 UDP packets). Work around this by reading byte-by-byte and piping
+        // complete lines to AisReader so it still handles fragment reassembly.
+        PipedInputStream pipedIn;
+        final PipedOutputStream pipedOut;
+        try {
+            pipedIn = new PipedInputStream(65536);
+            pipedOut = new PipedOutputStream(pipedIn);
+        } catch (IOException e) {
+            throw new SensorHubException("Error creating AIS pipe", e);
+        }
+
+        aisReader = AisReaders.createReaderFromInputStream(pipedIn);
+        aisReader.registerHandler(aisMessage ->
+            nmeaAisHandler.handleAisMessage(aisMessage)
+        );
+
+        Thread readerThread = new Thread(() -> {
             StringBuilder sb = new StringBuilder();
             try {
                 int b;
@@ -105,8 +126,12 @@ public class NmeaAisDriver extends AbstractSensorModule<NmeaAisConfig> {
                     if (b == '\n') {
                         String line = sb.toString().trim();
                         sb.setLength(0);
-                        if (!line.isEmpty())
-                            nmeaAisHandler.handleNmeaAisMessage(line);
+                        if (!line.isEmpty()) {
+                            publishRawMessage(line);
+                            byte[] bytes = (line + "\n").getBytes();
+                            pipedOut.write(bytes);
+                            pipedOut.flush();
+                        }
                     } else if (b != '\r') {
                         sb.append((char) b);
                     }
@@ -114,18 +139,26 @@ public class NmeaAisDriver extends AbstractSensorModule<NmeaAisConfig> {
             } catch (IOException e) {
                 if (started)
                     getLogger().error("Error reading AIS data stream", e);
+            } finally {
+                try { pipedOut.close(); } catch (IOException ignored) {}
             }
         });
 
         started = true;
-        t.setName("ais-reader");
-        t.setDaemon(true);
-        t.start();
+        readerThread.setName("ais-reader");
+        readerThread.setDaemon(true);
+        readerThread.start();
+        aisReader.start();
     }
 
     @Override
     public void doStop() throws SensorHubException {
         started = false;
+
+        if (aisReader != null) {
+            aisReader.stop();
+            aisReader = null;
+        }
 
         if (commProvider != null) {
             commProvider.stop();
@@ -144,12 +177,12 @@ public class NmeaAisDriver extends AbstractSensorModule<NmeaAisConfig> {
      * Registers an AIS vessel as a Feature of Interest (FOI) keyed by its MMSI.
      * Subsequent calls with the same MMSI are no-ops; the existing FOI UID is returned.
      */
-    public String addFoi(String mmsi) {
+    public String addFoi(int mmsi) {
         String foiUID = UID_PREFIX + "foi:" + mmsi;
 
         if (!foiMap.containsKey(foiUID)) {
             MovingFeature foi = new MovingFeature();
-            foi.setId(mmsi);
+            foi.setId(Integer.toString(mmsi));
             foi.setUniqueIdentifier(foiUID);
             foi.setName("Vessel " + mmsi);
             foi.setDescription("AIS vessel with MMSI " + mmsi);
@@ -162,21 +195,22 @@ public class NmeaAisDriver extends AbstractSensorModule<NmeaAisConfig> {
 
     /**
      * Publishes a raw NMEA AIS sentence to the messages output.
-     * Called by {@link NmeaAisHandler} for every parsed message regardless of type.
      */
     void publishRawMessage(String nmeaAisMsg) {
         nmeaAisOutputRawMessages.setData(nmeaAisMsg);
     }
 
     /**
-     * Forwards a decoded position report to the position output for publishing.
-     * Called by {@link NmeaAisHandler} — keeps the handler decoupled from the Outputs package.
+     * Forwards a decoded Class A position report to the position output for publishing.
      */
-    void publishPositionAReport(PositionReportClassA report) {
-        nmeaAisOutputPositionClassA.setData(report);
+    void publishPositionAReport(AisPositionMessage report, String description) {
+        nmeaAisOutputPositionClassA.setData(report, description);
     }
 
-    void publishPositionBReport(PositionReportClassB report) {
-        nmeaAisOutputPositionClassB.setData(report);
+    /**
+     * Forwards a decoded Class B position report to the position output for publishing.
+     */
+    void publishPositionBReport(AisMessage18 report, String description) {
+        nmeaAisOutputPositionClassB.setData(report, description);
     }
 }
