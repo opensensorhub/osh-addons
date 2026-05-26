@@ -64,8 +64,6 @@ import org.vast.util.Asserts;
  */
 public class ConSysApiMqttConnector implements IMqttHandler
 {
-    static final String DATA_SUFFIX = ":data";
-
     ConSysApiServlet servlet;
     String endpoint;
     String nodeId; // may be null; when set, topics use "{nodeId}/{resourcePath}" with no endpoint prefix
@@ -150,7 +148,7 @@ public class ConSysApiMqttConnector implements IMqttHandler
         // Resource Event Topics (no :data suffix) are published proactively by
         // ResourceEventPublisher — no per-subscriber stream to set up here.
         // Just validate the topic and check permissions.
-        if (!isDataTopic(topic))
+        if (!ConSysTopicValidator.isDataTopic(topic))
         {
             servlet.getLogger().info("User '{}' subscribing to resource event topic: {}", userID, topic);
             try
@@ -178,16 +176,22 @@ public class ConSysApiMqttConnector implements IMqttHandler
 
         try
         {
+            // Parse the optional format subtopic up front so an unknown format token
+            // is rejected before we create any subscriber state.
+            var format = ConSysTopicValidator.parseDataTopicFormat(topic);
+
             // register new subscription if needed
             var sub = subscribers.compute(topic, (k, v) -> {
                 if (v == null)
                     v = new MqttSubscriber(server, topic);
                 return v;
             });
-            
+
             // always evaluate request because we need to check for permissions
             // even if subscriber was already created
             var ctx = getResourceContext(topic, sub);
+            if (format != null)
+                ctx.setResponseFormat(format);
             servlet.getSecurityHandler().setCurrentUser(userID);
             servlet.getRootHandler().doGet(ctx);
             
@@ -223,7 +227,7 @@ public class ConSysApiMqttConnector implements IMqttHandler
         servlet.getLogger().info("User '{}' unsubscribing from topic: {}", userID, topic);
 
         // Resource Event Topics have no stream to clean up
-        if (!isDataTopic(topic))
+        if (!ConSysTopicValidator.isDataTopic(topic))
             return;
 
         subscribers.computeIfPresent(topic, (k, sub) -> {
@@ -246,7 +250,7 @@ public class ConSysApiMqttConnector implements IMqttHandler
     {
         // Per OGC CS API Part 3: only the server may publish to Resource Event Topics.
         // Clients SHALL be prevented from publishing on these channels.
-        if (!isDataTopic(topic))
+        if (!ConSysTopicValidator.isDataTopic(topic))
         {
             servlet.getLogger().warn("User '{}' attempted to publish to resource event topic '{}' — rejected", userID, topic);
             throw new InvalidTopicException("Publishing to resource event topics is not permitted");
@@ -254,8 +258,9 @@ public class ConSysApiMqttConnector implements IMqttHandler
 
         try
         {
+            var format = ConSysTopicValidator.parseDataTopicFormat(topic);
             var ctx = getResourceContext(topic, payload);
-            ctx.setRequestContentType(ResourceFormat.AUTO.getMimeType());
+            ctx.setRequestContentType(format != null ? format.getMimeType() : ResourceFormat.AUTO.getMimeType());
             
             if (correlData != null)
             {
@@ -288,15 +293,6 @@ public class ConSysApiMqttConnector implements IMqttHandler
         {
             servlet.getSecurityHandler().clearCurrentUser();
         }
-    }
-
-
-    /**
-     * @return true if this topic is a Resource Data Topic (ends with {@code :data})
-     */
-    private boolean isDataTopic(String topic)
-    {
-        return topic.endsWith(DATA_SUFFIX);
     }
 
 
@@ -417,9 +413,14 @@ public class ConSysApiMqttConnector implements IMqttHandler
                 topic = "/" + topic;
             }
 
+            // Strip optional /<format> subtopic (e.g. ":data/swe-json") before stripping :data
+            int sepIdx = topic.lastIndexOf('/');
+            if (sepIdx > 0 && topic.substring(0, sepIdx).endsWith(ConSysTopicValidator.DATA_SUFFIX))
+                topic = topic.substring(0, sepIdx);
+
             // Strip :data suffix — only from the end (it is guaranteed present for data topics)
-            if (topic.endsWith(DATA_SUFFIX))
-                topic = topic.substring(0, topic.length() - DATA_SUFFIX.length());
+            if (topic.endsWith(ConSysTopicValidator.DATA_SUFFIX))
+                topic = topic.substring(0, topic.length() - ConSysTopicValidator.DATA_SUFFIX.length());
 
             // parse URI (this also URL decodes the query string)
             return new URI(topic);

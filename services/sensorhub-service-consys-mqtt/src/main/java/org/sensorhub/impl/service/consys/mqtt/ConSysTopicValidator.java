@@ -15,7 +15,10 @@ Copyright (C) 2026 Sensia Software LLC. All Rights Reserved.
 package org.sensorhub.impl.service.consys.mqtt;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import org.sensorhub.api.comm.mqtt.InvalidTopicException;
+import org.sensorhub.impl.service.consys.resource.ResourceFormat;
 import static org.sensorhub.impl.service.consys.mqtt.ConSysTopicValidator.ResourceType.*;
 
 
@@ -55,6 +58,30 @@ import static org.sensorhub.impl.service.consys.mqtt.ConSysTopicValidator.Resour
 public final class ConSysTopicValidator
 {
     private ConSysTopicValidator() {}
+
+
+    /** Trailing marker that distinguishes Resource Data Topics from Resource Event Topics. */
+    public static final String DATA_SUFFIX = ":data";
+
+
+    /**
+     * Format subtopic name → {@link ResourceFormat}, per OGC CS API Part 3
+     * §"Resource Data Messages Content Negotiation". An optional final topic
+     * level after {@code :data} (e.g. {@code …:data/swe-json}) selects the wire
+     * format for both subscribe (response) and publish (request content).
+     *
+     * <p>Hyphens substitute for the '+' separator in MIME subtype names so each
+     * token stays legal across MQTT, NATS, and Kafka broker namespaces — '+' is
+     * reserved as an MQTT wildcard and disallowed in Kafka topic names.</p>
+     */
+    static final Map<String, ResourceFormat> FORMAT_SUBTOPICS = Map.of(
+        "json",       ResourceFormat.JSON,
+        "swe-json",   ResourceFormat.SWE_JSON,
+        "swe-binary", ResourceFormat.SWE_BINARY,
+        "swe-csv",    ResourceFormat.SWE_TEXT,
+        "om-json",    ResourceFormat.OM_JSON,
+        "sml-json",   ResourceFormat.SML_JSON
+    );
 
 
     /**
@@ -155,6 +182,43 @@ public final class ConSysTopicValidator
     public static boolean hasWildcard(String topic)
     {
         return topic.contains("+") || topic.contains("#");
+    }
+
+
+    /**
+     * Returns {@code true} if {@code topic} is a Resource Data Topic — i.e.
+     * ends with {@code :data} or {@code :data/<format>} (an optional format
+     * subtopic).
+     */
+    public static boolean isDataTopic(String topic)
+    {
+        if (topic.endsWith(DATA_SUFFIX))
+            return true;
+        int sepIdx = topic.lastIndexOf('/');
+        return sepIdx > 0 && topic.substring(0, sepIdx).endsWith(DATA_SUFFIX);
+    }
+
+
+    /**
+     * Parse the optional format subtopic of a Resource Data Topic, e.g. the
+     * {@code swe-json} in {@code …/observations:data/swe-json}. Returns null
+     * for bare {@code :data} topics (server default format applies) and for
+     * topics that have no {@code :data} marker at all.
+     *
+     * @throws InvalidTopicException if a token follows {@code :data/} but is
+     *         not a recognized format from {@link #FORMAT_SUBTOPICS}
+     */
+    public static ResourceFormat parseDataTopicFormat(String topic) throws InvalidTopicException
+    {
+        int sepIdx = topic.lastIndexOf('/');
+        if (sepIdx <= 0 || !topic.substring(0, sepIdx).endsWith(DATA_SUFFIX))
+            return null;
+        var token = topic.substring(sepIdx + 1);
+        var format = FORMAT_SUBTOPICS.get(token);
+        if (format == null)
+            throw new InvalidTopicException(
+                "Unknown format subtopic '" + token + "'; expected one of " + FORMAT_SUBTOPICS.keySet());
+        return format;
     }
 
 

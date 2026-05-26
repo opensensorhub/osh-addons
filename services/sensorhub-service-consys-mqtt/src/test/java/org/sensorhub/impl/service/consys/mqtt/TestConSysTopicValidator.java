@@ -17,7 +17,9 @@ package org.sensorhub.impl.service.consys.mqtt;
 import static org.junit.Assert.*;
 import static org.sensorhub.impl.service.consys.mqtt.ConSysTopicValidator.ResourceType.*;
 import org.junit.Test;
+import org.sensorhub.api.comm.mqtt.InvalidTopicException;
 import org.sensorhub.impl.service.consys.mqtt.ConSysTopicValidator.ResourceType;
+import org.sensorhub.impl.service.consys.resource.ResourceFormat;
 
 
 /**
@@ -221,5 +223,100 @@ public class TestConSysTopicValidator
         for (var row : cases)
             assertEquals("hasWildcard(\"" + row[0] + "\")", row[1],
                 ConSysTopicValidator.hasWildcard((String) row[0]));
+    }
+
+
+    // =========================================================================
+    // isDataTopic — recognises both bare ":data" and ":data/<format>"
+    // =========================================================================
+
+    @Test
+    public void testIsDataTopic()
+    {
+        Object[][] cases = {
+            // topic                                                                             isDataTopic
+            // Resource Data Topics — bare
+            { "node1/systems:data",                                                              true  },
+            { "node1/systems/134/datastreams/12/observations:data",                              true  },
+            // Resource Data Topics — with format subtopic
+            { "node1/systems/134/datastreams/12/observations:data/swe-json",                     true  },
+            { "node1/systems/134/datastreams/12/observations:data/swe-binary",                   true  },
+            { "node1/systems:data/sml-json",                                                     true  },
+            // Unknown format tokens are still structurally data topics; the
+            // parser decides whether the token is acceptable.
+            { "node1/systems/134/datastreams/12/observations:data/unknown",                      true  },
+            // Resource Event Topics — no :data marker
+            { "node1/systems/134",                                                               false },
+            { "node1/systems/134/datastreams/12",                                                false },
+            { "node1/systems/134/datastreams/12/observations",                                   false },
+            { "",                                                                                false },
+        };
+        for (var row : cases)
+            assertEquals("isDataTopic(\"" + row[0] + "\")", row[1],
+                ConSysTopicValidator.isDataTopic((String) row[0]));
+    }
+
+
+    // =========================================================================
+    // parseDataTopicFormat — token → ResourceFormat mapping (CS API Part 3
+    // §"Resource Data Messages Content Negotiation"). Hyphens substitute for
+    // the MIME '+' separator for cross-broker portability.
+    // =========================================================================
+
+    @Test
+    public void parseFormat_bareDataTopic_returnsNull() throws InvalidTopicException
+    {
+        assertNull(ConSysTopicValidator.parseDataTopicFormat(
+            "node1/systems/134/datastreams/12/observations:data"));
+        assertNull(ConSysTopicValidator.parseDataTopicFormat("node1/systems:data"));
+    }
+
+
+    @Test
+    public void parseFormat_nonDataTopic_returnsNull() throws InvalidTopicException
+    {
+        // Event topics have no :data marker — parser must return null, not throw.
+        assertNull(ConSysTopicValidator.parseDataTopicFormat("node1/systems/134"));
+        assertNull(ConSysTopicValidator.parseDataTopicFormat(
+            "node1/systems/134/datastreams/12"));
+    }
+
+
+    @Test
+    public void parseFormat_allKnownTokens_mapToExpectedResourceFormat() throws InvalidTopicException
+    {
+        var base = "node1/systems/134/datastreams/12/observations:data/";
+        assertSame(ResourceFormat.JSON,       ConSysTopicValidator.parseDataTopicFormat(base + "json"));
+        assertSame(ResourceFormat.SWE_JSON,   ConSysTopicValidator.parseDataTopicFormat(base + "swe-json"));
+        assertSame(ResourceFormat.SWE_BINARY, ConSysTopicValidator.parseDataTopicFormat(base + "swe-binary"));
+        assertSame(ResourceFormat.SWE_TEXT,   ConSysTopicValidator.parseDataTopicFormat(base + "swe-csv"));
+        assertSame(ResourceFormat.OM_JSON,    ConSysTopicValidator.parseDataTopicFormat(base + "om-json"));
+        assertSame(ResourceFormat.SML_JSON,   ConSysTopicValidator.parseDataTopicFormat(base + "sml-json"));
+    }
+
+
+    @Test(expected = InvalidTopicException.class)
+    public void parseFormat_unknownToken_throws() throws InvalidTopicException
+    {
+        ConSysTopicValidator.parseDataTopicFormat(
+            "node1/systems/134/datastreams/12/observations:data/protobuf");
+    }
+
+
+    @Test(expected = InvalidTopicException.class)
+    public void parseFormat_isCaseSensitive() throws InvalidTopicException
+    {
+        // Tokens are defined lowercase; an upper-case variant is not recognised.
+        ConSysTopicValidator.parseDataTopicFormat(
+            "node1/systems/134/datastreams/12/observations:data/SWE-JSON");
+    }
+
+
+    @Test(expected = InvalidTopicException.class)
+    public void parseFormat_swePlusJsonMimeStyle_throws() throws InvalidTopicException
+    {
+        // We chose '-' over '+' for cross-broker portability; the MIME-style form is rejected.
+        ConSysTopicValidator.parseDataTopicFormat(
+            "node1/systems/134/datastreams/12/observations:data/swe+json");
     }
 }
