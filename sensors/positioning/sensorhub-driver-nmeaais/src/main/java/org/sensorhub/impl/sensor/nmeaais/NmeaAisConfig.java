@@ -25,7 +25,7 @@ public class NmeaAisConfig extends SensorConfig {
      */
     @DisplayInfo.Required
     @DisplayInfo(desc = "Serial number or unique identifier")
-    public String serialNumber = "myShipXplorer";
+    public String serialNumber = "myNmeaAisDevice";
 
     @DisplayInfo(desc = "Communication settings for receiving AIS NMEA sentences (e.g. UDP, TCP, serial)")
     public CommProviderConfig<?> commSettings;
