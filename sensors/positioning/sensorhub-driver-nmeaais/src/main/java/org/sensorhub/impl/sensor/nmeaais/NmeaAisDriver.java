@@ -154,7 +154,8 @@ public class NmeaAisDriver extends AbstractSensorModule<NmeaAisConfig> {
                     if (b == '\n') {
                         String line = sb.toString().trim();
                         sb.setLength(0);
-                        if (!line.isEmpty()) {
+                        if (!line.isEmpty() &&
+                                (line.startsWith("!AIVDM") || line.startsWith("!AIVDO"))) {
                             publishRawMessage(line);
                             byte[] bytes = (line + "\n").getBytes();
                             pipedOut.write(bytes);
