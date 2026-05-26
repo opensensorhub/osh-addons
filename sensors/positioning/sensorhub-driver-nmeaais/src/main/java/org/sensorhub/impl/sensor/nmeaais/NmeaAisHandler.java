@@ -51,6 +51,8 @@ public class NmeaAisHandler {
             case 24: // Class B CS Static Data (two-part)
                 handleType24((AisMessage24) aisMessage, description);
                 break;
+            default:
+                nmeaAisDriver.getLogger().debug("No Output has been created to capture AIS reports with a Message ID of {}",messageId);
         }
     }
 
