@@ -21,6 +21,8 @@ Each AIS transmission is a comma-delimited NMEA sentence:
 | Fill bits | `0` | Padding bits added to final payload |
 | Checksum | `6A` | NMEA XOR checksum |
 
+**Supported sentence types:** This driver only processes sentences beginning with `!AIVDM` (messages received from other vessels) or `!AIVDO` (own-vessel transmissions). All other NMEA sentences arriving on the configured port — such as GPS fix sentences (`$GPGGA`, `$GPRMC`) — are silently ignored. This means the driver can safely share a UDP port carrying mixed NMEA traffic without producing errors or garbled output.
+
 ---
 
 ## Hardware Requirements
@@ -28,15 +30,23 @@ Each AIS transmission is a comma-delimited NMEA sentence:
 - [ShipXplorer AIS Dongle](https://www.shipxplorer.com/ais-dongle) (or any RTL-SDR / AIS receiver)
 - [ShipXplorer AIS Antenna](https://www.shipxplorer.com/ais-antenna) (or suitable VHF antenna)
 
-## Software Requirements
+## External Software Requirements
+This driver does not directly receive or decode AIS radio signals from SDR hardware.
+Instead, it expects already-decoded NMEA 0183 AIS messages to be forwarded to the driver over a supported network interface
+Because of this, users must run external AIS decoding or forwarding software capable of:
 
+- Receiving AIS signals from SDR hardware or another AIS source
+- Decoding the AIS transmissions into NMEA 0183 AIS sentences
+- Forwarding the decoded messages to this OSH driver 
+
+Examples of compatible software include:
 - [AIS-Catcher](https://jvde-github.github.io/AIS-catcher-docs/) — decodes RTL-SDR radio input and forwards NMEA sentences over UDP
-
+- AIS Dispatcher
 ---
 
 ## Setup
 
-### 1. Install and run AIS-Catcher
+### 1. Install and run AIS-Catcher (or other AIS decoding software)
 
 Start AIS-Catcher and forward sentences to your OSH node over UDP:
 
@@ -278,3 +288,6 @@ The following AIS message types are received and parsed by the radio layer but a
 | 27 | Long-Range AIS Broadcast | Class A/B position report for vessels outside base station coverage; not currently implemented |
 
 All received sentences — including the above types — are available in the raw messages output for custom processing or logging.
+
+## Additional Resources
+- [USCG Navigation Center](https://www.navcen.uscg.gov/ais-messages)
