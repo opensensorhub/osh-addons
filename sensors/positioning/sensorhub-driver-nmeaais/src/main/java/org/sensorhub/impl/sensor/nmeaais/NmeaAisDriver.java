@@ -184,7 +184,7 @@ public class NmeaAisDriver extends AbstractSensorModule<NmeaAisConfig> {
         started = false;
 
         if (aisReader != null) {
-            aisReader.stop();
+            aisReader.stopReader();
             aisReader = null;
         }
 
