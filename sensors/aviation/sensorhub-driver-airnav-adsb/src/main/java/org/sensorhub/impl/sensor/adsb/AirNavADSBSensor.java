@@ -36,9 +36,6 @@ import java.io.*;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 
@@ -53,7 +50,6 @@ public class AirNavADSBSensor extends AbstractSensorModule<AdsbConfig>
     private final ConcurrentHashMap<String, AircraftState> aircraftMap = new ConcurrentHashMap<>();
     private final AtomicBoolean started = new AtomicBoolean(false);
     private Thread workerThread;
-    private Process dump1090Process;
     String modelNumber;
 
 
@@ -87,15 +83,6 @@ public class AirNavADSBSensor extends AbstractSensorModule<AdsbConfig>
                 term.setValue(modelNumber);
                 identifierList.addIdentifier(term);
             }
-
-            if (config.serialNumber != null) {
-                term = smlFac.newTerm();
-                term.setDefinition(SWEHelper.getPropertyUri("SerialNumber"));
-                term.setLabel("Serial Number");
-                term.setValue(config.serialNumber);
-                identifierList.addIdentifier(term);
-
-            }
         }
     }
 
@@ -111,8 +98,6 @@ public class AirNavADSBSensor extends AbstractSensorModule<AdsbConfig>
 
     @Override
     protected void doStart() throws SensorHubException {
-        startDump1090();
-
         if (commProvider == null) {
             try {
                 if (config.commSettings == null)
@@ -233,46 +218,6 @@ public class AirNavADSBSensor extends AbstractSensorModule<AdsbConfig>
             state.isOnGround = "-1".equals(fields[21].trim());
     }
 
-    private void startDump1090() throws SensorHubException {
-        try {
-            var cmd = new ProcessBuilder(
-                "dump1090",
-                "--net",
-                "--device-index", String.valueOf(0),
-                "--quiet"
-            );
-            cmd.redirectErrorStream(true);
-            dump1090Process = cmd.start();
-
-            Thread.sleep(2000);
-
-            if (!dump1090Process.isAlive())
-                throw new SensorHubException("dump1090 exited immediately — check the path and RTL-SDR device");
-
-            getLogger().info("Started dump1090 (pid {})", dump1090Process.pid());
-        } catch (IOException e) {
-            throw new SensorHubException("Failed to start dump1090", e);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new SensorHubException("Interrupted while waiting for dump1090 to start", e);
-        }
-    }
-
-    private void stopDump1090() {
-        if (dump1090Process != null) {
-            dump1090Process.destroy();
-            try {
-                if (!dump1090Process.waitFor(5, TimeUnit.SECONDS))
-                    dump1090Process.destroyForcibly();
-            } catch (InterruptedException e) {
-                dump1090Process.destroyForcibly();
-                Thread.currentThread().interrupt();
-            }
-            getLogger().info("Stopped dump1090");
-            dump1090Process = null;
-        }
-    }
-
     @Override
     protected void doStop() throws SensorHubException
     {
@@ -304,7 +249,6 @@ public class AirNavADSBSensor extends AbstractSensorModule<AdsbConfig>
             msgIn = null;
         }
 
-        stopDump1090();
         aircraftMap.clear();
     }
 
