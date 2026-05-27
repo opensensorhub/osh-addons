@@ -60,24 +60,12 @@ public class QueryBuilderDataStreamStore extends QueryBuilder {
         "USING GIST (tsrange(parse_utc_timestamp(data->'validTime'->>'begin'),parse_utc_timestamp(data->'validTime'->>'end')))";
     }
 
-    public String createValidTimeEndIndexQuery() {
-        return "CREATE INDEX IF NOT EXISTS "+this.getStoreTableName()+"_date_range_end_idx ON " + this.getStoreTableName() + " USING GIN((data->'validTime'->'end'))";
-    }
-
     public String createTrigramExtensionQuery() {
         return "CREATE EXTENSION IF NOT EXISTS pg_trgm";
     }
 
     public String createTrigramDescriptionFullTextIndexQuery() {
         return "CREATE INDEX IF NOT EXISTS "+this.getStoreTableName()+"_desc_full_text_datastream_idx ON  " + this.getStoreTableName() + " USING GIN ((data->'recordSchema'->>'description') gin_trgm_ops)";
-    }
-
-    public String createOutputNameIndexQuery() {
-        return "CREATE INDEX IF NOT EXISTS "+this.getStoreTableName()+"_json_outputname_idx ON  " + this.getStoreTableName() + " ((data->>'outputName'))";
-    }
-
-    public String createUniqueIdIndexQuery() {
-        return "CREATE INDEX IF NOT EXISTS "+this.getStoreTableName()+"_json_uniqueid_idx ON  " + this.getStoreTableName() + " (((data->'system@id'->>'uniqueID')))";
     }
 
     //SELECT * from test_obs_datastreams where to_tsvector(data->'recordStruct'->'description') @@ to_tsquery('video | Air');
