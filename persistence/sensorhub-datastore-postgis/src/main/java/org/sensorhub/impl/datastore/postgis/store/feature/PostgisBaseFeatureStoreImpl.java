@@ -82,6 +82,7 @@ public abstract class PostgisBaseFeatureStoreImpl
                         queryBuilder.createTableQuery(),
                         queryBuilder.createUidUniqueIndexQuery(),
                         queryBuilder.createValidTimeIndexQuery(),
+                        queryBuilder.createLowerValidTimeIndexQuery(),
                         queryBuilder.createIdIndexQuery(),
                         queryBuilder.createTrigramExtensionQuery(),
                         queryBuilder.createTrigramDescriptionFullTextIndexQuery(),

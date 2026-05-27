@@ -123,6 +123,10 @@ public abstract class QueryBuilderBaseFeatureStore<V extends IFeature,VF extends
         return "CREATE INDEX IF NOT EXISTS  "+this.getStoreTableName()+"_feature_valid_time_0_idx ON "+this.getStoreTableName()+ " using GIST (validTime)";
     }
 
+    public String createLowerValidTimeIndexQuery() {
+        return "CREATE INDEX IF NOT EXISTS  "+this.getStoreTableName()+"_feature_valid_time_lower_desc_idx ON "+this.getStoreTableName()+ "  ((lower(validTime)) DESC, id DESC)";
+    }
+
     public String createIdIndexQuery() {
         return "CREATE INDEX IF NOT EXISTS "+this.getStoreTableName()+"_feature_id_idx ON "+this.getStoreTableName()+" (id)";
     }

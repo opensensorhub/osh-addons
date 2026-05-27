@@ -44,6 +44,7 @@ import java.time.format.DateTimeFormatterBuilder;
 import java.time.temporal.ChronoField;
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
@@ -77,6 +78,7 @@ public class PostgisObsStoreImpl extends PostgisStore<QueryBuilderObsStore> impl
 //                        queryBuilder.createDataIndexQuery(),
                         queryBuilder.createDataStreamIndexQuery(),
                         queryBuilder.createPhenomenonTimeIndexQuery(),
+                        queryBuilder.createPhenomenonTimeSimpleIndexQuery(),
                         queryBuilder.createResultTimeIndexQuery(),
                         queryBuilder.createFoiIndexQuery(),
                         queryBuilder.createUniqueConstraint()
@@ -108,16 +110,13 @@ public class PostgisObsStoreImpl extends PostgisStore<QueryBuilderObsStore> impl
         }
 
         String queryStr = queryBuilder.createSelectEntriesQuery(filter, hashSet);
-        ObsIteratorResultSet<Entry<BigId, IObsData>> iteratorResultSet =
-                new ObsIteratorResultSet<>(
+        IteratorResultSet<Entry<BigId, IObsData>> iteratorResultSet =
+                new IteratorResultSet<>(
                         queryStr,
-                        queryBuilder.getStoreTableName(),
                         connectionManager,
-                        STREAM_FETCH_SIZE,
                         filter.getLimit(),
-                        (resultSet) -> resultSetToEntry(resultSet, fields),
-                        (entry) -> (filter.getValuePredicate() == null || filter.getValuePredicate().test(entry.getValue())),
-                        filter);
+                        (ResultSet resultSet) -> resultSetToEntry(resultSet, fields),
+                        (entry) -> (filter.getValuePredicate() == null || filter.getValuePredicate().test(entry.getValue())));
         return StreamSupport.stream(Spliterators.spliteratorUnknownSize(iteratorResultSet, Spliterator.ORDERED), false);
     }
 
@@ -451,14 +450,19 @@ public class PostgisObsStoreImpl extends PostgisStore<QueryBuilderObsStore> impl
         if (dataStreamIds == null || dataStreamIds.isEmpty())
             return result;
 
-        String sql = queryBuilder.getPhenomenonTimeRangeByDataStreamIdsQuery();
+        String strIds = dataStreamIds.stream()
+                .map(id -> "'" + id + "'")
+                .collect(Collectors.joining(","));
+
+        String sql = queryBuilder.getPhenomenonTimeRangeByDataStreamIdsQuery(strIds);
 
         try (Connection conn = connectionManager.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
-            Array sqlArray = conn.createArrayOf("bigint", dataStreamIds.toArray());
-            ps.setArray(1, sqlArray);
+//            Array sqlArray = conn.createArrayOf("bigint", dataStreamIds.toArray());
+//            ps.setArray(1, sqlArray);
 
+            System.out.println(ps.toString());
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     long id = rs.getLong("datastreamID");
@@ -518,13 +522,16 @@ public class PostgisObsStoreImpl extends PostgisStore<QueryBuilderObsStore> impl
         if (dataStreamIds == null || dataStreamIds.isEmpty())
             return result;
 
-        String sql = queryBuilder.getResultTimeRangeByDataStreamIdsQuery();
+        String strIds = dataStreamIds.stream()
+                .map(id -> "'" + id + "'")
+                .collect(Collectors.joining(","));
+        String sql = queryBuilder.getResultTimeRangeByDataStreamIdsQuery(strIds);
 
         try (Connection conn = connectionManager.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
-            Array sqlArray = conn.createArrayOf("bigint", dataStreamIds.toArray());
-            ps.setArray(1, sqlArray);
+//            Array sqlArray = conn.createArrayOf("bigint", dataStreamIds.toArray());
+//            ps.setArray(1, sqlArray);
 
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {

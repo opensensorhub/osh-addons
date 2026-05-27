@@ -56,8 +56,11 @@ public class SelectFilterQueryGenerator extends FilterQueryGenerator {
         if (this.orConditions != null && !this.orConditions.isEmpty()) {
             if (addConditions == null || addConditions.isEmpty()) {
                 sb.append(" WHERE ");
+            } else {
+                sb.append(" AND ");
             }
-            sb.append(this.orConditions.stream().collect(Collectors.joining(" OR ")));
+
+            sb.append(" ( ").append(this.orConditions.stream().collect(Collectors.joining(" OR "))).append(" ) ");
         }
         if (this.groupBy != null && !this.groupBy.isEmpty()) {
             sb.append(" GROUP BY ");

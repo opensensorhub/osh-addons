@@ -54,6 +54,10 @@ public abstract class FilterQuery<F extends FilterQueryGenerator> {
         filterQueryGenerator.addCondition(condition);
     }
 
+    protected void orCondition(String condition) {
+        filterQueryGenerator.orCondition(condition);
+    }
+
     public void setCommandStreamTableName(String commandStreamTableName) {
         this.commandStreamTableName = commandStreamTableName;
     }
