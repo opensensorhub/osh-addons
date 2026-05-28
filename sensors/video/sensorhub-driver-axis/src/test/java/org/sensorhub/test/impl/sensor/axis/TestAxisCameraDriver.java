@@ -32,7 +32,7 @@ import org.sensorhub.impl.security.ClientAuth;
 import org.sensorhub.impl.sensor.axis.AxisCameraConfig;
 import org.sensorhub.impl.sensor.axis.AxisCameraDriver;
 import org.sensorhub.impl.sensor.axis.AxisPtzOutput;
-import org.sensorhub.impl.sensor.axis.AxisVideoOutput;
+import org.sensorhub.impl.sensor.ffmpeg.outputs.VideoOutput;
 import org.sensorhub.test.sensor.videocam.VideoTestHelper;
 import org.vast.data.DataChoiceImpl;
 import org.vast.sensorML.SMLUtils;
@@ -284,7 +284,7 @@ public class TestAxisCameraDriver implements IEventListener
         assertTrue(e instanceof DataEvent);
         DataEvent dataEvent = (DataEvent)e;
         
-        if (dataEvent.getSource().getClass().equals(AxisVideoOutput.class))
+        if (dataEvent.getSource() instanceof VideoOutput)
         {
 	        videoTestHelper.renderFrameJPEG(dataEvent.getRecords()[0]);
             frameCount++;

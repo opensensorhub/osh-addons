@@ -1,15 +1,11 @@
 description = 'Axis Video Camera'
 ext.details = 'Driver for IP video cameras from Axis (with PTZ tasking support)'
-version = '1.0.0'
+version = '1.1.0'
 
 dependencies {
   implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
   implementation project(':sensorhub-driver-rtpcam')
-  embeddedImpl('net.sf.jipcam:jipcam:0.9.1') {
-    exclude group: 'javax.servlet', module: 'servlet-api'
-    exclude group: 'commons-cli', module: 'commons-cli'
-    exclude group: 'commons-httpclient', module: 'commons-httpclient'
-  }
+  implementation project(':sensorhub-driver-ffmpeg')
   testImplementation project(path: ':sensorhub-driver-videocam', configuration: 'testArtifacts')
 }
 

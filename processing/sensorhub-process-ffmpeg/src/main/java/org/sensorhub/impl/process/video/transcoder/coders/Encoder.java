@@ -1,111 +1,139 @@
 package org.sensorhub.impl.process.video.transcoder.coders;
 
-import org.bytedeco.ffmpeg.avcodec.AVCodec;
 import org.bytedeco.ffmpeg.avcodec.AVPacket;
 import org.bytedeco.ffmpeg.avutil.AVFrame;
 import org.bytedeco.javacpp.BytePointer;
-import org.bytedeco.javacpp.PointerPointer;
-
-import java.util.HashMap;
+import org.sensorhub.impl.process.video.transcoder.helpers.CodecInfo;
+import org.sensorhub.impl.process.video.transcoder.helpers.CodecOptions;
+import org.sensorhub.impl.process.video.transcoder.helpers.FullCodecEnum;
+import org.sensorhub.impl.process.video.transcoder.helpers.FullPixelEnum;
 
 import static org.bytedeco.ffmpeg.global.avcodec.*;
 import static org.bytedeco.ffmpeg.global.avutil.*;
 
-public class Encoder extends Coder<AVFrame, AVPacket> {
-    long pts = 0;
+public class Encoder extends Codec<AVFrame, AVPacket> {
 
-    public Encoder(int codecId, HashMap<String, Integer> options) {
-        super(codecId, AVFrame.class, AVPacket.class, options);
+    volatile long pts = 0;
+    long timebaseNum, timebaseDen, framerateNum, framerateDen;
+    final int GOP_SIZE = 10;
+    volatile long frameSinceGop = 0;
+    final Object timestampLock = new Object();
+
+    public Encoder(CodecInfo inFormatInfo, CodecInfo outFormatInfo, CodecOptions options) {
+        super(inFormatInfo, outFormatInfo, AVFrame.class, AVPacket.class, options);
     }
 
+    // Override so we can get the timebase
     @Override
-    protected void deallocateOutQueue() {
-       outPackets.clear();
+    public FullPixelEnum init() {
+        var pixfmt = super.init();
+        timebaseNum = codec_ctx.time_base().num();
+        timebaseDen = codec_ctx.time_base().den();
+        framerateNum = codec_ctx.framerate().num();
+        framerateDen = codec_ctx.framerate().den();
+        //GOP_SIZE = codec_ctx.gop_size();
+        return pixfmt;
     }
 
     @Override
     protected void initContext() {
-        pts = 0;
-        AVCodec codec = avcodec_find_encoder(codecId);
-        codec_ctx = avcodec_alloc_context3(codec);
+        synchronized (contextLock) {
+            pts = 0;
 
-        initOptions(codec_ctx);
-        int ret = avcodec_open2(codec_ctx, codec, (PointerPointer<?>)null);
-        if (ret < 0) {
-            BytePointer errorBuffer = new BytePointer(AV_ERROR_MAX_STRING_SIZE);
-
-            av_strerror(ret, errorBuffer, AV_ERROR_MAX_STRING_SIZE);
-            logger.debug("Receive Error: {}", errorBuffer.getString());
-            throw new IllegalStateException("Error initializing " + codec.name().getString() + " encoder");
-        }
-    }
-
-    @Override
-    protected void sendInPacket() {
-        inPacket = inPackets.poll();
-        //pts++;
-        //inPacket.pts(pts);
-
-        avcodec_send_frame(codec_ctx, av_frame_clone(inPacket));
-        //av_frame_free(inPacket);
-
-    }
-
-    @Override
-    protected void receiveOutPacket() {
-        /*
-        synchronized (outPackets) {
-
-        }
-
-         */
-        int ret = 0;
-        while (( ret = avcodec_receive_packet(codec_ctx, outPacket) ) >= 0) {
-            outPackets.add(av_packet_clone(outPacket));
-        }
-        //BytePointer errorBuffer = new BytePointer(AV_ERROR_MAX_STRING_SIZE);
-        //av_strerror(ret, errorBuffer, AV_ERROR_MAX_STRING_SIZE);
-        //logger.debug("Receive Error: {}", errorBuffer.getString());
-    }
-
-    @Override
-    protected void deallocateInputPacket(AVFrame packet) {
-        av_frame_free(packet);
-        packet = null;
-    }
-
-    @Override
-    protected void deallocateOutputPacket(AVPacket packet) {
-        av_packet_free(packet);
-        packet = null;
-    }
-
-    @Override
-    protected void allocatePackets() {
-        inPacket = av_frame_alloc();
-        outPacket = av_packet_alloc();
-        av_init_packet(outPacket);
-    }
-
-    @Override
-    protected void deallocatePackets() {
-        if (inPacket != null) {
-            av_frame_free(inPacket);
-        }
-        if (outPacket != null) {
-            av_packet_free(outPacket);
-        }
-        if (outPackets != null) {
-            for (AVPacket packet : outPackets) {
-                av_packet_free(packet);
+            // For H264, prefer x264 over OpenH264 — better option compatibility
+            if (outputFormat.codec == FullCodecEnum.H264) {
+                codec = avcodec_find_encoder_by_name("libx264");
             }
-            outPackets.clear();
-        }
-        if (inPackets != null) {
-            for (AVFrame frame : inPackets) {
-                av_frame_free(frame);
+
+            // Fall back to the default encoder for this codec ID
+            if (codec == null || codec.isNull()) {
+                codec = avcodec_find_encoder(outputFormat.codec.ffmpegId);
             }
-            inPackets.clear();
+
+            if (codec == null || codec.isNull()) {
+                throw new IllegalStateException("Could not find encoder for: " + outputFormat.codec);
+            }
+
+            codec_ctx = avcodec_alloc_context3(codec);
+
+            if (codec_ctx == null || codec_ctx.isNull()) {
+                throw new IllegalStateException("Could not allocate encoder context for: " + codec.name().getString());
+            }
+
+            codec_ctx.gop_size(GOP_SIZE);
+            codec_ctx.max_b_frames(0);
+
+            setCodecPixFmt(codec_ctx, inputFormat.pixelFmt);
+
+            logger.debug("Using encoder: {}", codec.name().getString());
+        }
+    }
+
+    @Override
+    public void deallocateInputPacket(AVFrame packet) {
+        if (packet != null) {
+            av_frame_free(packet);
+        }
+    }
+
+    @Override
+    public void deallocateOutputPacket(AVPacket packet) {
+        if (packet != null) {
+            av_packet_free(packet);
+        }
+    }
+
+    @Override
+    protected AVPacket cloneOutput(AVPacket packet) {
+        if (packet != null) {
+            return av_packet_clone(packet);
+        } else {
+            return null;
+        }
+    }
+
+    @Override
+    protected synchronized void processInputPacket(AVFrame inputPacket) {
+        if (inputPacket != null && !inputPacket.isNull()) {
+            int ret;
+            if (inputPacket.format() != codec_ctx.pix_fmt()) {
+                throw new IllegalArgumentException("AVFrame pixel format: " + FullPixelEnum.fromId(inputPacket.format())
+                        + " incompatible with codec pixel format: " + FullPixelEnum.fromId(codec_ctx.pix_fmt()));
+            }
+
+            if (frameSinceGop++ >= GOP_SIZE) {
+                frameSinceGop = 0;
+                inputPacket.pict_type(AV_PICTURE_TYPE_I);
+                inputPacket.flags(inputPacket.flags() | AVFrame.AV_FRAME_FLAG_KEY);
+            }
+
+            if ((ret = avcodec_send_frame(codec_ctx, inputPacket)) < 0) {
+                //logger.warn("Error sending packet to encoder");
+                //logFFmpeg(ret);
+                //avcodec_flush_buffers(codec_ctx);
+                return;
+            }
+
+            AVPacket outputPacket = av_packet_alloc();
+
+            while (avcodec_receive_packet(codec_ctx, outputPacket) >= 0) {
+                if (!outputPacket.isNull()) {
+                    // Add headers if necessary/available
+                    if (((outputPacket.flags() & AV_PKT_FLAG_KEY) != 0) && headers != null) {
+                        int originalSize = outputPacket.size();
+                        byte[] original = new byte[originalSize];
+                        outputPacket.data().capacity(originalSize).position(0).get(original);
+                        av_grow_packet(outputPacket, headers.length);
+                        BytePointer dst = outputPacket.data().capacity((long) headers.length + originalSize);
+                        dst.position(0).put(headers);
+                        dst.position(headers.length).put(original);
+                    }
+                    addOutPacket(outputPacket);
+                }
+                outputPacket = av_packet_alloc();
+            }
+
+            av_packet_free(outputPacket);
         }
     }
 }

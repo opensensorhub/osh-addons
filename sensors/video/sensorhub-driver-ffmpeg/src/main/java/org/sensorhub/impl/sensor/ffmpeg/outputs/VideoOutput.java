@@ -36,6 +36,7 @@ import java.util.concurrent.Executor;
 public class VideoOutput<T extends ISensorModule<?>> extends AbstractSensorOutput<T> implements DataBufferListener {
     private static final String CODEC_MJPEG = "JPEG";
     private static final String CODEC_H264 = "H264";
+    private static final String CODEC_H265 = "H265";
     private static final Logger logger = LoggerFactory.getLogger(VideoOutput.class.getSimpleName());
     private static final int MAX_NUM_TIMING_SAMPLES = 10;
 
@@ -83,11 +84,13 @@ public class VideoOutput<T extends ISensorModule<?>> extends AbstractSensorOutpu
             this.codecName = CODEC_MJPEG;
         } else if (codecName.equalsIgnoreCase("h264")) {
             this.codecName = CODEC_H264;
+        } else if (codecName.equalsIgnoreCase("hevc") || codecName.equalsIgnoreCase("h265")) {
+            this.codecName = CODEC_H265;
         } else {
             this.codecName = codecName;
-            logger.warn("Codec {} is neither H264 nor MJPEG. Compression set using FFmpeg name.", codecName);
+            logger.warn("Codec {} is not one of H264, H265, or MJPEG. Compression set using FFmpeg name.", codecName);
             ((AbstractModule<?>) parentSensor).reportStatus("Video codec = " + codecName.toUpperCase() + ". Use the transcoder process module" +
-                    " with H264 or MJPEG output for compatibility with OSH visualization and serialization.");
+                    " with H264, H265, or MJPEG output for compatibility with OSH visualization and serialization.");
         }
 
         logger.debug("Video output created.");

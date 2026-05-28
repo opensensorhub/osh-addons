@@ -72,7 +72,7 @@ public class MP4Serializer extends AbstractAsyncSerializer<GetResultRequest, Obs
             ByteBuffer nals = ByteBuffer.wrap(frameData);
             
             // debug
-            //os.write(frameData);
+            os.write(frameData);
             //os.flush();
             
             // look for next nal unit

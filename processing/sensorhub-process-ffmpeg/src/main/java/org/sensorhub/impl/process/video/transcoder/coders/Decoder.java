@@ -1,102 +1,74 @@
 package org.sensorhub.impl.process.video.transcoder.coders;
 
-import org.bytedeco.ffmpeg.avcodec.AVCodec;
 import org.bytedeco.ffmpeg.avcodec.AVPacket;
 import org.bytedeco.ffmpeg.avutil.AVFrame;
-import org.bytedeco.javacpp.PointerPointer;
-
-import java.util.HashMap;
+import org.sensorhub.impl.process.video.transcoder.helpers.CodecInfo;
+import org.sensorhub.impl.process.video.transcoder.helpers.CodecOptions;
 
 import static org.bytedeco.ffmpeg.global.avcodec.*;
 import static org.bytedeco.ffmpeg.global.avutil.*;
 
-public class Decoder extends Coder<AVPacket, AVFrame> {
-    public Decoder(int codecId, HashMap<String, Integer> options) {
-        super(codecId, AVPacket.class, AVFrame.class, options);
+public class Decoder extends Codec<AVPacket, AVFrame> {
+
+    public Decoder(CodecInfo inFormatInfo, CodecInfo outFormatInfo, CodecOptions options) {
+        super(inFormatInfo, outFormatInfo, AVPacket.class, AVFrame.class, options);
     }
 
     @Override
     protected void initContext() {
-        AVCodec codec = avcodec_find_decoder(codecId);
-        codec_ctx = avcodec_alloc_context3(codec);
-
-        initOptions(codec_ctx);
-
-        if (avcodec_open2(codec_ctx, codec, (PointerPointer<?>)null) < 0) {
-            throw new IllegalStateException("Error initializing " + codec.name().getString() + " decoder");
+        synchronized (contextLock) {
+            codec = avcodec_find_decoder(inputFormat.codec.ffmpegId);
+            codec_ctx = avcodec_alloc_context3(codec);
+            codec_ctx.codec_id(inputFormat.codec.ffmpegId);
+            //setCodecPixFmt(codec_ctx, outputFormat.pixelFmt);
+            //codec_ctx.pix_fmt(outputFormat.pixelFmt().ffmpegId);
         }
     }
 
-    // Get compressed packet, send to decoder
     @Override
-    protected void sendInPacket() {
-        inPacket = inPackets.poll();
-        //logger.debug("decode send:");
-        //logger.debug("  data[0]: {}", inPacket.data());
-        //logger.debug("Sent frame to encoder");
-        avcodec_send_packet(codec_ctx, av_packet_clone(inPacket));
-        //av_packet_free(inPacket);
+    public void deallocateInputPacket(AVPacket packet) {
+        if (packet != null) {
+            av_packet_free(packet);
+        }
     }
 
-    // Receive uncompressed frame from decoder
     @Override
-    protected void receiveOutPacket() {
-        synchronized (outPackets) {
-            while (avcodec_receive_frame(codec_ctx, outPacket) >= 0) {
-                //av_packet_free(inPacket);
-                outPackets.add(av_frame_clone(outPacket));
-                //av_frame_free(outPacket);
-                //logger.debug("Decode Packet added");
+    public void deallocateOutputPacket(AVFrame packet) {
+        if (packet != null) {
+            av_frame_free(packet);
+        }
+    }
+
+    @Override
+    protected AVFrame cloneOutput(AVFrame packet) {
+        if (packet != null) {
+            return av_frame_clone(packet);
+        } else {
+            return null;
+        }
+    }
+
+    @Override
+    protected synchronized void processInputPacket(AVPacket inputPacket) {
+        if (inputPacket != null && !inputPacket.isNull()) {
+            int ret;
+            if ((ret = avcodec_send_packet(codec_ctx, inputPacket)) < 0) {
+                //logger.warn("Error sending packet to decoder");
+                //logFFmpeg(ret);
+                //avcodec_flush_buffers(codec_ctx);
+                return;
             }
-        }
-    }
 
-    @Override
-    protected void deallocateInputPacket(AVPacket packet) {
-        av_packet_free(packet);
-        packet = null;
-    }
+            AVFrame outputPacket = av_frame_alloc();
 
-    @Override
-    protected void deallocateOutputPacket(AVFrame packet) {
-        av_frame_free(packet);
-        packet = null;
-    }
-
-    @Override
-    protected void deallocateOutQueue() {
-        outPackets.clear();
-    }
-
-    @Override
-    protected void allocatePackets() {
-        inPacket = new AVPacket();
-        inPacket = av_packet_alloc();
-        av_init_packet(inPacket);
-        outPacket = new AVFrame();
-        outPacket = av_frame_alloc();
-    }
-
-    @Override
-    protected void deallocatePackets() {
-        if (inPacket != null) {
-            av_packet_free(inPacket);
-        }
-        if (outPacket != null) {
-            av_frame_free(outPacket);
-        }
-        if (outPackets != null) {
-            for (AVFrame frame : outPackets) {
-                av_frame_free(frame);
+            while (avcodec_receive_frame(codec_ctx, outputPacket) >= 0) {
+                if (!outputPacket.isNull()) {
+                    addOutPacket(outputPacket);
+                }
+                outputPacket = av_frame_alloc();
             }
-            outPackets.clear();
-        }
-        if (inPackets != null) {
-            for (AVPacket packet : inPackets) {
-                av_packet_free(packet);
 
-            }
-            inPackets.clear();
+            av_frame_free(outputPacket);
         }
     }
 }

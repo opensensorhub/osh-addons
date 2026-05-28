@@ -246,6 +246,7 @@ public abstract class FFmpegProcess extends AbstractProcessModule<FFmpegProcessC
             // Reinit executable. Not always necessary, but doesn't hurt.
             executable.init();
             process.start(this::onError);
+            //process.start(this::onError);
         } catch (ProcessException e) {
             logger.error("Could not initialize process.", e);
             return;
@@ -459,7 +460,7 @@ public abstract class FFmpegProcess extends AbstractProcessModule<FFmpegProcessC
     }
 
 
-    // Listens for event from dara
+    // Listens for event from data
     protected class DataQueuePusher implements IEventListener {
         DataQueue dataQueue;
 
