@@ -47,6 +47,14 @@ public abstract class QueryBuilderBaseFeatureStore<V extends IFeature,VF extends
                 "data JSONB)";
     }
 
+    public String createSpatialIndex() {
+        return "CREATE INDEX IF NOT EXISTS "+this.getStoreTableName()+"_features_geometry ON "+this.getStoreTableName()+" USING GIST ("+GEOMETRY+");";
+    }
+
+    public String createParentIdIndex() {
+        return "CREATE INDEX IF NOT EXISTS "+this.getStoreTableName()+"_features_parentId ON "+this.getStoreTableName()+" (parentId);";
+    }
+
     public String insertFeatureQuery() {
         return "INSERT INTO "+this.getStoreTableName()+" (parentId,"+GEOMETRY+", "+VALID_TIME+", data) VALUES (?,?,?,?)";
     }

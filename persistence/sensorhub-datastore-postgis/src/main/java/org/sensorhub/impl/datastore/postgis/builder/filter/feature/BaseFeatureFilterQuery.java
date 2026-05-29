@@ -28,6 +28,8 @@ import org.sensorhub.impl.datastore.postgis.builder.generator.FilterQueryGenerat
 import org.sensorhub.impl.datastore.postgis.utils.PostgisUtils;
 import org.vast.ogc.gml.IFeature;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.SortedSet;
 import java.util.stream.Collectors;
 
@@ -65,13 +67,11 @@ public abstract class BaseFeatureFilterQuery<V extends IFeature,F extends Featur
 
     protected void handleFullTextFilter(FullTextFilter fullTextFilter) {
         if (fullTextFilter != null) {
-            // can use directly ~* for fast lookup
-            // https://www.postgresql.org/docs/current/pgtrgm.html
             if(fullTextFilter.getKeywords() != null) {
-                String sb = "(" + tableName + ".data->'properties'->>'description') ~* '(" +
-                        fullTextFilter.getKeywords().stream().collect(Collectors.joining("|")) +
-                        ")'";
-                addCondition(sb);
+                List<String> sqlKeywords  = fullTextFilter.getKeywords()
+                        .stream()
+                        .map(k -> tableName + ".data::text ILIKE '" + k.replaceAll("\\*","%")+"'").toList();
+                addCondition(" ( "+sqlKeywords.stream().collect(Collectors.joining(" OR "))+" ) ");
             }
         }
     }

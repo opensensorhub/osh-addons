@@ -16,7 +16,6 @@ package org.sensorhub.impl.datastore.postgis.store.obs;
 import com.google.common.collect.Range;
 import net.opengis.swe.v20.DataBlock;
 import org.apache.commons.text.StringSubstitutor;
-import org.postgresql.util.PGobject;
 import org.sensorhub.api.common.BigId;
 import org.sensorhub.api.data.IDataStreamInfo;
 import org.sensorhub.api.data.IObsData;
@@ -26,7 +25,6 @@ import org.sensorhub.api.datastore.obs.*;
 import org.sensorhub.api.datastore.system.ISystemDescStore;
 import org.sensorhub.impl.datastore.postgis.IdProviderType;
 import org.sensorhub.impl.datastore.postgis.builder.IteratorResultSet;
-import org.sensorhub.impl.datastore.postgis.builder.ObsIteratorResultSet;
 import org.sensorhub.impl.datastore.postgis.builder.QueryBuilderObsStore;
 import org.sensorhub.impl.datastore.postgis.store.PostgisStore;
 import org.sensorhub.impl.datastore.postgis.utils.PostgisUtils;
@@ -118,6 +116,7 @@ public class PostgisObsStoreImpl extends PostgisStore<QueryBuilderObsStore> impl
                         (ResultSet resultSet) -> resultSetToEntry(resultSet, fields),
                         (entry) -> (filter.getValuePredicate() == null || filter.getValuePredicate().test(entry.getValue())));
         return StreamSupport.stream(Spliterators.spliteratorUnknownSize(iteratorResultSet, Spliterator.ORDERED), false);
+
     }
 
     private Entry<BigId, IObsData> resultSetToEntry(ResultSet resultSet, Set<ObsField> fields) {

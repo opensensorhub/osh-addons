@@ -86,7 +86,9 @@ public abstract class PostgisBaseFeatureStoreImpl
                         queryBuilder.createIdIndexQuery(),
                         queryBuilder.createTrigramExtensionQuery(),
                         queryBuilder.createTrigramDescriptionFullTextIndexQuery(),
-                        queryBuilder.createTrigramUidFullTextIndexQuery()
+                        queryBuilder.createTrigramUidFullTextIndexQuery(),
+                        queryBuilder.createSpatialIndex(),
+                        queryBuilder.createParentIdIndex()
                 }
         );
     }
