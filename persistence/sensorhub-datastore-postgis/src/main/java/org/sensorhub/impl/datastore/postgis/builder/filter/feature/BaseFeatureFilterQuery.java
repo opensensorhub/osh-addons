@@ -70,7 +70,11 @@ public abstract class BaseFeatureFilterQuery<V extends IFeature,F extends Featur
             if(fullTextFilter.getKeywords() != null) {
                 List<String> sqlKeywords  = fullTextFilter.getKeywords()
                         .stream()
-                        .map(k -> tableName + ".data::text ILIKE '" + k.replaceAll("\\*","%")+"'").toList();
+                        .map(k -> {
+                            String start = (k.startsWith("*") ? "" : "%");
+                            String end = (k.endsWith("*") ? "" : "%");;
+                            return tableName + ".data::text ILIKE '" + start + k.replaceAll("\\*", "%") + end + "'";
+                        }).toList();
                 addCondition(" ( "+sqlKeywords.stream().collect(Collectors.joining(" OR "))+" ) ");
             }
         }
