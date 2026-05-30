@@ -72,6 +72,8 @@ public abstract class PostgisStore<T extends QueryBuilder> {
     }
 
     private void initStore(String[] initScripts) {
+        logger.info("Executing init queries..");
+        logger.error(String.join(";", initScripts));
         try (Connection connection = this.connectionManager.getConnection()) {
 //            if (!PostgisUtils.checkTable(connection, queryBuilder.getStoreTableName())) {
                 // create table
@@ -82,7 +84,6 @@ public abstract class PostgisStore<T extends QueryBuilder> {
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
-
         try {
             this.initIdProvider();
         } catch (DataStoreException e) {

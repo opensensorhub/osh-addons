@@ -144,11 +144,7 @@ public abstract class QueryBuilderBaseFeatureStore<V extends IFeature,VF extends
     }
 
     public String createTrigramDescriptionFullTextIndexQuery() {
-        return "CREATE INDEX IF NOT EXISTS "+this.getStoreTableName()+"_feature_desc_full_text_datastream_idx ON  "+this.getStoreTableName()+" USING GIN ((data->'properties'->>'description') gin_trgm_ops)";
-    }
-
-    public String createTrigramUidFullTextIndexQuery() {
-        return "CREATE INDEX IF NOT EXISTS "+this.getStoreTableName()+"_feature_uid_full_text_datastream_idx ON  "+this.getStoreTableName()+" USING GIN ((data->'properties'->>'uid') gin_trgm_ops)";
+        return "CREATE INDEX IF NOT EXISTS "+this.getStoreTableName()+"_feature_desc_full_text_datastream_idx ON  "+this.getStoreTableName()+" USING GIN ((data::text) gin_trgm_ops)";
     }
 
     public abstract String createSelectEntriesQuery(F filter, Set<VF> fields);

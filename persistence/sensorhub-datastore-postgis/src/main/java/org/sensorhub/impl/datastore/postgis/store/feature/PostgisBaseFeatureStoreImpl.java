@@ -80,13 +80,12 @@ public abstract class PostgisBaseFeatureStoreImpl
         super(idScope, dsIdProviderType, queryBuilder, useBatch);
         this.init(url, dbName, login, password, new String[]{
                         queryBuilder.createTableQuery(),
-                        queryBuilder.createUidUniqueIndexQuery(),
+                        queryBuilder.createUidUniqueIndexQuery(), // needed for INSERT ..or..UPDATE
                         queryBuilder.createValidTimeIndexQuery(),
                         queryBuilder.createLowerValidTimeIndexQuery(),
                         queryBuilder.createIdIndexQuery(),
                         queryBuilder.createTrigramExtensionQuery(),
                         queryBuilder.createTrigramDescriptionFullTextIndexQuery(),
-                        queryBuilder.createTrigramUidFullTextIndexQuery(),
                         queryBuilder.createSpatialIndex(),
                         queryBuilder.createParentIdIndex()
                 }
