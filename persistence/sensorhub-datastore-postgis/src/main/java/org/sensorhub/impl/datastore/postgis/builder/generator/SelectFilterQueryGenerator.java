@@ -71,6 +71,9 @@ public class SelectFilterQueryGenerator extends FilterQueryGenerator {
             sb.append(" ORDER BY ");
             sb.append(this.orderBy.stream().collect(Collectors.joining(", ")));
         }
+//        if (this.offset >= 0) {
+//            sb.append(" OFFSET ").append(this.offset);
+//        }
         if (this.limit >= 0) {
             sb.append(" LIMIT ").append(this.limit);
         }

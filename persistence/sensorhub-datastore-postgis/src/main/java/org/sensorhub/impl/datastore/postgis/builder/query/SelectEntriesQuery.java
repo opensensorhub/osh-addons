@@ -32,6 +32,13 @@ public class SelectEntriesQuery extends EntriesQuery<SelectFilterQueryGenerator>
             return self();
         }
 
+        public T withOffset(long offset) {
+            if(offset != 0) {
+                filterQueryGenerator.setOffset(offset);
+            }
+            return self();
+        }
+
         public SelectEntriesQuery build() {
             return new SelectEntriesQuery(this);
         }

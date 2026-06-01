@@ -169,6 +169,7 @@ public class QueryBuilderObsStore extends QueryBuilder {
                 .withFields(fields)
                 .withObsFilter(filter)
                 .withLimit(filter.getLimit())
+                .withOffset(0)
                 .build();
         return selectEntriesObsQuery.toQuery();
     }

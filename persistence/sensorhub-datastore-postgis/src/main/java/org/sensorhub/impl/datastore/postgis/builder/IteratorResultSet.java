@@ -60,6 +60,21 @@ public class IteratorResultSet<T> implements Iterator<T> {
         this.useInternalLimit = !query.contains("LIMIT");
     }
 
+    public IteratorResultSet(String query,
+                             ConnectionManager connectionManager,
+                             long limit,
+                             long startOffset,
+                             Function<ResultSet, T> parsingFn,
+                             Function<T, Boolean> predicateValidator
+    ) {
+        this.query = query;
+        this.limit = limit;
+        this.parsingFn = parsingFn;
+        this.connectionManager = connectionManager;
+        this.predicateValidator = predicateValidator;
+        this.useInternalLimit = !query.contains("LIMIT");
+    }
+
     @Override
     public boolean hasNext() {
         if(!records.isEmpty()) {
@@ -91,9 +106,10 @@ public class IteratorResultSet<T> implements Iterator<T> {
 
     private void makeRequest() {
         long countRes = 0;
+        String nextQuery="";
         try (Connection connection = connectionManager.getConnection()) {
             try(Statement statement = connection.createStatement()) {
-                String nextQuery = getQuery();
+                nextQuery = getQuery();
                 if(logger.isDebugEnabled()) {
                     logger.debug(nextQuery);
                 }
@@ -112,7 +128,7 @@ public class IteratorResultSet<T> implements Iterator<T> {
                 ended = true;
             }
         } catch (SQLException e) {
-            throw new RuntimeException(e);
+            logger.error("Cannot Execute the request {}",query);
         }
     }
 }

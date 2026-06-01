@@ -7,6 +7,7 @@ public abstract class FilterQueryGenerator {
     protected List<String> addConditions;
     protected List<String> orConditions;
     protected long limit = -1;
+    protected long offset = -1;
 
     protected  String tableName;
     protected List<String> selectFields;
@@ -17,6 +18,10 @@ public abstract class FilterQueryGenerator {
 
     public void setLimit(long limit){
         this.limit = limit;
+    }
+
+    public void setOffset(long offset){
+        this.offset = offset;
     }
 
     protected void checkAddConditions() {
