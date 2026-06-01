@@ -218,7 +218,7 @@ public class PostgisUtils {
         } else if(instant.getEpochSecond() > PostgisUtils.MAX_INSTANT.getEpochSecond()) {
             return "infinity";
         } else {
-            return instant.truncatedTo(ChronoUnit.SECONDS).toString();
+            return instant.toString();
         }
     }
 
