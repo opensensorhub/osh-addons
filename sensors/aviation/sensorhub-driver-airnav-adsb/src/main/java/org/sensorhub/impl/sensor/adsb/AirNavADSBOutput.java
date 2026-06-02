@@ -49,12 +49,15 @@ public class AirNavADSBOutput extends AbstractSensorOutput<AirNavADSBSensor> {
                         .asSamplingTimeIsoUTC()
                         .label("Sample Time")
                         .description("Time of data collection"))
-                .addField("aircraftType", aeroHelper.createAircraftType())
+                .addField("icaoAddress", aeroHelper.createText()
+                        .label("ICAO Address")
+                        .definition(SWEHelper.getPropertyUri("IcaoAddress"))
+                        .description("24-bit ICAO hex transponder address uniquely identifying the aircraft"))
                 .addField("callsign", aeroHelper.createCallSign())
                 .addField("pos", aeroHelper.createAircraftLocation())
                 .addField("alt_baro", aeroHelper.createBaroAlt())
                 .addField("gs", aeroHelper.createGroundSpeed())
-                .addField("heading", aeroHelper.createTrueHeading())
+                .addField("track", aeroHelper.createTrueTrack())
                 .addField("alt_rate", aeroHelper.createVerticalRate())
                 .addField("squawk", aeroHelper.createText()
                         .label("Squawk Code")
@@ -93,10 +96,10 @@ public class AirNavADSBOutput extends AbstractSensorOutput<AirNavADSBSensor> {
         dataBlock.setStringValue(idx++, state.callsign != null ? state.callsign : "");
         dataBlock.setDoubleValue(idx++, state.lat);
         dataBlock.setDoubleValue(idx++, state.lon);
-        dataBlock.setDoubleValue(idx++, Double.isNaN(state.altFt) ? 0.0 : state.altFt * 0.3048); // ft to meters
-        dataBlock.setDoubleValue(idx++, Double.isNaN(state.groundSpeed) ? 0.0 : state.groundSpeed);
-        dataBlock.setDoubleValue(idx++, Double.isNaN(state.heading) ? 0.0 : state.heading);
-        dataBlock.setDoubleValue(idx++, Double.isNaN(state.verticalRate) ? 0.0 : state.verticalRate);
+        dataBlock.setDoubleValue(idx++, state.altFt);
+        dataBlock.setDoubleValue(idx++, state.groundSpeed);
+        dataBlock.setDoubleValue(idx++, state.track);
+        dataBlock.setDoubleValue(idx++, state.verticalRate);
         dataBlock.setStringValue(idx++, state.squawk != null ? state.squawk : "");
         dataBlock.setBooleanValue(idx++, state.alert);
         dataBlock.setBooleanValue(idx++, state.emergency);

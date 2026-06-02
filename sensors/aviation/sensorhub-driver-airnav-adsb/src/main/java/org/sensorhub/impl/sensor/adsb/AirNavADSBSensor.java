@@ -17,24 +17,18 @@ package org.sensorhub.impl.sensor.adsb;
 import net.opengis.gml.v32.AbstractFeature;
 import net.opengis.gml.v32.Point;
 import net.opengis.gml.v32.impl.GMLFactory;
-import net.opengis.sensorml.v20.ClassifierList;
-import net.opengis.sensorml.v20.ContactList;
 import net.opengis.sensorml.v20.IdentifierList;
 import net.opengis.sensorml.v20.Term;
-import org.isotc211.v2005.gmd.CIResponsibleParty;
 import org.sensorhub.api.comm.ICommProvider;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
 import org.vast.ogc.gml.IFeature;
 import org.vast.ogc.om.MovingFeature;
 import org.vast.sensorML.SMLFactory;
-import org.vast.sensorML.SMLHelper;
 import org.vast.swe.SWEConstants;
 import org.vast.swe.SWEHelper;
 
 import java.io.*;
-import java.util.Iterator;
-import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -50,8 +44,6 @@ public class AirNavADSBSensor extends AbstractSensorModule<AdsbConfig>
     private final ConcurrentHashMap<String, AircraftState> aircraftMap = new ConcurrentHashMap<>();
     private final AtomicBoolean started = new AtomicBoolean(false);
     private Thread workerThread;
-    String modelNumber;
-
 
     @Override
     protected void updateSensorDescription()
@@ -75,19 +67,18 @@ public class AirNavADSBSensor extends AbstractSensorModule<AdsbConfig>
             term.setValue("AirNav Systems");
             identifierList.addIdentifier(term);
 
-            if (modelNumber != null) {
-                term = smlFac.newTerm();
-                term.setDefinition(SWEHelper.getPropertyUri("ModelNumber"));
-                term.setLabel("Model Number");
-                term.setValue("RadarBox FlightStick");
-                term.setValue(modelNumber);
-                identifierList.addIdentifier(term);
-            }
+            term = smlFac.newTerm();
+            term.setDefinition(SWEHelper.getPropertyUri("ModelNumber"));
+            term.setLabel("Model Number");
+            term.setValue("RadarBox FlightStick");
+            identifierList.addIdentifier(term);
         }
     }
 
     @Override
     protected void doInit() throws SensorHubException {
+        super.doInit();
+
         generateUniqueID(SENSOR_UID_PREFIX, config.serialNumber);
         generateXmlID("AIRNAV_ADSB_", config.serialNumber);
 
@@ -99,16 +90,16 @@ public class AirNavADSBSensor extends AbstractSensorModule<AdsbConfig>
     @Override
     protected void doStart() throws SensorHubException {
         if (commProvider == null) {
-            try {
-                if (config.commSettings == null)
-                    throw new SensorHubException("No communication settings specified");
+            if (config.commSettings == null)
+                throw new SensorHubException("No communication settings specified");
 
+            try {
                 var moduleReg = getParentHub().getModuleRegistry();
                 commProvider = (ICommProvider<?>)moduleReg.loadSubModule(config.commSettings, true);
                 commProvider.start();
-            } catch (SensorHubException e) {
+            } catch (Exception e) {
                 commProvider = null;
-                reportError("Failed to start AirNav ADS-B Sensor", e);
+                throw new SensorHubException("Failed to start AirNav ADS-B Sensor", e);
             }
         }
 
@@ -148,74 +139,78 @@ public class AirNavADSBSensor extends AbstractSensorModule<AdsbConfig>
     }
 
     private void parseSbsLine(String line) {
-        String[] fields = line.split(",", -1);
-        if (fields.length < 11 || !"MSG".equals(fields[0]))
-            return;
+        try {
+            String[] fields = line.split(",", -1);
+            if (fields.length < 11 || !"MSG".equals(fields[0]))
+                return;
 
-        String msgType = fields[1].trim();
-        String icao = fields[4].trim();
-        if (icao.isEmpty())
-            return;
+            String msgType = fields[1].trim();
+            String icao = fields[4].trim();
+            if (icao.isEmpty())
+                return;
 
-        AircraftState state = aircraftMap.computeIfAbsent(icao, k -> {
-            AircraftState s = new AircraftState();
-            s.icao = k;
-            return s;
-        });
+            AircraftState state = aircraftMap.computeIfAbsent(icao, k -> {
+                AircraftState s = new AircraftState();
+                s.icao = k;
+                return s;
+            });
 
-        switch (msgType) {
-            case "1": // callsign
-                if (fields.length > 10 && !fields[10].trim().isEmpty())
-                    state.callsign = fields[10].trim();
-                break;
+            switch (msgType) {
+                case "1": // callsign
+                    if (fields.length > 10 && !fields[10].trim().isEmpty())
+                        state.callsign = fields[10].trim();
+                    break;
 
-            case "3": // position — lat, lon, altitude
-                if (fields.length > 15) {
-                    if (!fields[11].trim().isEmpty())
+                case "3": // position — lat, lon, altitude
+                    if (fields.length > 15) {
+                        if (!fields[11].trim().isEmpty())
+                            state.altFt = Double.parseDouble(fields[11].trim());
+                        if (!fields[14].trim().isEmpty())
+                            state.lat = Double.parseDouble(fields[14].trim());
+                        if (!fields[15].trim().isEmpty())
+                            state.lon = Double.parseDouble(fields[15].trim());
+                    }
+                    state.lastUpdateTime = System.currentTimeMillis();
+                    if (state.hasPosition())
+                        output.publishAircraftState(state);
+                    break;
+
+                case "4": // velocity — ground speed, heading, vertical rate
+                    if (fields.length > 16) {
+                        if (!fields[12].trim().isEmpty())
+                            state.groundSpeed = Double.parseDouble(fields[12].trim());
+                        if (!fields[13].trim().isEmpty())
+                            state.track = Double.parseDouble(fields[13].trim());
+                        if (!fields[16].trim().isEmpty())
+                            state.verticalRate = Double.parseDouble(fields[16].trim());
+                    }
+                    state.lastUpdateTime = System.currentTimeMillis();
+                    break;
+
+                case "5": // surveillance Alt
+                    if (fields.length > 11 && !fields[11].trim().isEmpty())
                         state.altFt = Double.parseDouble(fields[11].trim());
-                    if (!fields[14].trim().isEmpty())
-                        state.lat = Double.parseDouble(fields[14].trim());
-                    if (!fields[15].trim().isEmpty())
-                        state.lon = Double.parseDouble(fields[15].trim());
-                }
-                state.lastUpdateTime = System.currentTimeMillis();
-                if (state.hasPosition())
-                    output.publishAircraftState(state);
-                break;
+                    state.lastUpdateTime = System.currentTimeMillis();
+                    break;
 
-            case "4": // velocity — ground speed, heading, vertical rate
-                if (fields.length > 16) {
-                    if (!fields[12].trim().isEmpty())
-                        state.groundSpeed = Double.parseDouble(fields[12].trim());
-                    if (!fields[13].trim().isEmpty())
-                        state.heading = Double.parseDouble(fields[13].trim());
-                    if (!fields[16].trim().isEmpty())
-                        state.verticalRate = Double.parseDouble(fields[16].trim());
-                }
-                state.lastUpdateTime = System.currentTimeMillis();
-                break;
+                case "6": // surveillance ID — squawk
+                    if (fields.length > 17 && !fields[17].trim().isEmpty())
+                        state.squawk = fields[17].trim();
+                    state.lastUpdateTime = System.currentTimeMillis();
+                    break;
 
-            case "5": // surveillance Alt
-                if (fields.length > 11 && !fields[11].trim().isEmpty())
-                    state.altFt = Double.parseDouble(fields[11].trim());
-                state.lastUpdateTime = System.currentTimeMillis();
-                break;
-
-            case "6": // surveillance ID — squawk
-                if (fields.length > 17 && !fields[17].trim().isEmpty())
-                    state.squawk = fields[17].trim();
-                state.lastUpdateTime = System.currentTimeMillis();
-                break;
-
-            default:
-                break;
+                default:
+                    break;
+            }
+            if (fields.length > 18 && !fields[18].trim().isEmpty())
+                state.alert = "-1".equals(fields[18].trim());
+            if (fields.length > 19 && !fields[19].trim().isEmpty())
+                state.emergency = "-1".equals(fields[19].trim());
+            if (fields.length > 21 && !fields[21].trim().isEmpty())
+                state.isOnGround = "-1".equals(fields[21].trim());
+        } catch (NumberFormatException e) {
+            getLogger().debug("Skipping malformed SBS line: {}", line, e);
         }
-        if (fields.length > 18 && !fields[18].trim().isEmpty())
-            state.alert = "-1".equals(fields[18].trim());
-        if (fields.length > 19 && !fields[19].trim().isEmpty())
-            state.emergency = "-1".equals(fields[19].trim());
-        if (fields.length > 21 && !fields[21].trim().isEmpty())
-            state.isOnGround = "-1".equals(fields[21].trim());
     }
 
     @Override
@@ -261,27 +256,27 @@ public class AirNavADSBSensor extends AbstractSensorModule<AdsbConfig>
     String addFoi(String aircraftId, String callsign, Point point) {
         String foiUID = SENSOR_UID_PREFIX + aircraftId;
 
-        if (!foiMap.containsKey(foiUID)) {
-            MovingFeature foi = new MovingFeature();
-            foi.setId(aircraftId);
-            foi.setUniqueIdentifier(foiUID);
+        synchronized (foiMap) {
+            if (!foiMap.containsKey(foiUID)) {
+                MovingFeature foi = new MovingFeature();
+                foi.setId(aircraftId);
+                foi.setUniqueIdentifier(foiUID);
 
-            if (callsign != null && !callsign.isEmpty())
-                foi.setName(callsign);
-            else
-                foi.setName(aircraftId);
-            foi.setDescription("Aircraft " + aircraftId);
-            foi.setGeometry(point);
+                if (callsign != null && !callsign.isEmpty())
+                    foi.setName(callsign);
+                else
+                    foi.setName(aircraftId);
+                foi.setDescription("Aircraft " + aircraftId);
+                foi.setGeometry(point);
 
-            addFoi(foi);
-            logger.debug("New aircraft added as FOI: {}", foiUID);
-        } else {
-            IFeature existingFoi = foiMap.get(foiUID);
-            if (existingFoi instanceof AbstractFeature) {
-                ((AbstractFeature) existingFoi).setGeometry(point);
-                logger.debug("Updated geometry for FOI: {}", foiUID);
+                addFoi(foi);
+                logger.debug("New aircraft added as FOI: {}", foiUID);
             } else {
-                logger.warn("FOI {} found in map but cannot be updated (null or wrong type)", foiUID);
+                IFeature existingFoi = foiMap.get(foiUID);
+                if (existingFoi instanceof AbstractFeature) {
+                    ((AbstractFeature) existingFoi).setGeometry(point);
+                    logger.debug("Updated geometry for FOI: {}", foiUID);
+                }
             }
         }
         return foiUID;
