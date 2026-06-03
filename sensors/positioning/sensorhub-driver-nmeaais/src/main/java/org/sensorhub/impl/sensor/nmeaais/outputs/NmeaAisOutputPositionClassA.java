@@ -64,6 +64,11 @@ public class NmeaAisOutputPositionClassA extends VarRateSensorOutput<NmeaAisDriv
                 .label(OUTPUT_LABEL)
                 .description(OUTPUT_DESCRIPTION)
                 .definition(OUTPUT_DEFINITION)
+                .addField("samplingTime",fac.createTime()
+                        .asSamplingTimeIsoUTC()
+                        .label("Sample Time")
+                        .description("Time data was received")
+                        .definition("SampleTime"))
                 .addField("messageId", fac.createNmeaMessageId())
                 .addField("reportDescription", fac.createReportDescription())
                 .addField("repeat", fac.createRepeatIndicator())
@@ -142,22 +147,22 @@ public class NmeaAisOutputPositionClassA extends VarRateSensorOutput<NmeaAisDriv
         synchronized (processingLock) {
             DataBlock dataBlock = latestRecord == null ? aisReportRecord.createDataBlock() : latestRecord.renew();
 
-            dataBlock.setIntValue(0,  report.getMsgId());
-            dataBlock.setStringValue(1, description);
-            dataBlock.setIntValue(2,  report.getRepeat());
-            dataBlock.setStringValue(3,  String.valueOf(report.getUserId()));
-            dataBlock.setIntValue(4,  report.getNavStatus());
-            dataBlock.setIntValue(5,  report.getRot());
-            dataBlock.setDoubleValue(6,  report.getSog() / 10.0);
-            dataBlock.setIntValue(7,  report.getPosAcc());
-            dataBlock.setDoubleValue(8,  report.getPos().getLatitudeDouble());
-            dataBlock.setDoubleValue(9,  report.getPos().getLongitudeDouble());
-            dataBlock.setDoubleValue(10,  report.getCog() / 10.0);
-            dataBlock.setIntValue(11, report.getTrueHeading());
-            dataBlock.setIntValue(12, report.getUtcSec());
-            dataBlock.setIntValue(13, report.getSpecialManIndicator());
-            dataBlock.setIntValue(14, report.getRaim());
-            dataBlock.setIntValue(15, report.getSyncState());
+            dataBlock.setIntValue(1,  report.getMsgId());
+            dataBlock.setStringValue(2, description);
+            dataBlock.setIntValue(3,  report.getRepeat());
+            dataBlock.setStringValue(4,  String.valueOf(report.getUserId()));
+            dataBlock.setIntValue(5,  report.getNavStatus());
+            dataBlock.setIntValue(6,  report.getRot());
+            dataBlock.setDoubleValue(7,  report.getSog() / 10.0);
+            dataBlock.setIntValue(8,  report.getPosAcc());
+            dataBlock.setDoubleValue(9,  report.getPos().getLatitudeDouble());
+            dataBlock.setDoubleValue(10,  report.getPos().getLongitudeDouble());
+            dataBlock.setDoubleValue(11,  report.getCog() / 10.0);
+            dataBlock.setIntValue(12, report.getTrueHeading());
+            dataBlock.setIntValue(13, report.getUtcSec());
+            dataBlock.setIntValue(14, report.getSpecialManIndicator());
+            dataBlock.setIntValue(15, report.getRaim());
+            dataBlock.setIntValue(16, report.getSyncState());
 
             String foiUID = parentSensor.addFoi(String.valueOf(report.getUserId()));
 

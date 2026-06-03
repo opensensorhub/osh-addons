@@ -73,6 +73,11 @@ public class NmeaAisOutputPositionClassB extends VarRateSensorOutput<NmeaAisDriv
                              "Name, ship type, and dimension fields are only populated for type 19.")
                 .definition(SWEHelper.getPropertyUri("NmeaAisOutputPositionClassB"))
                 // --- fields common to type 18 and 19 ---
+                .addField("samplingTime",fac.createTime()
+                        .asSamplingTimeIsoUTC()
+                        .label("Sample Time")
+                        .description("Time data was received")
+                        .definition("SampleTime"))
                 .addField("messageId", fac.createNmeaMessageId())
                 .addField("reportDescription", fac.createReportDescription())
                 .addField("repeat", fac.createRepeatIndicator())
@@ -188,29 +193,28 @@ public class NmeaAisOutputPositionClassB extends VarRateSensorOutput<NmeaAisDriv
         synchronized (processingLock) {
             DataBlock dataBlock = latestRecord == null ? aisReportRecord.createDataBlock() : latestRecord.renew();
 
-            dataBlock.setIntValue(0,  report.getMsgId());
-            dataBlock.setStringValue(1, description);
-            dataBlock.setIntValue(2,  report.getRepeat());
-            dataBlock.setStringValue(3,  String.valueOf(report.getUserId()));
-            dataBlock.setDoubleValue(4,  report.getSog() / 10.0);
-            dataBlock.setIntValue(5,  report.getPosAcc());
-            dataBlock.setDoubleValue(6,  report.getPos().getLatitudeDouble());
-            dataBlock.setDoubleValue(7,  report.getPos().getLongitudeDouble());
-            dataBlock.setDoubleValue(8,  report.getCog() / 10.0);
-            dataBlock.setIntValue(9,  report.getTrueHeading());
-            dataBlock.setIntValue(10, report.getUtcSec());
-            dataBlock.setIntValue(11, report.getClassBUnitFlag());
-            dataBlock.setIntValue(12, report.getClassBDisplayFlag());
-            dataBlock.setIntValue(13, report.getClassBDscFlag());
-            dataBlock.setIntValue(14, report.getClassBBandFlag());
-            dataBlock.setIntValue(15, report.getClassBMsg22Flag());
-            dataBlock.setIntValue(16, report.getModeFlag());
-            dataBlock.setIntValue(17, report.getRaim());
-            dataBlock.setIntValue(18, report.getCommStateSelectorFlag());
-            dataBlock.setIntValue(19, report.getCommState());
+            dataBlock.setIntValue(1,  report.getMsgId());
+            dataBlock.setStringValue(2, description);
+            dataBlock.setIntValue(3,  report.getRepeat());
+            dataBlock.setStringValue(4,  String.valueOf(report.getUserId()));
+            dataBlock.setDoubleValue(5,  report.getSog() / 10.0);
+            dataBlock.setIntValue(6,  report.getPosAcc());
+            dataBlock.setDoubleValue(7,  report.getPos().getLatitudeDouble());
+            dataBlock.setDoubleValue(8,  report.getPos().getLongitudeDouble());
+            dataBlock.setDoubleValue(9,  report.getCog() / 10.0);
+            dataBlock.setIntValue(10,  report.getTrueHeading());
+            dataBlock.setIntValue(11, report.getUtcSec());
+            dataBlock.setIntValue(12, report.getClassBUnitFlag());
+            dataBlock.setIntValue(13, report.getClassBDisplayFlag());
+            dataBlock.setIntValue(14, report.getClassBDscFlag());
+            dataBlock.setIntValue(15, report.getClassBBandFlag());
+            dataBlock.setIntValue(16, report.getClassBMsg22Flag());
+            dataBlock.setIntValue(17, report.getModeFlag());
+            dataBlock.setIntValue(18, report.getRaim());
+            dataBlock.setIntValue(19, report.getCommStateSelectorFlag());
+            dataBlock.setIntValue(20, report.getCommState());
             // type-19-only fields — not present in type 18
-            dataBlock.setStringValue(20, "");
-            dataBlock.setIntValue(21, 0);
+            dataBlock.setStringValue(21, "");
             dataBlock.setIntValue(22, 0);
             dataBlock.setIntValue(23, 0);
             dataBlock.setIntValue(24, 0);
@@ -218,6 +222,7 @@ public class NmeaAisOutputPositionClassB extends VarRateSensorOutput<NmeaAisDriv
             dataBlock.setIntValue(26, 0);
             dataBlock.setIntValue(27, 0);
             dataBlock.setIntValue(28, 0);
+            dataBlock.setIntValue(29, 0);
 
             publish(dataBlock, String.valueOf(report.getUserId()));
         }
@@ -228,37 +233,37 @@ public class NmeaAisOutputPositionClassB extends VarRateSensorOutput<NmeaAisDriv
         synchronized (processingLock) {
             DataBlock dataBlock = latestRecord == null ? aisReportRecord.createDataBlock() : latestRecord.renew();
 
-            dataBlock.setIntValue(0,  report.getMsgId());
-            dataBlock.setStringValue(1, description);
-            dataBlock.setIntValue(2,  report.getRepeat());
-            dataBlock.setStringValue(3,  String.valueOf(report.getUserId()));
-            dataBlock.setDoubleValue(4,  report.getSog() / 10.0);
-            dataBlock.setIntValue(5,  report.getPosAcc());
-            dataBlock.setDoubleValue(6,  report.getPos().getLatitudeDouble());
-            dataBlock.setDoubleValue(7,  report.getPos().getLongitudeDouble());
-            dataBlock.setDoubleValue(8,  report.getCog() / 10.0);
-            dataBlock.setIntValue(9,  report.getTrueHeading());
-            dataBlock.setIntValue(10, report.getUtcSec());
+            dataBlock.setIntValue(1,  report.getMsgId());
+            dataBlock.setStringValue(2, description);
+            dataBlock.setIntValue(3,  report.getRepeat());
+            dataBlock.setStringValue(4,  String.valueOf(report.getUserId()));
+            dataBlock.setDoubleValue(5,  report.getSog() / 10.0);
+            dataBlock.setIntValue(6,  report.getPosAcc());
+            dataBlock.setDoubleValue(7,  report.getPos().getLatitudeDouble());
+            dataBlock.setDoubleValue(8,  report.getPos().getLongitudeDouble());
+            dataBlock.setDoubleValue(9,  report.getCog() / 10.0);
+            dataBlock.setIntValue(10,  report.getTrueHeading());
+            dataBlock.setIntValue(11, report.getUtcSec());
             // type 19 does not carry Class B CS radio flags — set to 0
-            dataBlock.setIntValue(11, 0);
             dataBlock.setIntValue(12, 0);
             dataBlock.setIntValue(13, 0);
             dataBlock.setIntValue(14, 0);
             dataBlock.setIntValue(15, 0);
-            dataBlock.setIntValue(16, report.getModeFlag());
-            dataBlock.setIntValue(17, report.getRaim());
-            dataBlock.setIntValue(18, 0);
+            dataBlock.setIntValue(16, 0);
+            dataBlock.setIntValue(17, report.getModeFlag());
+            dataBlock.setIntValue(18, report.getRaim());
             dataBlock.setIntValue(19, 0);
+            dataBlock.setIntValue(20, 0);
             // type-19-only fields
-            dataBlock.setStringValue(20, report.getName());
-            dataBlock.setIntValue(21, report.getShipType());
-            dataBlock.setIntValue(22, report.getDimBow());
-            dataBlock.setIntValue(23, report.getDimStern());
-            dataBlock.setIntValue(24, report.getDimPort());
-            dataBlock.setIntValue(25, report.getDimStarboard());
-            dataBlock.setIntValue(26, report.getPosType());
-            dataBlock.setIntValue(27, report.getDte());
-            dataBlock.setIntValue(28, report.getModeFlag());
+            dataBlock.setStringValue(21, report.getName());
+            dataBlock.setIntValue(22, report.getShipType());
+            dataBlock.setIntValue(23, report.getDimBow());
+            dataBlock.setIntValue(24, report.getDimStern());
+            dataBlock.setIntValue(25, report.getDimPort());
+            dataBlock.setIntValue(26, report.getDimStarboard());
+            dataBlock.setIntValue(27, report.getPosType());
+            dataBlock.setIntValue(28, report.getDte());
+            dataBlock.setIntValue(29, report.getModeFlag());
 
             publish(dataBlock, String.valueOf(report.getUserId()));
         }

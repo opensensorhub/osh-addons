@@ -65,6 +65,11 @@ public class NmeaAisOutputAidNavigation extends VarRateSensorOutput<NmeaAisDrive
                 .label(OUTPUT_LABEL)
                 .description(OUTPUT_DESCRIPTION)
                 .definition(OUTPUT_DEFINITION)
+                .addField("samplingTime",fac.createTime()
+                        .asSamplingTimeIsoUTC()
+                        .label("Sample Time")
+                        .description("Time data was received")
+                        .definition("SampleTime"))
                 .addField("messageId", fac.createNmeaMessageId())
                 .addField("reportDescription", fac.createReportDescription())
                 .addField("repeat", fac.createRepeatIndicator())
@@ -137,25 +142,25 @@ public class NmeaAisOutputAidNavigation extends VarRateSensorOutput<NmeaAisDrive
         synchronized (processingLock) {
             DataBlock dataBlock = latestRecord == null ? aisReportRecord.createDataBlock() : latestRecord.renew();
 
-            dataBlock.setIntValue(0,  report.getMsgId());
-            dataBlock.setStringValue(1, description);
-            dataBlock.setIntValue(2,  report.getRepeat());
-            dataBlock.setStringValue(3,  String.valueOf(report.getUserId()));
-            dataBlock.setIntValue(4,  report.getAtonType());
-            dataBlock.setStringValue(5, report.getName());
-            dataBlock.setIntValue(6,  report.getPosAcc());
-            dataBlock.setDoubleValue(7,  report.getPos().getLatitudeDouble());
-            dataBlock.setDoubleValue(8,  report.getPos().getLongitudeDouble());
-            dataBlock.setIntValue(9,  report.getDimBow());
-            dataBlock.setIntValue(10, report.getDimStern());
-            dataBlock.setIntValue(11, report.getDimPort());
-            dataBlock.setIntValue(12, report.getDimStarboard());
-            dataBlock.setIntValue(13, report.getPosType());
-            dataBlock.setIntValue(14, report.getUtcSec());
-            dataBlock.setIntValue(15, report.getOffPosition());
-            dataBlock.setIntValue(16, report.getRaim());
-            dataBlock.setIntValue(17, report.getVirtual());
-            dataBlock.setIntValue(18, report.getAssigned());
+            dataBlock.setIntValue(1,  report.getMsgId());
+            dataBlock.setStringValue(2, description);
+            dataBlock.setIntValue(3,  report.getRepeat());
+            dataBlock.setStringValue(4,  String.valueOf(report.getUserId()));
+            dataBlock.setIntValue(5,  report.getAtonType());
+            dataBlock.setStringValue(6, report.getName());
+            dataBlock.setIntValue(7,  report.getPosAcc());
+            dataBlock.setDoubleValue(8,  report.getPos().getLatitudeDouble());
+            dataBlock.setDoubleValue(9,  report.getPos().getLongitudeDouble());
+            dataBlock.setIntValue(10,  report.getDimBow());
+            dataBlock.setIntValue(11, report.getDimStern());
+            dataBlock.setIntValue(12, report.getDimPort());
+            dataBlock.setIntValue(13, report.getDimStarboard());
+            dataBlock.setIntValue(14, report.getPosType());
+            dataBlock.setIntValue(15, report.getUtcSec());
+            dataBlock.setIntValue(16, report.getOffPosition());
+            dataBlock.setIntValue(17, report.getRaim());
+            dataBlock.setIntValue(18, report.getVirtual());
+            dataBlock.setIntValue(19, report.getAssigned());
 
             String foiUID = parentSensor.addFoi(String.valueOf(report.getUserId()));
 

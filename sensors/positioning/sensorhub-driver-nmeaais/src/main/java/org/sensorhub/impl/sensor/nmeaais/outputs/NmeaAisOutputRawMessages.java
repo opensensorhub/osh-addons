@@ -57,7 +57,7 @@ public class NmeaAisOutputRawMessages extends VarRateSensorOutput<NmeaAisDriver>
                 .addField("sampleTime", sweFactory.createTime()
                         .asSamplingTimeIsoUTC()
                         .label("Sample Time")
-                        .description("Time of data collection")
+                        .description("Time data was received")
                         .definition("SampleTime"))
                 .addField("sentenceType", sweFactory.createText()
                         .label("Sentence Type")

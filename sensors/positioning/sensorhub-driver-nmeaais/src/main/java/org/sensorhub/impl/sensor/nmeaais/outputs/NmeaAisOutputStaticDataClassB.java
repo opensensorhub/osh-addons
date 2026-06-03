@@ -68,6 +68,11 @@ public class NmeaAisOutputStaticDataClassB extends VarRateSensorOutput<NmeaAisDr
                 .label(OUTPUT_LABEL)
                 .description(OUTPUT_DESCRIPTION)
                 .definition(OUTPUT_DEFINITION)
+                .addField("samplingTime",fac.createTime()
+                        .asSamplingTimeIsoUTC()
+                        .label("Sample Time")
+                        .description("Time data was received")
+                        .definition("SampleTime"))
                 .addField("messageId", fac.createNmeaMessageId())
                 .addField("reportDescription", fac.createReportDescription())
                 .addField("repeat", fac.createRepeatIndicator())
@@ -134,18 +139,18 @@ public class NmeaAisOutputStaticDataClassB extends VarRateSensorOutput<NmeaAisDr
         synchronized (processingLock) {
             DataBlock dataBlock = latestRecord == null ? aisReportRecord.createDataBlock() : latestRecord.renew();
 
-            dataBlock.setIntValue(0,  24);
-            dataBlock.setStringValue(1, description);
-            dataBlock.setIntValue(2,  repeat);
-            dataBlock.setStringValue(3,  String.valueOf(mmsi));
-            dataBlock.setStringValue(4, name);
-            dataBlock.setStringValue(5, callSign);
-            dataBlock.setIntValue(6,  shipType);
-            dataBlock.setIntValue(7,  dimBow);
-            dataBlock.setIntValue(8,  dimStern);
-            dataBlock.setIntValue(9,  dimPort);
-            dataBlock.setIntValue(10, dimStarboard);
-            dataBlock.setStringValue(11, vendorId);
+            dataBlock.setIntValue(1,  24);
+            dataBlock.setStringValue(2, description);
+            dataBlock.setIntValue(3,  repeat);
+            dataBlock.setStringValue(4,  String.valueOf(mmsi));
+            dataBlock.setStringValue(5, name);
+            dataBlock.setStringValue(6, callSign);
+            dataBlock.setIntValue(7,  shipType);
+            dataBlock.setIntValue(8,  dimBow);
+            dataBlock.setIntValue(9,  dimStern);
+            dataBlock.setIntValue(10,  dimPort);
+            dataBlock.setIntValue(11, dimStarboard);
+            dataBlock.setStringValue(12, vendorId);
 
             String foiUID = parentSensor.addFoi(String.valueOf(mmsi));
 

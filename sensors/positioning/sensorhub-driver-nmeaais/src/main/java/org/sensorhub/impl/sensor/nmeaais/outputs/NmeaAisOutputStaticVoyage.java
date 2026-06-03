@@ -66,6 +66,11 @@ public class NmeaAisOutputStaticVoyage extends VarRateSensorOutput<NmeaAisDriver
                 .label(OUTPUT_LABEL)
                 .description(OUTPUT_DESCRIPTION)
                 .definition(OUTPUT_DEFINITION)
+                .addField("samplingTime",fac.createTime()
+                        .asSamplingTimeIsoUTC()
+                        .label("Sample Time")
+                        .description("Time data was received")
+                        .definition("SampleTime"))
                 .addField("messageId", fac.createNmeaMessageId())
                 .addField("reportDescription", fac.createReportDescription())
                 .addField("repeat", fac.createRepeatIndicator())
@@ -153,20 +158,20 @@ public class NmeaAisOutputStaticVoyage extends VarRateSensorOutput<NmeaAisDriver
         synchronized (processingLock) {
             DataBlock dataBlock = latestRecord == null ? aisReportRecord.createDataBlock() : latestRecord.renew();
 
-            dataBlock.setIntValue(0,  report.getMsgId());
-            dataBlock.setStringValue(1, description);
-            dataBlock.setIntValue(2,  report.getRepeat());
-            dataBlock.setIntValue(3,  String.valueOf(report.getUserId()));
-            dataBlock.setIntValue(4,  report.getVersion());
-            dataBlock.setLongValue(5,  report.getImo());
-            dataBlock.setStringValue(6, report.getCallsign());
-            dataBlock.setStringValue(7, report.getName());
-            dataBlock.setIntValue(8,  report.getShipType());
-            dataBlock.setIntValue(9,  report.getDimBow());
-            dataBlock.setIntValue(10, report.getDimStern());
-            dataBlock.setIntValue(11, report.getDimPort());
-            dataBlock.setIntValue(12, report.getDimStarboard());
-            dataBlock.setIntValue(13, report.getPosType());
+            dataBlock.setIntValue(1,  report.getMsgId());
+            dataBlock.setStringValue(2, description);
+            dataBlock.setIntValue(3,  report.getRepeat());
+            dataBlock.setStringValue(4,  String.valueOf(report.getUserId()));
+            dataBlock.setIntValue(5,  report.getVersion());
+            dataBlock.setLongValue(6,  report.getImo());
+            dataBlock.setStringValue(7, report.getCallsign());
+            dataBlock.setStringValue(8, report.getName());
+            dataBlock.setIntValue(9,  report.getShipType());
+            dataBlock.setIntValue(10,  report.getDimBow());
+            dataBlock.setIntValue(11, report.getDimStern());
+            dataBlock.setIntValue(12, report.getDimPort());
+            dataBlock.setIntValue(13, report.getDimStarboard());
+            dataBlock.setIntValue(14, report.getPosType());
 
             // ETA is stored as a packed long; getEtaDate() converts to java.util.Date
             int etaMonth = 0, etaDay = 0, etaHour = 24, etaMinute = 60;
@@ -179,13 +184,13 @@ public class NmeaAisOutputStaticVoyage extends VarRateSensorOutput<NmeaAisDriver
                 etaHour   = cal.get(Calendar.HOUR_OF_DAY);
                 etaMinute = cal.get(Calendar.MINUTE);
             }
-            dataBlock.setIntValue(14, etaMonth);
-            dataBlock.setIntValue(15, etaDay);
-            dataBlock.setIntValue(16, etaHour);
-            dataBlock.setIntValue(17, etaMinute);
-            dataBlock.setDoubleValue(18, report.getDraught() / 10.0);
-            dataBlock.setStringValue(19, report.getDest());
-            dataBlock.setIntValue(20, report.getDte());
+            dataBlock.setIntValue(15, etaMonth);
+            dataBlock.setIntValue(16, etaDay);
+            dataBlock.setIntValue(17, etaHour);
+            dataBlock.setIntValue(18, etaMinute);
+            dataBlock.setDoubleValue(19, report.getDraught() / 10.0);
+            dataBlock.setStringValue(20, report.getDest());
+            dataBlock.setIntValue(21, report.getDte());
 
             String foiUID = parentSensor.addFoi(String.valueOf(report.getUserId()));
 
