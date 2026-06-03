@@ -32,8 +32,8 @@ ext.pom >>= {
         developer {
             id 'BillBrown341'
             name 'Bill Brown'
-            organization 'Botts-inc'
-            organizationUrl 'https://botts-inc.com/'
+            organization 'GeoRobotix Innovative Research'
+            organizationUrl 'https://georobotix.us'
         }
     }
 }
