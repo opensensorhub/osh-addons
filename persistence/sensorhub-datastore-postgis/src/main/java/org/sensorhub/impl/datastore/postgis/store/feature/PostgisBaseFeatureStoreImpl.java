@@ -253,13 +253,13 @@ public abstract class PostgisBaseFeatureStoreImpl
             endRangeValue = "infinity";
         } else if (timeExtent.beginsNow()) {
             startRangeValue = "-infinity";
-            endRangeValue = PostgisUtils.writeInstantToString(timeExtent.end().truncatedTo(ChronoUnit.SECONDS), false);
+            endRangeValue = PostgisUtils.writeInstantToString(timeExtent.end(), false);
         } else if (timeExtent.endsNow()) {
             endRangeValue = "infinity";
-            startRangeValue = PostgisUtils.writeInstantToString(timeExtent.begin().truncatedTo(ChronoUnit.SECONDS), false);
+            startRangeValue = PostgisUtils.writeInstantToString(timeExtent.begin(), false);
         } else {
-            startRangeValue = PostgisUtils.writeInstantToString(timeExtent.begin().truncatedTo(ChronoUnit.SECONDS), false);
-            endRangeValue = PostgisUtils.writeInstantToString(timeExtent.end().truncatedTo(ChronoUnit.SECONDS), false);
+            startRangeValue = PostgisUtils.writeInstantToString(timeExtent.begin(), false);
+            endRangeValue = PostgisUtils.writeInstantToString(timeExtent.end(), false);
         }
         range.setValue("[" + startRangeValue + "," + endRangeValue + "]");
         return range;
@@ -270,7 +270,7 @@ public abstract class PostgisBaseFeatureStoreImpl
         range.setType("tsrange");  // type PostgreSQL
         String rangeValue;
         if (key.getValidStartTime() != null && key.getValidStartTime().getEpochSecond() > MIN_INSTANT.getEpochSecond()) {
-            String pgValidTime = PostgisUtils.writeInstantToString(key.getValidStartTime().truncatedTo(ChronoUnit.SECONDS), false);
+            String pgValidTime = PostgisUtils.writeInstantToString(key.getValidStartTime(), false);
             rangeValue = "[" + pgValidTime + "," + pgValidTime + "]";
         } else {
             rangeValue = "[-infinity,infinity]";
@@ -295,7 +295,7 @@ public abstract class PostgisBaseFeatureStoreImpl
                     try (Connection connection = connectionManager.getConnection()) {
                         try (PreparedStatement preparedStatement = connection.prepareStatement(queryBuilder.selectByIdQuery())) {
                             preparedStatement.setLong(1, key.getInternalID().getIdAsLong());
-                            preparedStatement.setString(2, PostgisUtils.getPgTimestampFromInstant(key.getValidStartTime().truncatedTo(ChronoUnit.SECONDS)));
+                            preparedStatement.setString(2, PostgisUtils.getPgTimestampFromInstant(key.getValidStartTime()));
                             try (ResultSet resultSet = preparedStatement.executeQuery()) {
                                 if (resultSet.next()) {
                                     String data = resultSet.getString(1);
@@ -319,7 +319,7 @@ public abstract class PostgisBaseFeatureStoreImpl
     public PostgisFeatureKey getCurrentVersionKey(BigId internalID) {
         try (Connection connection = connectionManager.getConnection()) {
             try (Statement statement = connection.createStatement()) {
-                String query = queryBuilder.selectLastVersionByIdQuery(internalID.getIdAsLong(), Instant.now().truncatedTo(ChronoUnit.SECONDS).toString());
+                String query = queryBuilder.selectLastVersionByIdQuery(internalID.getIdAsLong(), Instant.now().toString());
                 try (ResultSet resultSet = statement.executeQuery(query)) {
                     if (resultSet.next()) {
                         long id = resultSet.getLong("id");
@@ -339,7 +339,7 @@ public abstract class PostgisBaseFeatureStoreImpl
     public PostgisFeatureKey getCurrentVersionKey(String uid) {
         try (Connection connection = connectionManager.getConnection()) {
             try (Statement statement = connection.createStatement()) {
-                String query = queryBuilder.selectLastVersionByUidQuery(uid, Instant.now().truncatedTo(ChronoUnit.SECONDS).toString());
+                String query = queryBuilder.selectLastVersionByUidQuery(uid, Instant.now().toString());
                 try (ResultSet resultSet = statement.executeQuery(query)) {
                     if (resultSet.next()) {
                         long id = resultSet.getLong("id");
@@ -509,7 +509,7 @@ public abstract class PostgisBaseFeatureStoreImpl
 //                PGobject pgValidTimeRange = this.createPGobjectValidTimeRange(key);
 //                preparedStatement.setObject(2, pgValidTimeRange);
                 preparedStatement.setString(2, PostgisUtils.getPgTimestampFromInstant(
-                        key.getValidStartTime().truncatedTo(ChronoUnit.SECONDS)
+                        key.getValidStartTime()
                 ));
 
                 int rows = preparedStatement.executeUpdate();
