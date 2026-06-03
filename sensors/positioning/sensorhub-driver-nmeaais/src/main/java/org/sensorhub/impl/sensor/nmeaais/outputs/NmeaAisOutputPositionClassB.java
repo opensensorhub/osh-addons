@@ -193,6 +193,7 @@ public class NmeaAisOutputPositionClassB extends VarRateSensorOutput<NmeaAisDriv
         synchronized (processingLock) {
             DataBlock dataBlock = latestRecord == null ? aisReportRecord.createDataBlock() : latestRecord.renew();
 
+            dataBlock.setDoubleValue(0, System.currentTimeMillis() / 1000d);
             dataBlock.setIntValue(1,  report.getMsgId());
             dataBlock.setStringValue(2, description);
             dataBlock.setIntValue(3,  report.getRepeat());
@@ -233,6 +234,7 @@ public class NmeaAisOutputPositionClassB extends VarRateSensorOutput<NmeaAisDriv
         synchronized (processingLock) {
             DataBlock dataBlock = latestRecord == null ? aisReportRecord.createDataBlock() : latestRecord.renew();
 
+            dataBlock.setDoubleValue(0, System.currentTimeMillis() / 1000d);
             dataBlock.setIntValue(1,  report.getMsgId());
             dataBlock.setStringValue(2, description);
             dataBlock.setIntValue(3,  report.getRepeat());

@@ -139,6 +139,7 @@ public class NmeaAisOutputStaticDataClassB extends VarRateSensorOutput<NmeaAisDr
         synchronized (processingLock) {
             DataBlock dataBlock = latestRecord == null ? aisReportRecord.createDataBlock() : latestRecord.renew();
 
+            dataBlock.setDoubleValue(0, System.currentTimeMillis() / 1000d);
             dataBlock.setIntValue(1,  24);
             dataBlock.setStringValue(2, description);
             dataBlock.setIntValue(3,  repeat);
