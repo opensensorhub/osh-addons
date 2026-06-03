@@ -22,7 +22,7 @@ dependencies {
 osgi {
     manifest {
         attributes ('Bundle-Vendor': 'Botts Inc')
-        attributes ('Bundle-Activator': 'org.sensorhub.impl.sensor.aisshipxplorer.Activator')
+        attributes ('Bundle-Activator': 'org.sensorhub.impl.sensor.nmeaais.Activator')
     }
 }
 
