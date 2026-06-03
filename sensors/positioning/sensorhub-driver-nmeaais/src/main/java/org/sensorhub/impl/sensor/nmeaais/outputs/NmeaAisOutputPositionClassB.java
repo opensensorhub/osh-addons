@@ -47,19 +47,20 @@ public class NmeaAisOutputPositionClassB extends VarRateSensorOutput<NmeaAisDriv
      * Initializes the data structure for the output.
      *
      * Flat index map (common to types 18 and 19):
-     *   0  = messageId        1  = reportDescription   2  = repeat
-     *   3  = mmsi             4  = sog                 5  = positionAccuracy
-     *   6  = latitude  (lat component of location vector)
-     *   7  = longitude (lon component of location vector)
-     *   8  = cog              9  = heading             10 = timeStamp
-     *   11 = unitFlag         12 = displayFlag         13 = dscFlag
-     *   14 = bandFlag         15 = message22Flag       16 = modeFlag
-     *   17 = raim             18 = commStateFlag       19 = commState
+     *   0  = samplingTime          1  = messageId              2  = reportDescription
+     *   3  = repeat                4  = mmsi                   5  = sog
+     *   6  = positionAccuracy (Category)
+     *   7  = latitude  (lat component of location vector)
+     *   8  = longitude (lon component of location vector)
+     *   9  = cog                   10 = heading                11 = utcSecond (Count)
+     *   12 = unitFlag (Category)   13 = displayFlag (Category) 14 = dscFlag (Category)
+     *   15 = bandFlag (Category)   16 = message22Flag (Category) 17 = modeFlag (Category)
+     *   18 = raim (Category)       19 = commStateFlag (Category) 20 = commState
      *
      * Additional fields populated only for type 19 (empty/zero for type 18):
-     *   20 = name             21 = shipType            22 = dimBow
-     *   23 = dimStern         24 = dimPort             25 = dimStarboard
-     *   26 = epfd             27 = dte                 28 = assignedMode
+     *   21 = name             22 = shipType            23 = dimBow
+     *   24 = dimStern         25 = dimPort             26 = dimStarboard
+     *   27 = epfd (Category)  28 = dte (Category)      29 = assignedMode (Category)
      */
     public void doInit() {
         GeoPosHelper geoFac = new GeoPosHelper();
@@ -87,10 +88,7 @@ public class NmeaAisOutputPositionClassB extends VarRateSensorOutput<NmeaAisDriv
                         .description("Speed over ground in knots (0–102.2 knots; 102.3 = not available)")
                         .uom("[kn_i]")
                         .definition(SWEHelper.getPropertyUri("SpeedOverGround")))
-                .addField("positionAccuracy", sweFactory.createQuantity()
-                        .label("Position Accuracy")
-                        .description("1 = high (<= 10 m); 0 = low (> 10 m); 0 = default")
-                        .definition(SWEHelper.getPropertyUri("PositionAccuracy")))
+                .addField("positionAccuracy", fac.createPositionAccuracy())
                 .addField("location", geoFac.createLocationVectorLatLon()
                         .label("Location"))
                 .addField("cog", sweFactory.createQuantity()
@@ -102,43 +100,51 @@ public class NmeaAisOutputPositionClassB extends VarRateSensorOutput<NmeaAisDriv
                         .uom("deg")
                         .description("Degrees (0-359); 511 = not available = default")
                         .definition(SWEHelper.getPropertyUri("heading")))
-                .addField("timeStamp", sweFactory.createTime()
-                        .label("Time Stamp")
+                .addField("utcSecond", sweFactory.createCount()
+                        .label("UTC Second")
                         .description("UTC second when the report was generated (0-59); 60 = not available = default")
-                        .definition(SWEHelper.getPropertyUri("TimeStamp")))
-                .addField("unitFlag", sweFactory.createQuantity()
+                        .definition(SWEHelper.getPropertyUri("UtcSecond")))
+                .addField("unitFlag", fac.createCategory()
                         .label("Class B Unit Flag")
+                        .addAllowedValues(0,1)
                         .description("0 = Class B SOTDMA unit; 1 = Class B CS unit")
                         .definition(SWEHelper.getPropertyUri("UnitFlag")))
-                .addField("displayFlag", sweFactory.createQuantity()
+                .addField("displayFlag", fac.createCategory()
                         .label("Class B Display Flag")
+                        .addAllowedValues(0,1)
                         .description("0 = No display available; 1 = Equipped with display for Message 12 and 14")
                         .definition(SWEHelper.getPropertyUri("DisplayFlag")))
-                .addField("dscFlag", sweFactory.createQuantity()
+                .addField("dscFlag", fac.createCategory()
                         .label("Class B DSC Flag")
+                        .addAllowedValues(0,1)
                         .description("0 = Not equipped with DSC function; 1 = Equipped with DSC function")
                         .definition(SWEHelper.getPropertyUri("DscFlag")))
-                .addField("bandFlag", sweFactory.createQuantity()
+                .addField("bandFlag", fac.createCategory()
                         .label("Class B Band Flag")
+                        .addAllowedValues(0,1)
                         .description("0 = Capable of operating over upper 525 kHz band; 1 = Capable of operating over whole marine band")
                         .definition(SWEHelper.getPropertyUri("BandFlag")))
-                .addField("message22Flag", sweFactory.createQuantity()
+                .addField("message22Flag", fac.createCategory()
                         .label("Class B Message 22 Flag")
+                        .addAllowedValues(0,1)
                         .description("0 = No frequency management via Message 22; 1 = Frequency management via Message 22")
                         .definition(SWEHelper.getPropertyUri("Message22Flag")))
-                .addField("modeFlag", sweFactory.createQuantity()
+                .addField("modeFlag", fac.createCategory()
                         .label("Mode Flag")
+                        .addAllowedValues(0,1)
                         .description("0 = Autonomous and continuous mode = default; 1 = Assigned mode")
                         .definition(SWEHelper.getPropertyUri("ModeFlag")))
-                .addField("raim", sweFactory.createQuantity()
+                .addField("raim", fac.createCategory()
                         .label("RAIM Flag")
+                        .addAllowedValues(0,1)
                         .description("0 = RAIM not in use = default; 1 = RAIM in use")
                         .definition(SWEHelper.getPropertyUri("Raim")))
-                .addField("commStateFlag", sweFactory.createQuantity()
+                .addField("commStateFlag", fac.createCategory()
                         .label("Communication State Selector Flag")
+                        .addAllowedValues(0,1)
                         .description("0 = SOTDMA communication state follows; 1 = ITDMA (always 1 for Class B CS)")
                         .definition(SWEHelper.getPropertyUri("CommStateFlag")))
-                .addField("commState", sweFactory.createQuantity()
+                .addField("commState", sweFactory.createCount()
                         .label("Communication State")
                         .description("SOTDMA or ITDMA communication state")
                         .definition(SWEHelper.getPropertyUri("CommState")))
@@ -147,7 +153,7 @@ public class NmeaAisOutputPositionClassB extends VarRateSensorOutput<NmeaAisDriv
                         .label("Vessel Name")
                         .description("Vessel name (type 19 only; empty for type 18)")
                         .definition(SWEHelper.getPropertyUri("VesselName")))
-                .addField("shipType", sweFactory.createQuantity()
+                .addField("shipType", sweFactory.createCount()
                         .label("Ship Type")
                         .description("Ship type per ITU-R M.1371-5 Table 53 (type 19 only; 0 for type 18)")
                         .definition(SWEHelper.getPropertyUri("ShipType")))
@@ -171,16 +177,19 @@ public class NmeaAisOutputPositionClassB extends VarRateSensorOutput<NmeaAisDriv
                         .description("Distance from GPS antenna to starboard side in metres (type 19 only)")
                         .uom("m")
                         .definition(SWEHelper.getPropertyUri("DimStarboard")))
-                .addField("epfd", sweFactory.createQuantity()
-                        .label("Type of EPFD")
-                        .description("Electronic position fixing device type (type 19 only)")
+                .addField("epfd", fac.createCategory()
+                        .label("EPFD Type")
+                        .addAllowedValues(0,1,2,3,4,5,6,7,8,15)
+                        .description("Electronic position fixing device type (type 19 only): 0 = undefined, 1 = GPS, 2 = GLONASS, 3 = Combined GPS/GLONASS, 4 = Loran-C, 5 = Chayka, 6 = Integrated navigation system, 7 = Surveyed, 8 = Galileo, 15 = internal GNSS")
                         .definition(SWEHelper.getPropertyUri("Epfd")))
-                .addField("dte", sweFactory.createQuantity()
+                .addField("dte", fac.createCategory()
                         .label("DTE")
+                        .addAllowedValues(0,1)
                         .description("Data terminal equipment available; 0 = available; 1 = not available (type 19 only)")
                         .definition(SWEHelper.getPropertyUri("Dte")))
-                .addField("assignedMode", sweFactory.createQuantity()
+                .addField("assignedMode", fac.createCategory()
                         .label("Assigned Mode Flag")
+                        .addAllowedValues(0,1)
                         .description("0 = autonomous mode = default; 1 = assigned mode (type 19 only)")
                         .definition(SWEHelper.getPropertyUri("AssignedMode")));
 
@@ -199,20 +208,20 @@ public class NmeaAisOutputPositionClassB extends VarRateSensorOutput<NmeaAisDriv
             dataBlock.setIntValue(3,  report.getRepeat());
             dataBlock.setStringValue(4,  String.valueOf(report.getUserId()));
             dataBlock.setDoubleValue(5,  report.getSog() / 10.0);
-            dataBlock.setIntValue(6,  report.getPosAcc());
+            dataBlock.setStringValue(6, String.valueOf(report.getPosAcc()));
             dataBlock.setDoubleValue(7,  report.getPos().getLatitudeDouble());
             dataBlock.setDoubleValue(8,  report.getPos().getLongitudeDouble());
             dataBlock.setDoubleValue(9,  report.getCog() / 10.0);
             dataBlock.setIntValue(10,  report.getTrueHeading());
             dataBlock.setIntValue(11, report.getUtcSec());
-            dataBlock.setIntValue(12, report.getClassBUnitFlag());
-            dataBlock.setIntValue(13, report.getClassBDisplayFlag());
-            dataBlock.setIntValue(14, report.getClassBDscFlag());
-            dataBlock.setIntValue(15, report.getClassBBandFlag());
-            dataBlock.setIntValue(16, report.getClassBMsg22Flag());
-            dataBlock.setIntValue(17, report.getModeFlag());
-            dataBlock.setIntValue(18, report.getRaim());
-            dataBlock.setIntValue(19, report.getCommStateSelectorFlag());
+            dataBlock.setStringValue(12, String.valueOf(report.getClassBUnitFlag()));
+            dataBlock.setStringValue(13, String.valueOf(report.getClassBDisplayFlag()));
+            dataBlock.setStringValue(14, String.valueOf(report.getClassBDscFlag()));
+            dataBlock.setStringValue(15, String.valueOf(report.getClassBBandFlag()));
+            dataBlock.setStringValue(16, String.valueOf(report.getClassBMsg22Flag()));
+            dataBlock.setStringValue(17, String.valueOf(report.getModeFlag()));
+            dataBlock.setStringValue(18, String.valueOf(report.getRaim()));
+            dataBlock.setStringValue(19, String.valueOf(report.getCommStateSelectorFlag()));
             dataBlock.setIntValue(20, report.getCommState());
             // type-19-only fields — not present in type 18
             dataBlock.setStringValue(21, "");
@@ -221,9 +230,9 @@ public class NmeaAisOutputPositionClassB extends VarRateSensorOutput<NmeaAisDriv
             dataBlock.setIntValue(24, 0);
             dataBlock.setIntValue(25, 0);
             dataBlock.setIntValue(26, 0);
-            dataBlock.setIntValue(27, 0);
-            dataBlock.setIntValue(28, 0);
-            dataBlock.setIntValue(29, 0);
+            dataBlock.setStringValue(27, "0");
+            dataBlock.setStringValue(28, "0");
+            dataBlock.setStringValue(29, "0");
 
             publish(dataBlock, String.valueOf(report.getUserId()));
         }
@@ -240,21 +249,21 @@ public class NmeaAisOutputPositionClassB extends VarRateSensorOutput<NmeaAisDriv
             dataBlock.setIntValue(3,  report.getRepeat());
             dataBlock.setStringValue(4,  String.valueOf(report.getUserId()));
             dataBlock.setDoubleValue(5,  report.getSog() / 10.0);
-            dataBlock.setIntValue(6,  report.getPosAcc());
+            dataBlock.setStringValue(6, String.valueOf(report.getPosAcc()));
             dataBlock.setDoubleValue(7,  report.getPos().getLatitudeDouble());
             dataBlock.setDoubleValue(8,  report.getPos().getLongitudeDouble());
             dataBlock.setDoubleValue(9,  report.getCog() / 10.0);
             dataBlock.setIntValue(10,  report.getTrueHeading());
             dataBlock.setIntValue(11, report.getUtcSec());
             // type 19 does not carry Class B CS radio flags — set to 0
-            dataBlock.setIntValue(12, 0);
-            dataBlock.setIntValue(13, 0);
-            dataBlock.setIntValue(14, 0);
-            dataBlock.setIntValue(15, 0);
-            dataBlock.setIntValue(16, 0);
-            dataBlock.setIntValue(17, report.getModeFlag());
-            dataBlock.setIntValue(18, report.getRaim());
-            dataBlock.setIntValue(19, 0);
+            dataBlock.setStringValue(12, "0");
+            dataBlock.setStringValue(13, "0");
+            dataBlock.setStringValue(14, "0");
+            dataBlock.setStringValue(15, "0");
+            dataBlock.setStringValue(16, "0");
+            dataBlock.setStringValue(17, String.valueOf(report.getModeFlag()));
+            dataBlock.setStringValue(18, String.valueOf(report.getRaim()));
+            dataBlock.setStringValue(19, "0");
             dataBlock.setIntValue(20, 0);
             // type-19-only fields
             dataBlock.setStringValue(21, report.getName());
@@ -263,9 +272,9 @@ public class NmeaAisOutputPositionClassB extends VarRateSensorOutput<NmeaAisDriv
             dataBlock.setIntValue(24, report.getDimStern());
             dataBlock.setIntValue(25, report.getDimPort());
             dataBlock.setIntValue(26, report.getDimStarboard());
-            dataBlock.setIntValue(27, report.getPosType());
-            dataBlock.setIntValue(28, report.getDte());
-            dataBlock.setIntValue(29, report.getModeFlag());
+            dataBlock.setStringValue(27, String.valueOf(report.getPosType()));
+            dataBlock.setStringValue(28, String.valueOf(report.getDte()));
+            dataBlock.setStringValue(29, String.valueOf(report.getModeFlag()));
 
             publish(dataBlock, String.valueOf(report.getUserId()));
         }

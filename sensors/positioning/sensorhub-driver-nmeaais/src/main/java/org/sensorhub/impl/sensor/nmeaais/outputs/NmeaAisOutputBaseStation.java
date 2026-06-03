@@ -26,6 +26,8 @@ import org.vast.swe.SWEBuilders;
 import org.vast.swe.SWEHelper;
 import org.vast.swe.helper.GeoPosHelper;
 
+import java.util.stream.IntStream;
+
 public class NmeaAisOutputBaseStation extends VarRateSensorOutput<NmeaAisDriver> implements NmeaAisReportInterface<AisMessage4> {
     private DataRecord aisReportRecord;
     private DataEncoding dataEncoding;
@@ -45,13 +47,14 @@ public class NmeaAisOutputBaseStation extends VarRateSensorOutput<NmeaAisDriver>
      * Initializes the data structure for the output.
      *
      * Flat index map:
-     *   0  = messageId          1  = reportDescription   2  = repeat
-     *   3  = mmsi               4  = utcYear             5  = utcMonth
-     *   6  = utcDay             7  = utcHour             8  = utcMinute
-     *   9  = utcSecond          10 = positionAccuracy
-     *   11 = latitude  (lat component of location vector)
-     *   12 = longitude (lon component of location vector)
-     *   13 = epfd               14 = raim
+     *   0  = samplingTime       1  = messageId            2  = reportDescription
+     *   3  = repeat             4  = mmsi                 5  = utcYear
+     *   6  = utcMonth           7  = utcDay               8  = utcHour
+     *   9  = utcMinute          10 = utcSecond
+     *   11 = positionAccuracy (Category)
+     *   12 = latitude  (lat component of location vector)
+     *   13 = longitude (lon component of location vector)
+     *   14 = epfd (Category)    15 = raim (Category)
      */
     public void doInit() {
         GeoPosHelper geoFac = new GeoPosHelper();
@@ -72,42 +75,46 @@ public class NmeaAisOutputBaseStation extends VarRateSensorOutput<NmeaAisDriver>
                 .addField("reportDescription", fac.createReportDescription())
                 .addField("repeat", fac.createRepeatIndicator())
                 .addField("mmsi", fac.createMssi())
-                .addField("utcYear", sweFactory.createQuantity()
+                .addField("utcYear", sweFactory.createCount()
                         .label("UTC Year")
                         .description("UTC Year (1-9999, 0 = not available = default)")
                         .definition(SWEHelper.getPropertyUri("UtcYear")))
-                .addField("utcMonth", sweFactory.createQuantity()
+                .addField("utcMonth", sweFactory.createCount()
                         .label("UTC Month")
+                        .addAllowedValues(IntStream.rangeClosed(0, 12).toArray())
                         .description("UTC Month (1-12, 0 = not available = default)")
                         .definition(SWEHelper.getPropertyUri("UtcMonth")))
-                .addField("utcDay", sweFactory.createQuantity()
+                .addField("utcDay", sweFactory.createCount()
                         .label("UTC Day")
+                        .addAllowedValues(IntStream.rangeClosed(0, 31).toArray())
                         .description("UTC Day (1-31, 0 = not available = default)")
                         .definition(SWEHelper.getPropertyUri("UtcDay")))
-                .addField("utcHour", sweFactory.createQuantity()
+                .addField("utcHour", sweFactory.createCount()
                         .label("UTC Hour")
+                        .addAllowedValues(IntStream.rangeClosed(0, 24).toArray())
                         .description("UTC Hour (0-23, 24 = not available = default)")
                         .definition(SWEHelper.getPropertyUri("UtcHour")))
-                .addField("utcMinute", sweFactory.createQuantity()
+                .addField("utcMinute", sweFactory.createCount()
                         .label("UTC Minute")
+                        .addAllowedValues(IntStream.rangeClosed(0, 60).toArray())
                         .description("UTC Minute (0-59, 60 = not available = default)")
                         .definition(SWEHelper.getPropertyUri("UtcMinute")))
-                .addField("utcSecond", sweFactory.createQuantity()
+                .addField("utcSecond", sweFactory.createCount()
                         .label("UTC Second")
+                        .addAllowedValues(IntStream.rangeClosed(0, 60).toArray())
                         .description("UTC Second (0-59, 60 = not available = default)")
                         .definition(SWEHelper.getPropertyUri("UtcSecond")))
-                .addField("positionAccuracy", sweFactory.createQuantity()
-                        .label("Position Accuracy")
-                        .description("1 = high (<= 10 m); 0 = low (> 10 m); 0 = default")
-                        .definition(SWEHelper.getPropertyUri("PositionAccuracy")))
+                .addField("positionAccuracy", fac.createPositionAccuracy())
                 .addField("location", geoFac.createLocationVectorLatLon()
                         .label("Location"))
-                .addField("epfd", sweFactory.createQuantity()
-                        .label("Type of EPFD")
-                        .description("0 = undefined, 1 = GPS, 2 = GLONASS, 3 = Combined GPS/GLONASS, 4 = Loran-C, 5 = Chayka, 6 = Integrated navigation system, 7 = Surveyed, 8 = Galileo, 15 = internal GNSS")
+                .addField("epfd", fac.createCategory()
+                        .label("EPFD Type")
+                        .addAllowedValues(0,1,2,3,4,5,6,7,8,15)
+                        .description("Type of Electronic Position Fixing Device: 0 = undefined, 1 = GPS, 2 = GLONASS, 3 = Combined GPS/GLONASS, 4 = Loran-C, 5 = Chayka, 6 = Integrated navigation system, 7 = Surveyed, 8 = Galileo, 15 = internal GNSS")
                         .definition(SWEHelper.getPropertyUri("Epfd")))
-                .addField("raim", sweFactory.createQuantity()
+                .addField("raim", fac.createCategory()
                         .label("RAIM Flag")
+                        .addAllowedValues(0,1)
                         .description("Receiver autonomous integrity monitoring flag; 0 = RAIM not in use; 1 = RAIM in use")
                         .definition(SWEHelper.getPropertyUri("Raim")));
 
@@ -131,11 +138,11 @@ public class NmeaAisOutputBaseStation extends VarRateSensorOutput<NmeaAisDriver>
             dataBlock.setIntValue(8,  report.getUtcHour());
             dataBlock.setIntValue(9,  report.getUtcMinute());
             dataBlock.setIntValue(10,  report.getUtcSecond());
-            dataBlock.setIntValue(11, report.getPosAcc());
+            dataBlock.setStringValue(11, String.valueOf(report.getPosAcc()));
             dataBlock.setDoubleValue(12, report.getPos().getLatitudeDouble());
             dataBlock.setDoubleValue(13, report.getPos().getLongitudeDouble());
-            dataBlock.setIntValue(14, report.getPosType());
-            dataBlock.setIntValue(15, report.getRaim());
+            dataBlock.setStringValue(14, String.valueOf(report.getPosType()));
+            dataBlock.setStringValue(15, String.valueOf(report.getRaim()));
 
             String foiUID = parentSensor.addFoi(String.valueOf(report.getUserId()));
 

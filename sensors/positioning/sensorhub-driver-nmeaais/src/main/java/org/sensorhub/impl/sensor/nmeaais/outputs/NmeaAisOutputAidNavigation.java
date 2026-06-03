@@ -26,6 +26,8 @@ import org.vast.swe.SWEBuilders;
 import org.vast.swe.SWEHelper;
 import org.vast.swe.helper.GeoPosHelper;
 
+import java.util.stream.IntStream;
+
 public class NmeaAisOutputAidNavigation extends VarRateSensorOutput<NmeaAisDriver> implements NmeaAisReportInterface<AisMessage21> {
     private DataRecord aisReportRecord;
     private DataEncoding dataEncoding;
@@ -45,22 +47,22 @@ public class NmeaAisOutputAidNavigation extends VarRateSensorOutput<NmeaAisDrive
      * Initializes the data structure for the output.
      *
      * Flat index map:
-     *   0  = messageId            1  = reportDescription     2  = repeat
-     *   3  = mmsi                 4  = typeOfAidsToNav       5  = name
-     *   6  = positionAccuracy
-     *   7  = latitude  (lat component of location vector)
-     *   8  = longitude (lon component of location vector)
-     *   9  = dimBow               10 = dimStern              11 = dimPort
-     *   12 = dimStarboard         13 = epfd                  14 = utcSecond
-     *   15 = offPositionIndicator 16 = raim                  17 = virtualAid
-     *   18 = assignedMode
+     *   0  = samplingTime         1  = messageId             2  = reportDescription
+     *   3  = repeat               4  = mmsi                  5  = typeOfAidsToNav (Category)
+     *   6  = name
+     *   7  = positionAccuracy (Category)
+     *   8  = latitude  (lat component of location vector)
+     *   9  = longitude (lon component of location vector)
+     *   10 = dimBow               11 = dimStern              12 = dimPort
+     *   13 = dimStarboard         14 = epfd (Category)       15 = utcSecond
+     *   16 = offPositionIndicator (Category)                 17 = raim (Category)
+     *   18 = virtualAid (Category)                           19 = assignedMode (Category)
      */
     public void doInit() {
         GeoPosHelper geoFac = new GeoPosHelper();
-        SWEHelper sweFactory = new SWEHelper();
         NmeaAisHelper fac = new NmeaAisHelper();
 
-        SWEBuilders.DataRecordBuilder recordBuilder = sweFactory.createRecord()
+        SWEBuilders.DataRecordBuilder recordBuilder = fac.createRecord()
                 .name(OUTPUT_NAME)
                 .label(OUTPUT_LABEL)
                 .description(OUTPUT_DESCRIPTION)
@@ -74,62 +76,65 @@ public class NmeaAisOutputAidNavigation extends VarRateSensorOutput<NmeaAisDrive
                 .addField("reportDescription", fac.createReportDescription())
                 .addField("repeat", fac.createRepeatIndicator())
                 .addField("mmsi", fac.createMssi())
-                .addField("typeOfAidsToNav", sweFactory.createQuantity()
+                .addField("typeOfAidsToNav", fac.createCategory()
                         .label("Type of Aid-to-Nav")
                         .description("1 = Default/unspecified; 2 = Reference point; 3 = RACON; 4 = Fixed structure; 5-20 = Fixed; 21-29 = Floating; 30-31 = Landfall/Coast/Inland")
+                        .addAllowedValues(IntStream.rangeClosed(0, 31).toArray())
                         .definition(SWEHelper.getPropertyUri("TypeOfAidsToNav")))
-                .addField("name", sweFactory.createText()
+                .addField("name", fac.createText()
                         .label("Name of Aid-to-Nav")
                         .description("Maximum 20 characters; padded with spaces")
                         .definition(SWEHelper.getPropertyUri("AidToNavName")))
-                .addField("positionAccuracy", sweFactory.createQuantity()
-                        .label("Position Accuracy")
-                        .description("1 = high (<= 10 m); 0 = low (> 10 m); 0 = default")
-                        .definition(SWEHelper.getPropertyUri("PositionAccuracy")))
+                .addField("positionAccuracy", fac.createPositionAccuracy())
                 .addField("location", geoFac.createLocationVectorLatLon()
                         .label("Location"))
-                .addField("dimBow", sweFactory.createQuantity()
+                .addField("dimBow", fac.createQuantity()
                         .label("Dimension to Bow")
                         .description("Size of the aid-to-navigation, bow to GPS antenna in metres; 0 = not available = default")
                         .uom("m")
                         .definition(SWEHelper.getPropertyUri("DimBow")))
-                .addField("dimStern", sweFactory.createQuantity()
+                .addField("dimStern", fac.createQuantity()
                         .label("Dimension to Stern")
                         .description("Size of the aid-to-navigation, GPS antenna to stern in metres; 0 = not available = default")
                         .uom("m")
                         .definition(SWEHelper.getPropertyUri("DimStern")))
-                .addField("dimPort", sweFactory.createQuantity()
+                .addField("dimPort", fac.createQuantity()
                         .label("Dimension to Port")
                         .description("Size of the aid-to-navigation, GPS antenna to port side in metres; 0 = not available = default")
                         .uom("m")
                         .definition(SWEHelper.getPropertyUri("DimPort")))
-                .addField("dimStarboard", sweFactory.createQuantity()
+                .addField("dimStarboard", fac.createQuantity()
                         .label("Dimension to Starboard")
                         .description("Size of the aid-to-navigation, GPS antenna to starboard side in metres; 0 = not available = default")
                         .uom("m")
                         .definition(SWEHelper.getPropertyUri("DimStarboard")))
-                .addField("epfd", sweFactory.createQuantity()
-                        .label("Type of EPFD")
-                        .description("0 = undefined, 1 = GPS, 2 = GLONASS, 3 = Combined GPS/GLONASS, 4 = Loran-C, 5 = Chayka, 6 = Integrated navigation system, 7 = Surveyed, 8 = Galileo, 15 = internal GNSS")
+                .addField("epfd", fac.createCategory()
+                        .label("EPFD Type")
+                        .addAllowedValues(0,1,2,3,4,5,6,7,8,15)
+                        .description("Type of Electronic Position Fixing Device: 0 = undefined, 1 = GPS, 2 = GLONASS, 3 = Combined GPS/GLONASS, 4 = Loran-C, 5 = Chayka, 6 = Integrated navigation system, 7 = Surveyed, 8 = Galileo, 15 = internal GNSS")
                         .definition(SWEHelper.getPropertyUri("Epfd")))
-                .addField("utcSecond", sweFactory.createQuantity()
+                .addField("utcSecond", fac.createCount()
                         .label("UTC Second")
                         .description("UTC second when report was generated (0-59); 60 = not available = default")
                         .definition(SWEHelper.getPropertyUri("UtcSecond")))
-                .addField("offPositionIndicator", sweFactory.createQuantity()
+                .addField("offPositionIndicator", fac.createCategory()
                         .label("Off Position Indicator")
+                        .addAllowedValues(0,1)
                         .description("For floating aids-to-navigation: 0 = on position; 1 = off position. Only valid if UTC second is 0-59")
                         .definition(SWEHelper.getPropertyUri("OffPositionIndicator")))
-                .addField("raim", sweFactory.createQuantity()
+                .addField("raim", fac.createCategory()
                         .label("RAIM Flag")
+                        .addAllowedValues(0,1)
                         .description("Receiver autonomous integrity monitoring flag; 0 = RAIM not in use; 1 = RAIM in use")
                         .definition(SWEHelper.getPropertyUri("Raim")))
-                .addField("virtualAid", sweFactory.createQuantity()
+                .addField("virtualAid", fac.createCategory()
                         .label("Virtual Aid Flag")
+                        .addAllowedValues(0,1)
                         .description("0 = default; 1 = virtual aid to navigation simulated by nearby AIS station")
                         .definition(SWEHelper.getPropertyUri("VirtualAid")))
-                .addField("assignedMode", sweFactory.createQuantity()
+                .addField("assignedMode", fac.createCategory()
                         .label("Assigned Mode Flag")
+                        .addAllowedValues(0,1)
                         .description("0 = station operating in autonomous and continuous mode = default; 1 = station operating in assigned mode")
                         .definition(SWEHelper.getPropertyUri("AssignedMode")));
 
@@ -147,21 +152,21 @@ public class NmeaAisOutputAidNavigation extends VarRateSensorOutput<NmeaAisDrive
             dataBlock.setStringValue(2, description);
             dataBlock.setIntValue(3,  report.getRepeat());
             dataBlock.setStringValue(4,  String.valueOf(report.getUserId()));
-            dataBlock.setIntValue(5,  report.getAtonType());
+            dataBlock.setStringValue(5, String.valueOf(report.getAtonType()));
             dataBlock.setStringValue(6, report.getName());
-            dataBlock.setIntValue(7,  report.getPosAcc());
+            dataBlock.setStringValue(7, String.valueOf(report.getPosAcc()));
             dataBlock.setDoubleValue(8,  report.getPos().getLatitudeDouble());
             dataBlock.setDoubleValue(9,  report.getPos().getLongitudeDouble());
             dataBlock.setIntValue(10,  report.getDimBow());
             dataBlock.setIntValue(11, report.getDimStern());
             dataBlock.setIntValue(12, report.getDimPort());
             dataBlock.setIntValue(13, report.getDimStarboard());
-            dataBlock.setIntValue(14, report.getPosType());
+            dataBlock.setStringValue(14, String.valueOf(report.getPosType()));
             dataBlock.setIntValue(15, report.getUtcSec());
-            dataBlock.setIntValue(16, report.getOffPosition());
-            dataBlock.setIntValue(17, report.getRaim());
-            dataBlock.setIntValue(18, report.getVirtual());
-            dataBlock.setIntValue(19, report.getAssigned());
+            dataBlock.setStringValue(16, String.valueOf(report.getOffPosition()));
+            dataBlock.setStringValue(17, String.valueOf(report.getRaim()));
+            dataBlock.setStringValue(18, String.valueOf(report.getVirtual()));
+            dataBlock.setStringValue(19, String.valueOf(report.getAssigned()));
 
             String foiUID = parentSensor.addFoi(String.valueOf(report.getUserId()));
 

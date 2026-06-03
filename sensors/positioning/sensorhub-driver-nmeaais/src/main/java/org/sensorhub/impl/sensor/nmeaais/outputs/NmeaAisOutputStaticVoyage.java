@@ -17,6 +17,8 @@ import dk.dma.ais.message.AisMessage5;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.TimeZone;
+import java.util.stream.IntStream;
+
 import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.DataEncoding;
@@ -48,20 +50,20 @@ public class NmeaAisOutputStaticVoyage extends VarRateSensorOutput<NmeaAisDriver
      * Initializes the data structure for the output.
      *
      * Flat index map:
-     *   0  = messageId       1  = reportDescription   2  = repeat
-     *   3  = mmsi            4  = aisVersion          5  = imoNumber
-     *   6  = callSign        7  = name                8  = shipType
-     *   9  = dimBow          10 = dimStern            11 = dimPort
-     *   12 = dimStarboard    13 = epfd               14 = etaMonth
-     *   15 = etaDay          16 = etaHour            17 = etaMinute
-     *   18 = draught         19 = destination         20 = dte
+     *   0  = samplingTime        1  = messageId               2  = reportDescription
+     *   3  = repeat              4  = mmsi                    5  = aisVersion (Category)
+     *   6  = imoNumber           7  = callSign                8  = name
+     *   9  = shipType            10 = dimBow                  11 = dimStern
+     *   12 = dimPort             13 = dimStarboard            14 = epfd (Category)
+     *   15 = etaMonth            16 = etaDay                  17 = etaHour
+     *   18 = etaMinute           19 = draught                 20 = destination
+     *   21 = dte (Category)
      */
     public void doInit() {
         GeoPosHelper geoFac = new GeoPosHelper();
-        SWEHelper sweFactory = new SWEHelper();
         NmeaAisHelper fac = new NmeaAisHelper();
 
-        SWEBuilders.DataRecordBuilder recordBuilder = sweFactory.createRecord()
+        SWEBuilders.DataRecordBuilder recordBuilder = fac.createRecord()
                 .name(OUTPUT_NAME)
                 .label(OUTPUT_LABEL)
                 .description(OUTPUT_DESCRIPTION)
@@ -75,77 +77,84 @@ public class NmeaAisOutputStaticVoyage extends VarRateSensorOutput<NmeaAisDriver
                 .addField("reportDescription", fac.createReportDescription())
                 .addField("repeat", fac.createRepeatIndicator())
                 .addField("mmsi", fac.createMssi())
-                .addField("aisVersion", sweFactory.createQuantity()
+                .addField("aisVersion", fac.createCategory()
                         .label("AIS Version")
+                        .addAllowedValues(0,1,2,3)
                         .description("0 = ITU1371; 1-3 = future editions")
                         .definition(SWEHelper.getPropertyUri("AisVersion")))
-                .addField("imoNumber", sweFactory.createQuantity()
+                .addField("imoNumber", fac.createQuantity()
                         .label("IMO Number")
                         .description("1-999999999; 0 = not available = default")
                         .definition(SWEHelper.getPropertyUri("ImoNumber")))
-                .addField("callSign", sweFactory.createText()
+                .addField("callSign", fac.createText()
                         .label("Call Sign")
                         .description("7 x 6 bit ASCII characters, padded with spaces after")
                         .definition(SWEHelper.getPropertyUri("CallSign")))
-                .addField("name", sweFactory.createText()
+                .addField("name", fac.createText()
                         .label("Vessel Name")
                         .description("Maximum 20 characters; padded with spaces after. Indicate \"Not available\" if not known")
                         .definition(SWEHelper.getPropertyUri("VesselName")))
-                .addField("shipType", sweFactory.createQuantity()
+                .addField("shipType", fac.createCount()
                         .label("Ship Type")
                         .description("0 = not available or no ship = default; 1-99 per ITU-R M.1371-5 Table 53")
                         .definition(SWEHelper.getPropertyUri("ShipType")))
-                .addField("dimBow", sweFactory.createQuantity()
+                .addField("dimBow", fac.createQuantity()
                         .label("Dimension to Bow")
                         .description("Distance from GPS antenna to bow in metres; 0 = not available = default; 511 = 511 m or greater")
                         .uom("m")
                         .definition(SWEHelper.getPropertyUri("DimBow")))
-                .addField("dimStern", sweFactory.createQuantity()
+                .addField("dimStern", fac.createQuantity()
                         .label("Dimension to Stern")
                         .description("Distance from GPS antenna to stern in metres; 0 = not available = default; 511 = 511 m or greater")
                         .uom("m")
                         .definition(SWEHelper.getPropertyUri("DimStern")))
-                .addField("dimPort", sweFactory.createQuantity()
+                .addField("dimPort", fac.createQuantity()
                         .label("Dimension to Port")
                         .description("Distance from GPS antenna to port side in metres; 0 = not available = default; 63 = 63 m or greater")
                         .uom("m")
                         .definition(SWEHelper.getPropertyUri("DimPort")))
-                .addField("dimStarboard", sweFactory.createQuantity()
+                .addField("dimStarboard", fac.createQuantity()
                         .label("Dimension to Starboard")
                         .description("Distance from GPS antenna to starboard side in metres; 0 = not available = default; 63 = 63 m or greater")
                         .uom("m")
                         .definition(SWEHelper.getPropertyUri("DimStarboard")))
-                .addField("epfd", sweFactory.createQuantity()
-                        .label("Type of EPFD")
-                        .description("0 = undefined, 1 = GPS, 2 = GLONASS, 3 = Combined GPS/GLONASS, 4 = Loran-C, 5 = Chayka, 6 = Integrated navigation system, 7 = Surveyed, 8 = Galileo, 15 = internal GNSS")
+                .addField("epfd", fac.createCategory()
+                        .label("EPFD Type")
+                        .addAllowedValues(0,1,2,3,4,5,6,7,8,15)
+                        .description("Type of Electronic Position Fixing Device: 0 = undefined, 1 = GPS, 2 = GLONASS, 3 = Combined GPS/GLONASS, 4 = Loran-C, 5 = Chayka, 6 = Integrated navigation system, 7 = Surveyed, 8 = Galileo, 15 = internal GNSS")
                         .definition(SWEHelper.getPropertyUri("Epfd")))
-                .addField("etaMonth", sweFactory.createQuantity()
+                .addField("etaMonth", fac.createCount()
                         .label("ETA Month")
+                        .addAllowedValues(IntStream.rangeClosed(0, 12).toArray())
                         .description("Estimated time of arrival month; 1-12; 0 = not available = default")
                         .definition(SWEHelper.getPropertyUri("EtaMonth")))
-                .addField("etaDay", sweFactory.createQuantity()
+                .addField("etaDay", fac.createCount()
                         .label("ETA Day")
+                        .addAllowedValues(IntStream.rangeClosed(0, 31).toArray())
                         .description("Estimated time of arrival day; 1-31; 0 = not available = default")
                         .definition(SWEHelper.getPropertyUri("EtaDay")))
-                .addField("etaHour", sweFactory.createQuantity()
+                .addField("etaHour", fac.createCount()
                         .label("ETA Hour")
+                        .addAllowedValues(IntStream.rangeClosed(0, 24).toArray())
                         .description("Estimated time of arrival hour; 0-23; 24 = not available = default")
                         .definition(SWEHelper.getPropertyUri("EtaHour")))
-                .addField("etaMinute", sweFactory.createQuantity()
+                .addField("etaMinute", fac.createCount()
                         .label("ETA Minute")
+                        .addAllowedValues(IntStream.rangeClosed(0, 60).toArray())
                         .description("Estimated time of arrival minute; 0-59; 60 = not available = default")
                         .definition(SWEHelper.getPropertyUri("EtaMinute")))
-                .addField("draught", sweFactory.createQuantity()
+                .addField("draught", fac.createQuantity()
                         .label("Maximum Present Static Draught")
                         .description("In metres; 1/10 m steps; 0 = not available = default; 25.5 m = draught is 25.5 m or greater")
                         .uom("m")
                         .definition(SWEHelper.getPropertyUri("Draught")))
-                .addField("destination", sweFactory.createText()
+                .addField("destination", fac.createText()
                         .label("Destination")
                         .description("Maximum 20 characters; padded with spaces after. Indicate \"Not available\" if not known")
                         .definition(SWEHelper.getPropertyUri("Destination")))
-                .addField("dte", sweFactory.createQuantity()
+                .addField("dte", fac.createCategory()
                         .label("DTE")
+                        .addAllowedValues(0,1)
                         .description("Data terminal equipment (DTE) available; 0 = available; 1 = not available = default")
                         .definition(SWEHelper.getPropertyUri("Dte")));
 
@@ -163,7 +172,7 @@ public class NmeaAisOutputStaticVoyage extends VarRateSensorOutput<NmeaAisDriver
             dataBlock.setStringValue(2, description);
             dataBlock.setIntValue(3,  report.getRepeat());
             dataBlock.setStringValue(4,  String.valueOf(report.getUserId()));
-            dataBlock.setIntValue(5,  report.getVersion());
+            dataBlock.setStringValue(5, String.valueOf(report.getVersion()));
             dataBlock.setLongValue(6,  report.getImo());
             dataBlock.setStringValue(7, report.getCallsign());
             dataBlock.setStringValue(8, report.getName());
@@ -172,7 +181,7 @@ public class NmeaAisOutputStaticVoyage extends VarRateSensorOutput<NmeaAisDriver
             dataBlock.setIntValue(11, report.getDimStern());
             dataBlock.setIntValue(12, report.getDimPort());
             dataBlock.setIntValue(13, report.getDimStarboard());
-            dataBlock.setIntValue(14, report.getPosType());
+            dataBlock.setStringValue(14, String.valueOf(report.getPosType()));
 
             // ETA is stored as a packed long; getEtaDate() converts to java.util.Date
             int etaMonth = 0, etaDay = 0, etaHour = 24, etaMinute = 60;
@@ -191,7 +200,7 @@ public class NmeaAisOutputStaticVoyage extends VarRateSensorOutput<NmeaAisDriver
             dataBlock.setIntValue(18, etaMinute);
             dataBlock.setDoubleValue(19, report.getDraught() / 10.0);
             dataBlock.setStringValue(20, report.getDest());
-            dataBlock.setIntValue(21, report.getDte());
+            dataBlock.setStringValue(21, String.valueOf(report.getDte()));
 
             String foiUID = parentSensor.addFoi(String.valueOf(report.getUserId()));
 

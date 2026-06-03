@@ -38,10 +38,11 @@ import org.vast.swe.helper.GeoPosHelper;
  * the corresponding Part A has not yet been seen.
  *
  * Flat index map:
- *   0  = messageId       1  = reportDescription   2  = repeat
- *   3  = mmsi            4  = name                5  = callSign
- *   6  = shipType        7  = dimBow              8  = dimStern
- *   9  = dimPort         10 = dimStarboard        11 = vendorId
+ *   0  = samplingTime    1  = messageId           2  = reportDescription
+ *   3  = repeat          4  = mmsi                5  = name
+ *   6  = callSign        7  = shipType            8  = dimBow
+ *   9  = dimStern        10 = dimPort             11 = dimStarboard
+ *   12 = vendorId
  */
 public class NmeaAisOutputStaticDataClassB extends VarRateSensorOutput<NmeaAisDriver> {
     private DataRecord aisReportRecord;
@@ -60,10 +61,9 @@ public class NmeaAisOutputStaticDataClassB extends VarRateSensorOutput<NmeaAisDr
 
     public void doInit() {
         GeoPosHelper geoFac = new GeoPosHelper();
-        SWEHelper sweFactory = new SWEHelper();
         NmeaAisHelper fac = new NmeaAisHelper();
 
-        SWEBuilders.DataRecordBuilder recordBuilder = sweFactory.createRecord()
+        SWEBuilders.DataRecordBuilder recordBuilder = fac.createRecord()
                 .name(OUTPUT_NAME)
                 .label(OUTPUT_LABEL)
                 .description(OUTPUT_DESCRIPTION)
@@ -77,39 +77,39 @@ public class NmeaAisOutputStaticDataClassB extends VarRateSensorOutput<NmeaAisDr
                 .addField("reportDescription", fac.createReportDescription())
                 .addField("repeat", fac.createRepeatIndicator())
                 .addField("mmsi", fac.createMssi())
-                .addField("name", sweFactory.createText()
+                .addField("name", fac.createText()
                         .label("Vessel Name")
                         .description("Vessel name from Part A (20 characters max); empty if Part A not yet received")
                         .definition(SWEHelper.getPropertyUri("VesselName")))
-                .addField("callSign", sweFactory.createText()
+                .addField("callSign", fac.createText()
                         .label("Call Sign")
                         .description("Call sign (7 x 6-bit ASCII characters, padded with spaces)")
                         .definition(SWEHelper.getPropertyUri("CallSign")))
-                .addField("shipType", sweFactory.createQuantity()
+                .addField("shipType", fac.createCount()
                         .label("Ship Type")
                         .description("Ship type per ITU-R M.1371-5 Table 53; 0 = not available or no ship = default")
                         .definition(SWEHelper.getPropertyUri("ShipType")))
-                .addField("dimBow", sweFactory.createQuantity()
+                .addField("dimBow", fac.createQuantity()
                         .label("Dimension to Bow")
                         .description("Distance from GPS antenna to bow in metres; 0 = not available = default")
                         .uom("m")
                         .definition(SWEHelper.getPropertyUri("DimBow")))
-                .addField("dimStern", sweFactory.createQuantity()
+                .addField("dimStern", fac.createQuantity()
                         .label("Dimension to Stern")
                         .description("Distance from GPS antenna to stern in metres; 0 = not available = default")
                         .uom("m")
                         .definition(SWEHelper.getPropertyUri("DimStern")))
-                .addField("dimPort", sweFactory.createQuantity()
+                .addField("dimPort", fac.createQuantity()
                         .label("Dimension to Port")
                         .description("Distance from GPS antenna to port side in metres; 0 = not available = default")
                         .uom("m")
                         .definition(SWEHelper.getPropertyUri("DimPort")))
-                .addField("dimStarboard", sweFactory.createQuantity()
+                .addField("dimStarboard", fac.createQuantity()
                         .label("Dimension to Starboard")
                         .description("Distance from GPS antenna to starboard side in metres; 0 = not available = default")
                         .uom("m")
                         .definition(SWEHelper.getPropertyUri("DimStarboard")))
-                .addField("vendorId", sweFactory.createText()
+                .addField("vendorId", fac.createText()
                         .label("Vendor ID")
                         .description("Unique identification of the Unit by the manufacturer")
                         .definition(SWEHelper.getPropertyUri("VendorId")));

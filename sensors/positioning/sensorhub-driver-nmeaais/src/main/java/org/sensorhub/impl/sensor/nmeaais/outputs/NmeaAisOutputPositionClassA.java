@@ -26,6 +26,8 @@ import org.vast.swe.SWEBuilders;
 import org.vast.swe.SWEHelper;
 import org.vast.swe.helper.GeoPosHelper;
 
+import java.util.stream.IntStream;
+
 public class NmeaAisOutputPositionClassA extends VarRateSensorOutput<NmeaAisDriver> implements NmeaAisReportInterface<AisPositionMessage> {
     private DataRecord aisReportRecord;
     private DataEncoding dataEncoding;
@@ -45,21 +47,20 @@ public class NmeaAisOutputPositionClassA extends VarRateSensorOutput<NmeaAisDriv
      * Initializes the data structure for the output.
      *
      * Flat index map:
-     *   0  = messageId        1  = repeat           2  = mmsi
-     *   3  = navStatus        4  = rot              5  = sog
-     *   6  = positionAccuracy
-     *   7  = latitude  (lat component of location vector)
-     *   8  = longitude (lon component of location vector)
-     *   9  = cog              10 = heading          11 = timeStamp
-     *   12 = smi              13 = raim             14 = commState
-     *   15 = bits
+     *   0  = samplingTime          1  = messageId              2  = reportDescription
+     *   3  = repeat                4  = mmsi                   5  = navStatus (Category)
+     *   6  = rot                   7  = sog
+     *   8  = positionAccuracy (Category)
+     *   9  = latitude  (lat component of location vector)
+     *   10 = longitude (lon component of location vector)
+     *   11 = cog                   12 = heading                13 = utcSecond (Count)
+     *   14 = smi (Category)        15 = raim (Category)        16 = commState
      */
     public void doInit() {
         GeoPosHelper geoFac = new GeoPosHelper();
-        SWEHelper sweFactory = new SWEHelper();
         NmeaAisHelper fac = new NmeaAisHelper();
 
-        SWEBuilders.DataRecordBuilder recordBuilder = sweFactory.createRecord()
+        SWEBuilders.DataRecordBuilder recordBuilder = fac.createRecord()
                 .name(OUTPUT_NAME)
                 .label(OUTPUT_LABEL)
                 .description(OUTPUT_DESCRIPTION)
@@ -73,8 +74,9 @@ public class NmeaAisOutputPositionClassA extends VarRateSensorOutput<NmeaAisDriv
                 .addField("reportDescription", fac.createReportDescription())
                 .addField("repeat", fac.createRepeatIndicator())
                 .addField("mmsi", fac.createMssi())
-                .addField("navStatus", sweFactory.createQuantity()
+                .addField("navStatus", fac.createCategory()
                         .label("Navigational Status")
+                        .addAllowedValues(IntStream.rangeClosed(0, 15).toArray())
                         .description(
                                 "0 = under way using engine, 1 = at anchor, 2 = not under command, 3 = restricted maneuverability, 4 = constrained by her draught, 5 = moored, 6 = aground, 7 = engaged in fishing, 8 = under way sailing, 9 = reserved for future amendment of navigational status for ships carrying DG, HS, or MP, or IMO hazard or pollutant category C, high speed craft (HSC), 10 = reserved for future amendment of navigational status for ships carrying dangerous goods (DG), harmful substances (HS) or marine pollutants (MP), or IMO hazard or pollutant category A, wing in ground (WIG); 11 = power-driven vessel towing astern (regional use); 12 = power-driven vessel pushing ahead or towing alongside (regional use);\n" +
                                 "13 = reserved for future use,\n" +
@@ -82,7 +84,7 @@ public class NmeaAisOutputPositionClassA extends VarRateSensorOutput<NmeaAisDriv
                                 "15 = undefined = default (also used by AIS-SART, MOB-AIS and EPIRB-AIS under test)"
                         )
                         .definition(SWEHelper.getPropertyUri("NavStatus")))
-                .addField("rot", sweFactory.createQuantity()
+                .addField("rot", fac.createQuantity()
                         .label("Rate of Turn")
                         .description(
                                 "0 to +126 = turning right at up to 708 deg per min or higher\n" +
@@ -94,13 +96,14 @@ public class NmeaAisOutputPositionClassA extends VarRateSensorOutput<NmeaAisDriv
                                 "ROT data should not be derived from COG information."
                         )
                         .definition(SWEHelper.getPropertyUri("Rot")))
-                .addField("sog", sweFactory.createQuantity()
+                .addField("sog", fac.createQuantity()
                         .label("Speed Over Ground")
                         .description("Speed over ground in knots (0–102.2 knots, 102.3 = not available, 102.3+ should not be used)")
                         .uom("[kn_i]")
                         .definition(SWEHelper.getPropertyUri("SpeedOverGround")))
-                .addField("positionAccuracy", sweFactory.createQuantity()
+                .addField("positionAccuracy", fac.createCategory()
                         .label("Position Accuracy")
+                        .addAllowedValues(0,1)
                         .description(
                                 "1 = high (<= 10 m)\n" +
                                 "0 = low (> 10 m)\n" +
@@ -109,34 +112,37 @@ public class NmeaAisOutputPositionClassA extends VarRateSensorOutput<NmeaAisDriv
                         .definition(SWEHelper.getPropertyUri("PositionAccuracy")))
                 .addField("location", geoFac.createLocationVectorLatLon()
                         .label("Location"))
-                .addField("cog", sweFactory.createQuantity()
+                .addField("cog", fac.createQuantity()
                         .label("COG")
                         .description("Course over ground in 1/10 = (0-3599). 3600 (E10h) = not available = default. 3601-4095 should not be used")
                         .definition(SWEHelper.getPropertyUri("Cog")))
-                .addField("heading", sweFactory.createQuantity()
+                .addField("heading", fac.createQuantity()
                         .label("True Heading")
                         .uom("deg")
                         .description("Degrees (0-359) (511 indicates not available = default)")
                         .definition(SWEHelper.getPropertyUri("heading")))
-                .addField("timeStamp", sweFactory.createTime()
-                        .label("Time Stamp")
+                .addField("utcSecond", fac.createCount()
+                        .label("UTC Second")
                         .description("UTC second when the report was generated by the electronic position system (EPFS) (0-59, or 60 if time stamp is not available, which should also be the default value, or 61 if positioning system is in manual input mode, or 62 if electronic position fixing system operates in estimated (dead reckoning) mode, or 63 if the positioning system is inoperative)")
-                        .definition(SWEHelper.getPropertyUri("TimeStamp")))
-                .addField("smi", sweFactory.createQuantity()
+                        .definition(SWEHelper.getPropertyUri("UtcSecond")))
+                .addField("smi", fac.createCategory()
                         .label("Special Maneuvre Indicator")
+                        .addAllowedValues(0,1,2)
                         .description("0 = not available = default\n" +
                                 "1 = not engaged in special maneuver\n" +
                                 "2 = engaged in special maneuver\n" +
                                 "(i.e.: regional passing arrangement on Inland Waterway)")
                         .definition(SWEHelper.getPropertyUri("Smi")))
-                .addField("raim", sweFactory.createQuantity()
+                .addField("raim", fac.createCategory()
                         .label("RAIM-flag")
+                        .addAllowedValues(0,1)
                         .description("Receiver autonomous integrity monitoring (RAIM) flag of electronic position fixing device; 0 = RAIM not in use = default; 1 = RAIM in use. See Table")
                         .definition(SWEHelper.getPropertyUri("Raim")))
-                .addField("commState", sweFactory.createQuantity()
+                .addField("commState", fac.createCount()
                         .label("Communication State")
                         .description("visit https://www.navcen.uscg.gov/ais-class-a-reports#CommState")
-                        .definition(SWEHelper.getPropertyUri("CommState")));
+                        .definition(SWEHelper.getPropertyUri("CommState")))
+                ;
 
         aisReportRecord = recordBuilder.build();
         dataEncoding = geoFac.newTextEncoding(",", "\n");
@@ -152,17 +158,17 @@ public class NmeaAisOutputPositionClassA extends VarRateSensorOutput<NmeaAisDriv
             dataBlock.setStringValue(2, description);
             dataBlock.setIntValue(3,  report.getRepeat());
             dataBlock.setStringValue(4,  String.valueOf(report.getUserId()));
-            dataBlock.setIntValue(5,  report.getNavStatus());
+            dataBlock.setStringValue(5, String.valueOf(report.getNavStatus()));
             dataBlock.setIntValue(6,  report.getRot());
             dataBlock.setDoubleValue(7,  report.getSog() / 10.0);
-            dataBlock.setIntValue(8,  report.getPosAcc());
+            dataBlock.setStringValue(8, String.valueOf(report.getPosAcc()));
             dataBlock.setDoubleValue(9,  report.getPos().getLatitudeDouble());
             dataBlock.setDoubleValue(10,  report.getPos().getLongitudeDouble());
             dataBlock.setDoubleValue(11,  report.getCog() / 10.0);
             dataBlock.setIntValue(12, report.getTrueHeading());
             dataBlock.setIntValue(13, report.getUtcSec());
-            dataBlock.setIntValue(14, report.getSpecialManIndicator());
-            dataBlock.setIntValue(15, report.getRaim());
+            dataBlock.setStringValue(14, String.valueOf(report.getSpecialManIndicator()));
+            dataBlock.setStringValue(15, String.valueOf(report.getRaim()));
             dataBlock.setIntValue(16, report.getSyncState());
 
             String foiUID = parentSensor.addFoi(String.valueOf(report.getUserId()));
