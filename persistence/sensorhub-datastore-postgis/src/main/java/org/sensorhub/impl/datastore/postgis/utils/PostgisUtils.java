@@ -290,11 +290,13 @@ public class PostgisUtils {
         int hour = zdt.getHour();
         int minute = zdt.getMinute();
         int second = zdt.getSecond();
+
         int nano = zdt.getNano();
+        int milli = nano / 1_000_000;
 
         String fraction = "";
-        if (nano != 0) {
-            fraction = "." + Integer.toString(nano).replaceAll("0+$", "");
+        if (milli != 0) {
+            fraction = "." + String.format("%03d", milli).replaceAll("0+$", "");
         }
 
         String result = String.format("%04d-%02d-%02d %02d:%02d:%02d%s+00",

@@ -118,7 +118,6 @@ public class IteratorResultSet<T> implements Iterator<T> {
                 }
             }
             totalFetchedElements += countRes;
-            logger.info("totalFetchedElements={}, maxElements={}",totalFetchedElements,maxElements);
             if(countRes == 0 || countRes < limit || totalFetchedElements >= maxElements) {
                 ended = true;
             }
