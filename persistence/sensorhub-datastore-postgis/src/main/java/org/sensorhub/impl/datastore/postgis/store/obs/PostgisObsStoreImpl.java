@@ -107,6 +107,7 @@ public class PostgisObsStoreImpl extends PostgisStore<QueryBuilderObsStore> impl
             hashSet = null;
         }
 
+        logger.warn("Limit={}",filter.getLimit());
         String queryStr = queryBuilder.createSelectEntriesQuery(filter, hashSet);
         IteratorResultSet<Entry<BigId, IObsData>> iteratorResultSet =
                 new IteratorResultSet<>(

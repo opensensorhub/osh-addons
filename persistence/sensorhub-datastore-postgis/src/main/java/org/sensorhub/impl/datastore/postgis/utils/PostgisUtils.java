@@ -327,4 +327,8 @@ public class PostgisUtils {
         ldt = ldt.withYear(correctedYear);
         return ldt.toInstant(ZoneOffset.UTC);
     }
+
+    public static String getTimeOrder(TemporalFilter temporalFilter) {
+        return (temporalFilter != null && temporalFilter.isDescendingOrder()) ? "DESC": "ASC";
+    }
 }

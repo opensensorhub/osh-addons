@@ -29,9 +29,10 @@ import java.util.function.Function;
 public class IteratorResultSet<T> implements Iterator<T> {
     private static final Logger logger = LoggerFactory.getLogger(IteratorResultSet.class);
 
-    private long limit = Long.MAX_VALUE;
-
+    private long limit = 1000;
     private long offset = 0;
+    private long maxElements = 0;
+    private long totalFetchedElements = 0;
 
     private String query;
 
@@ -44,7 +45,6 @@ public class IteratorResultSet<T> implements Iterator<T> {
     private boolean ended = false;
 
     private final Function<T, Boolean> predicateValidator;
-    private final boolean useInternalLimit;
 
     public IteratorResultSet(String query,
                              ConnectionManager connectionManager,
@@ -52,12 +52,7 @@ public class IteratorResultSet<T> implements Iterator<T> {
                              Function<ResultSet, T> parsingFn,
                              Function<T, Boolean> predicateValidator
     ) {
-        this.query = query;
-        this.limit = limit;
-        this.parsingFn = parsingFn;
-        this.connectionManager = connectionManager;
-        this.predicateValidator = predicateValidator;
-        this.useInternalLimit = !query.contains("LIMIT");
+        this(query,connectionManager,limit,0,parsingFn,predicateValidator);
     }
 
     public IteratorResultSet(String query,
@@ -67,12 +62,16 @@ public class IteratorResultSet<T> implements Iterator<T> {
                              Function<ResultSet, T> parsingFn,
                              Function<T, Boolean> predicateValidator
     ) {
-        this.query = query;
-        this.limit = limit;
+        this.query = removeSqlLimit(query);
+        this.limit = Math.min(limit,this.limit);
+        this.maxElements = limit;
         this.parsingFn = parsingFn;
         this.connectionManager = connectionManager;
         this.predicateValidator = predicateValidator;
-        this.useInternalLimit = !query.contains("LIMIT");
+    }
+
+    private String removeSqlLimit(String sql) {
+        return sql.replaceAll("(?i)\\s+LIMIT\\s+\\d+(\\s+OFFSET\\s+\\d+)?", "");
     }
 
     @Override
@@ -90,13 +89,7 @@ public class IteratorResultSet<T> implements Iterator<T> {
     }
 
     private String getQuery() {
-        if(useInternalLimit) {
-            return query + " LIMIT " + limit + " OFFSET " + offset;
-        } else {
-            // limit set by the filter itself
-            return query + " OFFSET " + offset;
-        }
-
+        return query + " LIMIT " + limit + " OFFSET " + offset;
     }
 
     @Override
@@ -124,7 +117,9 @@ public class IteratorResultSet<T> implements Iterator<T> {
                     offset += limit;
                 }
             }
-            if(countRes == 0 || countRes < limit) {
+            totalFetchedElements += countRes;
+            logger.info("totalFetchedElements={}, maxElements={}",totalFetchedElements,maxElements);
+            if(countRes == 0 || countRes < limit || totalFetchedElements >= maxElements) {
                 ended = true;
             }
         } catch (SQLException e) {

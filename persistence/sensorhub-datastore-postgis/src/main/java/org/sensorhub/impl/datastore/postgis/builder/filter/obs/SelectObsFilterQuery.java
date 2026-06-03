@@ -41,12 +41,12 @@ public class SelectObsFilterQuery extends BaseObsFilterQuery<SelectFilterQueryGe
 
     public SelectFilterQueryGenerator build(ObsFilter filter) {
         this.filterQueryGenerator = super.build(filter);
-        this.handleSorted();
+        this.handleSorted(filter.getPhenomenonTime());
         return this.filterQueryGenerator;
     }
 
-    protected void handleSorted() {
-        this.filterQueryGenerator.addOrderBy(this.tableName+".phenomenonTime ASC");
+    protected void handleSorted(TemporalFilter temporalFilter) {
+        this.filterQueryGenerator.addOrderBy(this.tableName+".phenomenonTime "+PostgisUtils.getTimeOrder(temporalFilter));
     }
 
     protected void handleDataStreamFilter(DataStreamFilter dataStreamFilter) {
