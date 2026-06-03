@@ -178,11 +178,9 @@ public abstract class Codec<I extends Pointer, O extends Pointer> implements Aut
         headers = getExtradata(codec_ctx);
 
         try {
-            var desc = av_pix_fmt_desc_get(codec_ctx.pix_fmt());
-            pixelFmt = FullPixelEnum.valueOf(desc.name().getString().toUpperCase());
+            pixelFmt = FullPixelEnum.fromId(codec_ctx.pix_fmt());
             inputFormat.pixelFmt = pixelFmt;
             outputFormat.pixelFmt = pixelFmt;
-            desc.deallocate();
         } catch (Exception e) {
             pixelFmt = null;
             logger.warn("Could not determine codec info for " + codec.name().getString(), e);
