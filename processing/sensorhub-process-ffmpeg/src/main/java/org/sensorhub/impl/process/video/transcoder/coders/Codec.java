@@ -297,16 +297,16 @@ public abstract class Codec<I extends Pointer, O extends Pointer> implements Aut
                         I inPacket = inQueue.poll();
                         processInputPacket(inPacket);
                         deallocateInputPacket(inPacket);
-                    }
 
-                    if (!outQueue.isEmpty() && isNotifying.compareAndSet(false, true)) {
-                        outputExecutor.submit(() -> {
-                            while (!outQueue.isEmpty()) {
-                                O outputPacket = outQueue.poll();
-                                notifyCallbacks(outputPacket);
-                            }
-                            isNotifying.set(false);
-                        });
+                        if (!outQueue.isEmpty() && isNotifying.compareAndSet(false, true)) {
+                            outputExecutor.submit(() -> {
+                                while (!outQueue.isEmpty()) {
+                                    O outputPacket = outQueue.poll();
+                                    notifyCallbacks(outputPacket);
+                                }
+                                isNotifying.set(false);
+                            });
+                        }
                     }
 
                     isProcessing.set(false);
