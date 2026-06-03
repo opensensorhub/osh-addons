@@ -13,19 +13,39 @@
  ******************************* END LICENSE BLOCK ***************************/
 package org.sensorhub.impl.sensor.nmeaais.helpers;
 
-import net.opengis.swe.v20.Count;
+import org.vast.swe.SWEBuilders.*;
 import org.vast.swe.SWEHelper;
-import org.vast.swe.helper.GeoPosHelper;
+
 
 public class NmeaAisHelper extends SWEHelper{
-    GeoPosHelper geoFac = new GeoPosHelper();
 
-    public Count createNmeaMessageId() {
+    public CountBuilder createNmeaMessageId() {
         return createCount()
                 .label("Message Id")
                 .description("AIS Message Identifier")
-                .definition(getPropertyUri("MessageId"))
-                .build();
+                .definition(getPropertyUri("MessageId"));
+
+    }
+
+    public TextBuilder createReportDescription() {
+        return createText()
+                .label("Report Description")
+                .description("Describes the report based on the Message Id provided")
+                .definition(getPropertyUri("ReportDescription"));
+    }
+
+    public CountBuilder createRepeatIndicator(){
+        return createCount()
+                .label("Repeat Indicator")
+                .description("Used by the repeater to indicate how many times a message has been repeated; 0-3; 0 = default")
+                .definition(SWEHelper.getPropertyUri("repeat"));
+    }
+
+    public TextBuilder createMssi() {
+        return createText()
+                .label("MMSI Number")
+                .description("MMSI Number")
+                .definition(SWEHelper.getPropertyUri("Mmsi"));
     }
 
 }
