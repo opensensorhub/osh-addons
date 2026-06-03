@@ -208,12 +208,12 @@ public class NmeaAisDriver extends AbstractSensorModule<NmeaAisConfig> {
      * Registers an AIS vessel as a Feature of Interest (FOI) keyed by its MMSI.
      * Subsequent calls with the same MMSI are no-ops; the existing FOI UID is returned.
      */
-    public String addFoi(int mmsi) {
+    public String addFoi(String mmsi) {
         String foiUID = UID_PREFIX + "foi:" + mmsi;
 
         if (!foiMap.containsKey(foiUID)) {
             MovingFeature foi = new MovingFeature();
-            foi.setId(Integer.toString(mmsi));
+            foi.setId(mmsi);
             foi.setUniqueIdentifier(foiUID);
             foi.setName("Vessel " + mmsi);
             foi.setDescription("AIS vessel with MMSI " + mmsi);

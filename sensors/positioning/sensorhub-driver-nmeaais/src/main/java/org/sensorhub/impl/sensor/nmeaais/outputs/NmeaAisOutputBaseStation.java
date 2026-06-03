@@ -21,6 +21,7 @@ import net.opengis.swe.v20.DataRecord;
 import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.impl.sensor.VarRateSensorOutput;
 import org.sensorhub.impl.sensor.nmeaais.NmeaAisDriver;
+import org.sensorhub.impl.sensor.nmeaais.helpers.NmeaAisHelper;
 import org.vast.swe.SWEBuilders;
 import org.vast.swe.SWEHelper;
 import org.vast.swe.helper.GeoPosHelper;
@@ -55,28 +56,17 @@ public class NmeaAisOutputBaseStation extends VarRateSensorOutput<NmeaAisDriver>
     public void doInit() {
         GeoPosHelper geoFac = new GeoPosHelper();
         SWEHelper sweFactory = new SWEHelper();
+        NmeaAisHelper fac = new NmeaAisHelper();
 
         SWEBuilders.DataRecordBuilder recordBuilder = sweFactory.createRecord()
                 .name(OUTPUT_NAME)
                 .label(OUTPUT_LABEL)
                 .description(OUTPUT_DESCRIPTION)
                 .definition(OUTPUT_DEFINITION)
-                .addField("messageId", sweFactory.createQuantity()
-                        .label("Message Id")
-                        .description("Identifier for this message: 4 (UTC/Date Report) or 11 (UTC/Date Response)")
-                        .definition(SWEHelper.getPropertyUri("MessageId")))
-                .addField("reportDescription", sweFactory.createText()
-                        .label("Report Description")
-                        .description("Describes the report based on the Message Id provided")
-                        .definition(SWEHelper.getPropertyUri("ReportDescription")))
-                .addField("repeat", sweFactory.createQuantity()
-                        .label("Repeat Indicator")
-                        .description("Used by the repeater to indicate how many times a message has been repeated; 0-3; 0 = default")
-                        .definition(SWEHelper.getPropertyUri("repeat")))
-                .addField("mmsi", sweFactory.createQuantity()
-                        .label("MMSI Number")
-                        .description("MMSI Number of the base station")
-                        .definition(SWEHelper.getPropertyUri("Mmsi")))
+                .addField("messageId", fac.createNmeaMessageId())
+                .addField("reportDescription", fac.createReportDescription())
+                .addField("repeat", fac.createRepeatIndicator())
+                .addField("mmsi", fac.createMssi())
                 .addField("utcYear", sweFactory.createQuantity()
                         .label("UTC Year")
                         .description("UTC Year (1-9999, 0 = not available = default)")
@@ -128,7 +118,7 @@ public class NmeaAisOutputBaseStation extends VarRateSensorOutput<NmeaAisDriver>
             dataBlock.setIntValue(0,  report.getMsgId());
             dataBlock.setStringValue(1, description);
             dataBlock.setIntValue(2,  report.getRepeat());
-            dataBlock.setIntValue(3,  report.getUserId());
+            dataBlock.setStringValue(3,  String.valueOf(report.getUserId()));
             dataBlock.setIntValue(4,  report.getUtcYear());
             dataBlock.setIntValue(5,  report.getUtcMonth());
             dataBlock.setIntValue(6,  report.getUtcDay());
@@ -141,7 +131,7 @@ public class NmeaAisOutputBaseStation extends VarRateSensorOutput<NmeaAisDriver>
             dataBlock.setIntValue(13, report.getPosType());
             dataBlock.setIntValue(14, report.getRaim());
 
-            String foiUID = parentSensor.addFoi(report.getUserId());
+            String foiUID = parentSensor.addFoi(String.valueOf(report.getUserId()));
 
             latestRecord = dataBlock;
             latestRecordTime = System.currentTimeMillis();

@@ -22,6 +22,7 @@ import net.opengis.swe.v20.DataRecord;
 import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.impl.sensor.VarRateSensorOutput;
 import org.sensorhub.impl.sensor.nmeaais.NmeaAisDriver;
+import org.sensorhub.impl.sensor.nmeaais.helpers.NmeaAisHelper;
 import org.vast.swe.SWEBuilders;
 import org.vast.swe.SWEHelper;
 import org.vast.swe.helper.GeoPosHelper;
@@ -63,6 +64,7 @@ public class NmeaAisOutputPositionClassB extends VarRateSensorOutput<NmeaAisDriv
     public void doInit() {
         GeoPosHelper geoFac = new GeoPosHelper();
         SWEHelper sweFactory = new SWEHelper();
+        NmeaAisHelper fac = new NmeaAisHelper();
 
         SWEBuilders.DataRecordBuilder recordBuilder = sweFactory.createRecord()
                 .name("nmeaAisOutputPositionClassB")
@@ -71,22 +73,10 @@ public class NmeaAisOutputPositionClassB extends VarRateSensorOutput<NmeaAisDriv
                              "Name, ship type, and dimension fields are only populated for type 19.")
                 .definition(SWEHelper.getPropertyUri("NmeaAisOutputPositionClassB"))
                 // --- fields common to type 18 and 19 ---
-                .addField("messageId", sweFactory.createQuantity()
-                        .label("Message Id")
-                        .description("18 = Standard Class B CS Position Report; 19 = Extended Class B CS Position Report")
-                        .definition(SWEHelper.getPropertyUri("MessageId")))
-                .addField("reportDescription", sweFactory.createText()
-                        .label("Report Description")
-                        .description("Describes the report based on the Message Id provided")
-                        .definition(SWEHelper.getPropertyUri("ReportDescription")))
-                .addField("repeat", sweFactory.createQuantity()
-                        .label("Repeat Indicator")
-                        .description("Used by the repeater to indicate how many times a message has been repeated; 0-3; 0 = default")
-                        .definition(SWEHelper.getPropertyUri("repeat")))
-                .addField("mmsi", sweFactory.createQuantity()
-                        .label("MMSI Number")
-                        .description("MMSI Number")
-                        .definition(SWEHelper.getPropertyUri("Mmsi")))
+                .addField("messageId", fac.createNmeaMessageId())
+                .addField("reportDescription", fac.createReportDescription())
+                .addField("repeat", fac.createRepeatIndicator())
+                .addField("mmsi", fac.createMssi())
                 .addField("sog", sweFactory.createQuantity()
                         .label("Speed Over Ground")
                         .description("Speed over ground in knots (0–102.2 knots; 102.3 = not available)")
@@ -201,7 +191,7 @@ public class NmeaAisOutputPositionClassB extends VarRateSensorOutput<NmeaAisDriv
             dataBlock.setIntValue(0,  report.getMsgId());
             dataBlock.setStringValue(1, description);
             dataBlock.setIntValue(2,  report.getRepeat());
-            dataBlock.setIntValue(3,  report.getUserId());
+            dataBlock.setStringValue(3,  String.valueOf(report.getUserId()));
             dataBlock.setDoubleValue(4,  report.getSog() / 10.0);
             dataBlock.setIntValue(5,  report.getPosAcc());
             dataBlock.setDoubleValue(6,  report.getPos().getLatitudeDouble());
@@ -229,7 +219,7 @@ public class NmeaAisOutputPositionClassB extends VarRateSensorOutput<NmeaAisDriv
             dataBlock.setIntValue(27, 0);
             dataBlock.setIntValue(28, 0);
 
-            publish(dataBlock, report.getUserId());
+            publish(dataBlock, String.valueOf(report.getUserId()));
         }
     }
 
@@ -241,7 +231,7 @@ public class NmeaAisOutputPositionClassB extends VarRateSensorOutput<NmeaAisDriv
             dataBlock.setIntValue(0,  report.getMsgId());
             dataBlock.setStringValue(1, description);
             dataBlock.setIntValue(2,  report.getRepeat());
-            dataBlock.setIntValue(3,  report.getUserId());
+            dataBlock.setStringValue(3,  String.valueOf(report.getUserId()));
             dataBlock.setDoubleValue(4,  report.getSog() / 10.0);
             dataBlock.setIntValue(5,  report.getPosAcc());
             dataBlock.setDoubleValue(6,  report.getPos().getLatitudeDouble());
@@ -270,11 +260,11 @@ public class NmeaAisOutputPositionClassB extends VarRateSensorOutput<NmeaAisDriv
             dataBlock.setIntValue(27, report.getDte());
             dataBlock.setIntValue(28, report.getModeFlag());
 
-            publish(dataBlock, report.getUserId());
+            publish(dataBlock, String.valueOf(report.getUserId()));
         }
     }
 
-    private void publish(DataBlock dataBlock, int userId) {
+    private void publish(DataBlock dataBlock, String userId) {
         String foiUID = parentSensor.addFoi(userId);
         latestRecord = dataBlock;
         latestRecordTime = System.currentTimeMillis();

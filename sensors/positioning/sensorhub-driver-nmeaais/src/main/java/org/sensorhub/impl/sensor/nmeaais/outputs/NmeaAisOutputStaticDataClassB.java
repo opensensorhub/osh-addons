@@ -17,9 +17,11 @@ import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.DataEncoding;
 import net.opengis.swe.v20.DataRecord;
+import org.checkerframework.checker.units.qual.N;
 import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.impl.sensor.VarRateSensorOutput;
 import org.sensorhub.impl.sensor.nmeaais.NmeaAisDriver;
+import org.sensorhub.impl.sensor.nmeaais.helpers.NmeaAisHelper;
 import org.vast.swe.SWEBuilders;
 import org.vast.swe.SWEHelper;
 import org.vast.swe.helper.GeoPosHelper;
@@ -59,28 +61,17 @@ public class NmeaAisOutputStaticDataClassB extends VarRateSensorOutput<NmeaAisDr
     public void doInit() {
         GeoPosHelper geoFac = new GeoPosHelper();
         SWEHelper sweFactory = new SWEHelper();
+        NmeaAisHelper fac = new NmeaAisHelper();
 
         SWEBuilders.DataRecordBuilder recordBuilder = sweFactory.createRecord()
                 .name(OUTPUT_NAME)
                 .label(OUTPUT_LABEL)
                 .description(OUTPUT_DESCRIPTION)
                 .definition(OUTPUT_DEFINITION)
-                .addField("messageId", sweFactory.createQuantity()
-                        .label("Message Id")
-                        .description("Identifier for this message: 24")
-                        .definition(SWEHelper.getPropertyUri("MessageId")))
-                .addField("reportDescription", sweFactory.createText()
-                        .label("Report Description")
-                        .description("Describes the report based on the Message Id provided")
-                        .definition(SWEHelper.getPropertyUri("ReportDescription")))
-                .addField("repeat", sweFactory.createQuantity()
-                        .label("Repeat Indicator")
-                        .description("Used by the repeater to indicate how many times a message has been repeated; 0-3; 0 = default")
-                        .definition(SWEHelper.getPropertyUri("repeat")))
-                .addField("mmsi", sweFactory.createQuantity()
-                        .label("MMSI Number")
-                        .description("MMSI Number of the vessel")
-                        .definition(SWEHelper.getPropertyUri("Mmsi")))
+                .addField("messageId", fac.createNmeaMessageId())
+                .addField("reportDescription", fac.createReportDescription())
+                .addField("repeat", fac.createRepeatIndicator())
+                .addField("mmsi", fac.createMssi())
                 .addField("name", sweFactory.createText()
                         .label("Vessel Name")
                         .description("Vessel name from Part A (20 characters max); empty if Part A not yet received")
@@ -146,7 +137,7 @@ public class NmeaAisOutputStaticDataClassB extends VarRateSensorOutput<NmeaAisDr
             dataBlock.setIntValue(0,  24);
             dataBlock.setStringValue(1, description);
             dataBlock.setIntValue(2,  repeat);
-            dataBlock.setIntValue(3,  mmsi);
+            dataBlock.setStringValue(3,  String.valueOf(mmsi));
             dataBlock.setStringValue(4, name);
             dataBlock.setStringValue(5, callSign);
             dataBlock.setIntValue(6,  shipType);
@@ -156,7 +147,7 @@ public class NmeaAisOutputStaticDataClassB extends VarRateSensorOutput<NmeaAisDr
             dataBlock.setIntValue(10, dimStarboard);
             dataBlock.setStringValue(11, vendorId);
 
-            String foiUID = parentSensor.addFoi(mmsi);
+            String foiUID = parentSensor.addFoi(String.valueOf(mmsi));
 
             latestRecord = dataBlock;
             latestRecordTime = System.currentTimeMillis();

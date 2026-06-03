@@ -21,6 +21,7 @@ import net.opengis.swe.v20.DataRecord;
 import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.impl.sensor.VarRateSensorOutput;
 import org.sensorhub.impl.sensor.nmeaais.NmeaAisDriver;
+import org.sensorhub.impl.sensor.nmeaais.helpers.NmeaAisHelper;
 import org.vast.swe.SWEBuilders;
 import org.vast.swe.SWEHelper;
 import org.vast.swe.helper.GeoPosHelper;
@@ -57,28 +58,17 @@ public class NmeaAisOutputAidNavigation extends VarRateSensorOutput<NmeaAisDrive
     public void doInit() {
         GeoPosHelper geoFac = new GeoPosHelper();
         SWEHelper sweFactory = new SWEHelper();
+        NmeaAisHelper fac = new NmeaAisHelper();
 
         SWEBuilders.DataRecordBuilder recordBuilder = sweFactory.createRecord()
                 .name(OUTPUT_NAME)
                 .label(OUTPUT_LABEL)
                 .description(OUTPUT_DESCRIPTION)
                 .definition(OUTPUT_DEFINITION)
-                .addField("messageId", sweFactory.createQuantity()
-                        .label("Message Id")
-                        .description("Identifier for this message: 21")
-                        .definition(SWEHelper.getPropertyUri("MessageId")))
-                .addField("reportDescription", sweFactory.createText()
-                        .label("Report Description")
-                        .description("Describes the report based on the Message Id provided")
-                        .definition(SWEHelper.getPropertyUri("ReportDescription")))
-                .addField("repeat", sweFactory.createQuantity()
-                        .label("Repeat Indicator")
-                        .description("Used by the repeater to indicate how many times a message has been repeated; 0-3; 0 = default")
-                        .definition(SWEHelper.getPropertyUri("repeat")))
-                .addField("mmsi", sweFactory.createQuantity()
-                        .label("MMSI Number")
-                        .description("MMSI Number of the aid-to-navigation")
-                        .definition(SWEHelper.getPropertyUri("Mmsi")))
+                .addField("messageId", fac.createNmeaMessageId())
+                .addField("reportDescription", fac.createReportDescription())
+                .addField("repeat", fac.createRepeatIndicator())
+                .addField("mmsi", fac.createMssi())
                 .addField("typeOfAidsToNav", sweFactory.createQuantity()
                         .label("Type of Aid-to-Nav")
                         .description("1 = Default/unspecified; 2 = Reference point; 3 = RACON; 4 = Fixed structure; 5-20 = Fixed; 21-29 = Floating; 30-31 = Landfall/Coast/Inland")
@@ -150,7 +140,7 @@ public class NmeaAisOutputAidNavigation extends VarRateSensorOutput<NmeaAisDrive
             dataBlock.setIntValue(0,  report.getMsgId());
             dataBlock.setStringValue(1, description);
             dataBlock.setIntValue(2,  report.getRepeat());
-            dataBlock.setIntValue(3,  report.getUserId());
+            dataBlock.setStringValue(3,  String.valueOf(report.getUserId()));
             dataBlock.setIntValue(4,  report.getAtonType());
             dataBlock.setStringValue(5, report.getName());
             dataBlock.setIntValue(6,  report.getPosAcc());
@@ -167,7 +157,7 @@ public class NmeaAisOutputAidNavigation extends VarRateSensorOutput<NmeaAisDrive
             dataBlock.setIntValue(17, report.getVirtual());
             dataBlock.setIntValue(18, report.getAssigned());
 
-            String foiUID = parentSensor.addFoi(report.getUserId());
+            String foiUID = parentSensor.addFoi(String.valueOf(report.getUserId()));
 
             latestRecord = dataBlock;
             latestRecordTime = System.currentTimeMillis();
