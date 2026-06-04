@@ -101,15 +101,7 @@ public class NmeaAisOutputPositionClassA extends VarRateSensorOutput<NmeaAisDriv
                         .description("Speed over ground in knots (0–102.2 knots, 102.3 = not available, 102.3+ should not be used)")
                         .uom("[kn_i]")
                         .definition(SWEHelper.getPropertyUri("SpeedOverGround")))
-                .addField("positionAccuracy", fac.createCategory()
-                        .label("Position Accuracy")
-                        .addAllowedValues(0,1)
-                        .description(
-                                "1 = high (<= 10 m)\n" +
-                                "0 = low (> 10 m)\n" +
-                                "0 = default"
-                        )
-                        .definition(SWEHelper.getPropertyUri("PositionAccuracy")))
+                .addField("positionAccuracy", fac.createPositionAccuracy())
                 .addField("location", geoFac.createLocationVectorLatLon()
                         .label("Location"))
                 .addField("cog", fac.createQuantity()
