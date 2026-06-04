@@ -386,7 +386,7 @@ public class AisCodeHelper {
     }
 
     /**
-     * AIS Position Accuracy Descriptions found at <a href="https://www.navcen.uscg.gov/ais-aton-report">https://www.navcen.uscg.gov/ais-aton-report</a>
+     * AIS Aid To Navigation Type Descriptions found at <a href="https://www.navcen.uscg.gov/">https://www.navcen.uscg.gov/</a>
      */
     public enum AtoNType {
         DEFAULT(0,                  "Default, Type of AtoN not specified"),
@@ -444,5 +444,6 @@ public class AisCodeHelper {
             return LOOKUP.get(code);
         }
     }
+
 
 }

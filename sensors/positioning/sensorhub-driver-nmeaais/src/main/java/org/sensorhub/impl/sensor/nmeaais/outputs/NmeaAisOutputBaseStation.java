@@ -108,11 +108,7 @@ public class NmeaAisOutputBaseStation extends VarRateSensorOutput<NmeaAisDriver>
                 .addField("positionAccuracy", fac.createPositionAccuracy())
                 .addField("location", geoFac.createLocationVectorLatLon()
                         .label("Location"))
-                .addField("epfd", fac.createCategory()
-                        .label("EPFD Type")
-                        .addAllowedValues(0,1,2,3,4,5,6,7,8,15)
-                        .description("Type of Electronic Position Fixing Device: 0 = undefined, 1 = GPS, 2 = GLONASS, 3 = Combined GPS/GLONASS, 4 = Loran-C, 5 = Chayka, 6 = Integrated navigation system, 7 = Surveyed, 8 = Galileo, 15 = internal GNSS")
-                        .definition(SWEHelper.getPropertyUri("Epfd")))
+                .addField("epfd", fac.createEpfd())
                 .addField("raim", fac.createCategory()
                         .label("RAIM Flag")
                         .addAllowedValues(0,1)
@@ -142,7 +138,7 @@ public class NmeaAisOutputBaseStation extends VarRateSensorOutput<NmeaAisDriver>
             dataBlock.setStringValue(11, AisCodeHelper.PosAcc.getDescription(report.getPosAcc()));
             dataBlock.setDoubleValue(12, report.getPos().getLatitudeDouble());
             dataBlock.setDoubleValue(13, report.getPos().getLongitudeDouble());
-            dataBlock.setStringValue(14, String.valueOf(report.getPosType()));
+            dataBlock.setStringValue(14, AisCodeHelper.EpfdType.getDescription(report.getPosType()));
             dataBlock.setStringValue(15, String.valueOf(report.getRaim()));
 
             String foiUID = parentSensor.addFoi(String.valueOf(report.getUserId()));

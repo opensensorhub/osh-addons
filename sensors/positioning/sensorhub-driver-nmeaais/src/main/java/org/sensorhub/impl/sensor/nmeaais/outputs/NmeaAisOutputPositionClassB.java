@@ -178,11 +178,7 @@ public class NmeaAisOutputPositionClassB extends VarRateSensorOutput<NmeaAisDriv
                         .description("Distance from GPS antenna to starboard side in metres (type 19 only)")
                         .uom("m")
                         .definition(SWEHelper.getPropertyUri("DimStarboard")))
-                .addField("epfd", fac.createCategory()
-                        .label("EPFD Type")
-                        .addAllowedValues(0,1,2,3,4,5,6,7,8,15)
-                        .description("Electronic position fixing device type (type 19 only): 0 = undefined, 1 = GPS, 2 = GLONASS, 3 = Combined GPS/GLONASS, 4 = Loran-C, 5 = Chayka, 6 = Integrated navigation system, 7 = Surveyed, 8 = Galileo, 15 = internal GNSS")
-                        .definition(SWEHelper.getPropertyUri("Epfd")))
+                .addField("epfd", fac.createEpfd())
                 .addField("dte", fac.createCategory()
                         .label("DTE")
                         .addAllowedValues(0,1)
@@ -273,7 +269,7 @@ public class NmeaAisOutputPositionClassB extends VarRateSensorOutput<NmeaAisDriv
             dataBlock.setIntValue(24, report.getDimStern());
             dataBlock.setIntValue(25, report.getDimPort());
             dataBlock.setIntValue(26, report.getDimStarboard());
-            dataBlock.setStringValue(27, String.valueOf(report.getPosType()));
+            dataBlock.setStringValue(27, AisCodeHelper.EpfdType.getDescription(report.getPosType()));
             dataBlock.setStringValue(28, String.valueOf(report.getDte()));
             dataBlock.setStringValue(29, String.valueOf(report.getModeFlag()));
 

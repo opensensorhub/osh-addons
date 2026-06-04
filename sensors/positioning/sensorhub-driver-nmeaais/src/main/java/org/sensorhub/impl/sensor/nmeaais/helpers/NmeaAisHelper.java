@@ -55,4 +55,11 @@ public class NmeaAisHelper extends SWEHelper{
                 .definition(SWEHelper.getPropertyUri("PositionAccuracy"));
     }
 
+    public TextBuilder createEpfd() {
+        return createText()
+                .label("EPFD Type")
+                .description("Type of Electronic Position Fixing Device: 0 = undefined, 1 = GPS, 2 = GLONASS, 3 = Combined GPS/GLONASS, 4 = Loran-C, 5 = Chayka, 6 = Integrated navigation system, 7 = Surveyed, 8 = Galileo, 15 = internal GNSS")
+                .definition(SWEHelper.getPropertyUri("Epfd"));
+    }
+
 }

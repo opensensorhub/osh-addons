@@ -108,13 +108,10 @@ public class NmeaAisOutputAidNavigation extends VarRateSensorOutput<NmeaAisDrive
                         .description("Size of the aid-to-navigation, GPS antenna to starboard side in metres; 0 = not available = default")
                         .uom("m")
                         .definition(SWEHelper.getPropertyUri("DimStarboard")))
-                .addField("epfd", fac.createCategory()
-                        .label("EPFD Type")
-                        .addAllowedValues(0,1,2,3,4,5,6,7,8,15)
-                        .description("Type of Electronic Position Fixing Device: 0 = undefined, 1 = GPS, 2 = GLONASS, 3 = Combined GPS/GLONASS, 4 = Loran-C, 5 = Chayka, 6 = Integrated navigation system, 7 = Surveyed, 8 = Galileo, 15 = internal GNSS")
-                        .definition(SWEHelper.getPropertyUri("Epfd")))
-                .addField("utcSecond", fac.createCount()
+                .addField("epfd", fac.createEpfd())
+                .addField("utcSecond", fac.createQuantity()
                         .label("UTC Second")
+                        .uom("s")
                         .description("UTC second when report was generated (0-59); 60 = not available = default")
                         .definition(SWEHelper.getPropertyUri("UtcSecond")))
                 .addField("offPositionIndicator", fac.createCategory()
@@ -161,7 +158,7 @@ public class NmeaAisOutputAidNavigation extends VarRateSensorOutput<NmeaAisDrive
             dataBlock.setIntValue(11, report.getDimStern());
             dataBlock.setIntValue(12, report.getDimPort());
             dataBlock.setIntValue(13, report.getDimStarboard());
-            dataBlock.setStringValue(14, String.valueOf(report.getPosType()));
+            dataBlock.setStringValue(14, AisCodeHelper.EpfdType.getDescription(report.getPosType()));
             dataBlock.setIntValue(15, report.getUtcSec());
             dataBlock.setStringValue(16, String.valueOf(report.getOffPosition()));
             dataBlock.setStringValue(17, String.valueOf(report.getRaim()));
