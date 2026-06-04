@@ -125,11 +125,7 @@ public class NmeaAisOutputAidNavigation extends VarRateSensorOutput<NmeaAisDrive
                         .addAllowedValues(0,1)
                         .description("0 = default; 1 = virtual aid to navigation simulated by nearby AIS station")
                         .definition(SWEHelper.getPropertyUri("VirtualAid")))
-                .addField("assignedMode", fac.createCategory()
-                        .label("Assigned Mode Flag")
-                        .addAllowedValues(0,1)
-                        .description("0 = station operating in autonomous and continuous mode = default; 1 = station operating in assigned mode")
-                        .definition(SWEHelper.getPropertyUri("AssignedMode")));
+                .addField("assignedMode", fac.createAssignedMode());
 
         aisReportRecord = recordBuilder.build();
         dataEncoding = geoFac.newTextEncoding(",", "\n");

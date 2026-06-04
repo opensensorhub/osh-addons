@@ -13,6 +13,7 @@
  ******************************* END LICENSE BLOCK ***************************/
 package org.sensorhub.impl.sensor.nmeaais.helpers;
 
+import net.opengis.swe.v20.Text;
 import org.vast.swe.SWEBuilders.*;
 import org.vast.swe.SWEHelper;
 
@@ -69,4 +70,10 @@ public class NmeaAisHelper extends SWEHelper{
                 .definition(SWEHelper.getPropertyUri("Raim"));
     }
 
+    public TextBuilder createAssignedMode(){
+        return createText()
+                .label("Assigned Mode Flag")
+                .description("0 = station operating in autonomous and continuous mode = default; 1 = station operating in assigned mode")
+                .definition(SWEHelper.getPropertyUri("AssignedMode"));
+    }
 }

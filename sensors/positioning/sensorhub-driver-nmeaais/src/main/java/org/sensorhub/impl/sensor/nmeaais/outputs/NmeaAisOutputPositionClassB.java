@@ -180,11 +180,7 @@ public class NmeaAisOutputPositionClassB extends VarRateSensorOutput<NmeaAisDriv
                         .addAllowedValues(0,1)
                         .description("Data terminal equipment available; 0 = available; 1 = not available (type 19 only)")
                         .definition(SWEHelper.getPropertyUri("Dte")))
-                .addField("assignedMode", fac.createCategory()
-                        .label("Assigned Mode Flag")
-                        .addAllowedValues(0,1)
-                        .description("0 = autonomous mode = default; 1 = assigned mode (type 19 only)")
-                        .definition(SWEHelper.getPropertyUri("AssignedMode")));
+                .addField("assignedMode", fac.createAssignedMode());
 
         aisReportRecord = recordBuilder.build();
         dataEncoding = geoFac.newTextEncoding(",", "\n");
@@ -267,7 +263,7 @@ public class NmeaAisOutputPositionClassB extends VarRateSensorOutput<NmeaAisDriv
             dataBlock.setIntValue(26, report.getDimStarboard());
             dataBlock.setStringValue(27, AisCodeHelper.EpfdType.getDescription(report.getPosType()));
             dataBlock.setStringValue(28, String.valueOf(report.getDte()));
-            dataBlock.setStringValue(29, String.valueOf(report.getModeFlag()));
+            dataBlock.setStringValue(29, AisCodeHelper.AssignedMode.getDescription(report.getModeFlag()));
 
             publish(dataBlock, String.valueOf(report.getUserId()));
         }
