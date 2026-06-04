@@ -155,7 +155,7 @@ public class NmeaAisOutputAidNavigation extends VarRateSensorOutput<NmeaAisDrive
             dataBlock.setStringValue(4,  String.valueOf(report.getUserId()));
             dataBlock.setStringValue(5, String.valueOf(report.getAtonType()));
             dataBlock.setStringValue(6, report.getName());
-            dataBlock.setStringValue(7, String.valueOf(report.getPosAcc()));
+            dataBlock.setStringValue(7, AisCodeHelper.PosAcc.getDescription(report.getPosAcc()));
             dataBlock.setDoubleValue(8,  report.getPos().getLatitudeDouble());
             dataBlock.setDoubleValue(9,  report.getPos().getLongitudeDouble());
             dataBlock.setIntValue(10,  report.getDimBow());

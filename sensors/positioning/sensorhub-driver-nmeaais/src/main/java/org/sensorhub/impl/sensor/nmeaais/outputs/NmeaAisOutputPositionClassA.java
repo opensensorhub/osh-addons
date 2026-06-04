@@ -155,7 +155,7 @@ public class NmeaAisOutputPositionClassA extends VarRateSensorOutput<NmeaAisDriv
             dataBlock.setStringValue(5, AisCodeHelper.NavigationalStatus.getDescription(report.getNavStatus()));
             dataBlock.setIntValue(6,  report.getRot());
             dataBlock.setDoubleValue(7,  report.getSog() / 10.0);
-            dataBlock.setStringValue(8, String.valueOf(report.getPosAcc()));
+            dataBlock.setStringValue(8, AisCodeHelper.PosAcc.getDescription(report.getPosAcc()));
             dataBlock.setDoubleValue(9,  report.getPos().getLatitudeDouble());
             dataBlock.setDoubleValue(10,  report.getPos().getLongitudeDouble());
             dataBlock.setDoubleValue(11,  report.getCog() / 10.0);

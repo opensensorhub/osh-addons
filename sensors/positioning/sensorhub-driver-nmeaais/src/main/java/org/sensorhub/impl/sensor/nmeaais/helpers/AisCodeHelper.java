@@ -345,15 +345,42 @@ public class AisCodeHelper {
             this.description = description;
         }
 
-        public int getCode() { return code; }
-        public String getDescription() { return description; }
-
         public static String getDescription(int code) {
             EpfdType e = LOOKUP.get(code);
             return e != null ? e.description : "Unknown EPFD type " + code;
         }
 
         public static EpfdType fromCode(int code) {
+            return LOOKUP.get(code);
+        }
+    }
+
+    /**
+     * AIS Message Descriptions found at <a href="https://www.navcen.uscg.gov/ais-messages">navcen.uscg.gov</a>
+     */
+    public enum PosAcc {
+        LOW(0, "Low (> 10 m) or Default"),
+        HIGH(1, "High (<= 10 m)");
+
+        private final int code;
+        private final String description;
+        private static final Map<Integer, PosAcc> LOOKUP = new HashMap<>();
+
+        static {
+            for (PosAcc p : values()) LOOKUP.put(p.code, p);
+        }
+
+        PosAcc(int code, String description) {
+            this.code = code;
+            this.description = description;
+        }
+
+        public static String getDescription(int code) {
+            PosAcc p = LOOKUP.get(code);
+            return p != null ? p.description : "Unknown Position Accuracy Number: " + code;
+        }
+
+        public static PosAcc fromCode(int code) {
             return LOOKUP.get(code);
         }
     }

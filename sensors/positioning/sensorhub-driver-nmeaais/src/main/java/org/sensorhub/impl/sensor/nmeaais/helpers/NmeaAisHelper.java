@@ -48,10 +48,9 @@ public class NmeaAisHelper extends SWEHelper{
                 .definition(SWEHelper.getPropertyUri("Mmsi"));
     }
 
-    public CategoryBuilder createPositionAccuracy() {
-        return createCategory()
+    public TextBuilder createPositionAccuracy() {
+        return createText()
                 .label("Position Accuracy")
-                .addAllowedValues(0,1)
                 .description("1 = high (<= 10 m); 0 = low (> 10 m); 0 = default")
                 .definition(SWEHelper.getPropertyUri("PositionAccuracy"));
     }

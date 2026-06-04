@@ -139,7 +139,7 @@ public class NmeaAisOutputBaseStation extends VarRateSensorOutput<NmeaAisDriver>
             dataBlock.setIntValue(8,  report.getUtcHour());
             dataBlock.setIntValue(9,  report.getUtcMinute());
             dataBlock.setIntValue(10,  report.getUtcSecond());
-            dataBlock.setStringValue(11, String.valueOf(report.getPosAcc()));
+            dataBlock.setStringValue(11, AisCodeHelper.PosAcc.getDescription(report.getPosAcc()));
             dataBlock.setDoubleValue(12, report.getPos().getLatitudeDouble());
             dataBlock.setDoubleValue(13, report.getPos().getLongitudeDouble());
             dataBlock.setStringValue(14, String.valueOf(report.getPosType()));

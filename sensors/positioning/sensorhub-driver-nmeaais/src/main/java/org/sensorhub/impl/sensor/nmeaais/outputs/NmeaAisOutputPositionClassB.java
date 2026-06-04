@@ -209,7 +209,7 @@ public class NmeaAisOutputPositionClassB extends VarRateSensorOutput<NmeaAisDriv
             dataBlock.setIntValue(3,  report.getRepeat());
             dataBlock.setStringValue(4,  String.valueOf(report.getUserId()));
             dataBlock.setDoubleValue(5,  report.getSog() / 10.0);
-            dataBlock.setStringValue(6, String.valueOf(report.getPosAcc()));
+            dataBlock.setStringValue(6, AisCodeHelper.PosAcc.getDescription(report.getPosAcc()));
             dataBlock.setDoubleValue(7,  report.getPos().getLatitudeDouble());
             dataBlock.setDoubleValue(8,  report.getPos().getLongitudeDouble());
             dataBlock.setDoubleValue(9,  report.getCog() / 10.0);
@@ -250,7 +250,7 @@ public class NmeaAisOutputPositionClassB extends VarRateSensorOutput<NmeaAisDriv
             dataBlock.setIntValue(3,  report.getRepeat());
             dataBlock.setStringValue(4,  String.valueOf(report.getUserId()));
             dataBlock.setDoubleValue(5,  report.getSog() / 10.0);
-            dataBlock.setStringValue(6, String.valueOf(report.getPosAcc()));
+            dataBlock.setStringValue(6, AisCodeHelper.PosAcc.getDescription(report.getPosAcc()));
             dataBlock.setDoubleValue(7,  report.getPos().getLatitudeDouble());
             dataBlock.setDoubleValue(8,  report.getPos().getLongitudeDouble());
             dataBlock.setDoubleValue(9,  report.getCog() / 10.0);
