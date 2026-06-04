@@ -1,0 +1,361 @@
+/***************************** BEGIN LICENSE BLOCK ***************************
+
+ The contents of this file are subject to the Mozilla Public License, v. 2.0.
+ If a copy of the MPL was not distributed with this file, You can obtain one
+ at http://mozilla.org/MPL/2.0/.
+
+ Software distributed under the License is distributed on an "AS IS" basis,
+ WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+ for the specific language governing rights and limitations under the License.
+
+ Copyright (C) 2026 GeoRobotix Innovative Research. All Rights Reserved.
+
+ ******************************* END LICENSE BLOCK ***************************/
+package org.sensorhub.impl.sensor.nmeaais.helpers;
+
+import java.util.HashMap;
+import java.util.Map;
+
+/**
+ * AIS integer-code lookup tables per ITU-R M.1371-5.
+ * Each nested enum maps raw integer codes to human-readable descriptions.
+ */
+public class AisCodeHelper {
+    /**
+     * AIS Message Descriptions found at <a href="https://www.navcen.uscg.gov/ais-messages">navcen.uscg.gov</a>
+     */
+    public enum MessageType {
+        TYPE_1(1,   "Scheduled position report; Class A shipborne mobile equipment"),
+        TYPE_2(2,   "Assigned scheduled position report; Class A shipborne mobile equipment"),
+        TYPE_3(3,   "Special position report, response to interrogation; Class A shipborne mobile equipment"),
+        TYPE_4(4,   "Position, UTC, date and current slot number of base station"),
+        TYPE_5(5,   "Scheduled static and voyage related vessel data report, Class A shipborne mobile equipment"),
+        TYPE_6(6,   "Binary data for addressed communication"),
+        TYPE_7(7,   "Acknowledgement of received addressed binary data"),
+        TYPE_8(8,   "Binary data for broadcast communication"),
+        TYPE_9(9,   "Position report for airborne stations involved in SAR operations only"),
+        TYPE_10(10, "Request UTC and date"),
+        TYPE_11(11, "Current UTC and date if available"),
+        TYPE_12(12, "Safety related data for addressed communication"),
+        TYPE_13(13, "Acknowledgement of received addressed safety related message"),
+        TYPE_14(14, "Safety related data for broadcast communication"),
+        TYPE_15(15, "Request for a specific message type can result in multiple responses from one or several stations"),
+        TYPE_16(16, "Assignment of a specific report behaviour by competent authority using a Base station"),
+        TYPE_17(17, "DGNSS corrections provided by a base station"),
+        TYPE_18(18, "Standard position report for Class B shipborne mobile equipment to be used instead of Messages 1, 2, 3"),
+        TYPE_19(19, "No longer required. Extended position report for Class B shipborne mobile equipment; contains additional static information"),
+        TYPE_20(20, "Reserve slots for Base station(s)"),
+        TYPE_21(21, "Position and status report for aids-to-navigation"),
+        TYPE_22(22, "Management of channels and transceiver modes by a Base station"),
+        TYPE_23(23, "Assignment of a specific report behaviour by competent authority using a Base station to a specific group of mobiles"),
+        TYPE_24(24, "Additional data assigned to an MMSI Part A: Name Part B: Static Data"),
+        TYPE_25(25, "Short unscheduled binary data transmission Broadcast or addressed"),
+        TYPE_26(26, "Scheduled binary data transmission Broadcast or addressed"),
+        TYPE_27(27, "Class A and Class B \"SO\" shipborne mobile equipment outside base station coverage");
+
+        private final int code;
+        private final String description;
+        private static final Map<Integer, MessageType> LOOKUP = new HashMap<>();
+
+        static {
+            for (MessageType m : values()) LOOKUP.put(m.code, m);
+        }
+
+        MessageType(int code, String description) {
+            this.code = code;
+            this.description = description;
+        }
+
+        public int getCode() { return code; }
+        public String getDescription() { return description; }
+
+        public static String getDescription(int code) {
+            MessageType m = LOOKUP.get(code);
+            return m != null ? m.description : "Unknown message type " + code;
+        }
+
+        public static MessageType fromCode(int code) {
+            return LOOKUP.get(code);
+        }
+    }
+
+    public enum NavigationalStatus {
+        UNDER_WAY_ENGINE(0, "Under way using engine"),
+        AT_ANCHOR(1, "At anchor"),
+        NOT_UNDER_COMMAND(2, "Not under command"),
+        RESTRICTED_MANEUVERABILITY(3, "Restricted maneuverability"),
+        CONSTRAINED_DRAUGHT(4, "Constrained by her draught"),
+        MOORED(5, "Moored"),
+        AGROUND(6, "Aground"),
+        FISHING(7, "Engaged in fishing"),
+        UNDER_WAY_SAILING(8, "Under way sailing"),
+        RESERVED_9(9, "Reserved (DG/HS/MP / HSC)"),
+        RESERVED_10(10, "Reserved (DG/HS/MP / WIG)"),
+        RESERVED_11(11, "Power-driven vessel towing astern (regional use)"),
+        RESERVED_12(12, "Power-driven vessel pushing ahead or towing alongside (regional use)"),
+        RESERVED_13(13, "Reserved for future use"),
+        AIS_SART_MOB(14, "AIS-SART / MOB-AIS / EPIRB-AIS (active)"),
+        UNDEFINED(15, "Undefined / default");
+
+        private final int code;
+        private final String description;
+        private static final Map<Integer, NavigationalStatus> LOOKUP = new HashMap<>();
+
+        static {
+            for (NavigationalStatus s : values()) LOOKUP.put(s.code, s);
+        }
+
+        NavigationalStatus(int code, String description) {
+            this.code = code;
+            this.description = description;
+        }
+
+        public int getCode() { return code; }
+        public String getDescription() { return description; }
+
+        public static String getDescription(int code) {
+            NavigationalStatus s = LOOKUP.get(code);
+            return s != null ? s.description : "Unknown navigational status " + code;
+        }
+
+        public static NavigationalStatus fromCode(int code) {
+            return LOOKUP.get(code);
+        }
+    }
+
+    /**
+     * AIS Ship Type codes per the USCG AIS Static Data Encoding Guide (26-05-01)
+     * and ITU-R M.1371-5 (Message 5 Type of Ship).
+     *
+     * Vessels operating in U.S. waters should encode their ship type as denoted in
+     * the USCG AIS Encoding Guide:
+     *   <a href="https://www.navcen.uscg.gov/sites/default/files/pdf/AIS/AISGuide.pdf">AISGuide.pdg</a>
+     *
+     * Additional field definitions:
+     *   <a href="https://www.navcen.uscg.gov/ais-class-a-static-voyage-message-5">www.navcen.uscg.gov</a>
+     *
+     * NOTE: Embolden / new code numbers from the current USCG guide may appear as
+     * 'Reserved for future use' or not at all on legacy AIS systems.
+     */
+    public enum ShipType {
+        // -------------------------------------------------------------------------
+        // Code 0
+        // -------------------------------------------------------------------------
+        NOT_AVAILABLE(0, "Not available or no ship"),
+
+        // -------------------------------------------------------------------------
+        // Codes 1–19  (specific vessel types; new in current USCG guide)
+        // -------------------------------------------------------------------------
+        RESEARCH_VESSEL(1,  "Science / Research vessel"),
+        TRAINING(2,         "Training vessel"),
+        GOVERNMENT(3,       "Ship owned or operated by a government"),
+        ICEBREAKER(4,       "Ice breaker"),
+        BUOY_TENDER(5,      "Buoy (Aids to Navigation) tender"),
+        CABLE_LAYER(6,      "Cable layer"),
+        PIPE_LAYER(7,       "Pipe layer"),
+        // 8 = Reserved for future use
+        SPECIAL_PURPOSE(9,  "Special purpose ship, no additional information"),
+        // 10 = Reserved for future use
+        FPSO(11,            "FPSO (Floating, Production, Storage, Offloading) vessel"),
+        FISH_FACTORY(12,    "Fish factory ship"),
+        FISH_FARM_SUPPORT(13, "Fish farm support vessel"),
+        OFFSHORE_SUPPORT(14,  "Offshore support vessel"),
+        // 15, 16 = Reserved for future use
+        CONSTRUCTION(17,    "Construction vessel"),
+        CREW_BOAT(18,       "Crew boat"),
+        SUPPORT_VESSEL(19,  "Support vessel, no additional information"),
+
+        // -------------------------------------------------------------------------
+        // Codes 20–29  Wing-in-Ground (WIG)
+        // -------------------------------------------------------------------------
+        WING_IN_GROUND(20,  "Wing in Ground (WIG), all ships of this type"),
+        WIG_HAZARD_X(21,    "Wing in Ground (WIG), carrying DG/MHB/HS/MP, IMO hazard category X (formerly A)"),
+        WIG_HAZARD_Y(22,    "Wing in Ground (WIG), carrying DG/MHB/HS/MP, IMO hazard category Y (formerly B)"),
+        WIG_HAZARD_Z(23,    "Wing in Ground (WIG), carrying DG/MHB/HS/MP, IMO hazard category Z (formerly C)"),
+        WIG_HAZARD_OS(24,   "Wing in Ground (WIG), carrying DG/MHB/HS/MP, IMO hazard category OS (formerly D)"),
+        // 25–28 = Reserved for future use
+        WIG_NO_INFO(29,     "Wing in Ground (WIG), no additional information"),
+
+        // -------------------------------------------------------------------------
+        // Codes 30–39  Special vessel operations / types
+        // -------------------------------------------------------------------------
+        FISHING(30,         "Fishing vessel"),
+        TOWING(31,          "Towing vessel"),
+        TOWING_LARGE(32,    "Towing vessel; length of tow exceeds 200 m or breadth exceeds 25 m"),
+        DREDGING(33,        "Dredger"),
+        DIVING(34,          "Diving vessel"),
+        MILITARY(35,        "Warship or naval auxiliary"),
+        SAILING(36,         "Sailing vessel"),
+        PLEASURE_CRAFT(37,  "Pleasure motor craft"),
+        TRAWLER(38,         "Trawler"),
+        PATROL_VESSEL(39,   "Patrol vessel"),
+
+        // -------------------------------------------------------------------------
+        // Codes 40–49  High Speed Craft (HSC)
+        // -------------------------------------------------------------------------
+        HIGH_SPEED_CRAFT(40,    "High Speed Craft (HSC), all ships of this type"),
+        HSC_HAZARD_X(41,        "High Speed Craft (HSC), carrying DG/MHB/HS/MP, IMO hazard category X (formerly A)"),
+        HSC_HAZARD_Y(42,        "High Speed Craft (HSC), carrying DG/MHB/HS/MP, IMO hazard category Y (formerly B)"),
+        HSC_HAZARD_Z(43,        "High Speed Craft (HSC), carrying DG/MHB/HS/MP, IMO hazard category Z (formerly C)"),
+        HSC_HAZARD_OS(44,       "High Speed Craft (HSC), carrying DG/MHB/HS/MP, IMO hazard category OS (formerly D)"),
+        HSC_PASSENGER(45,       "High Speed Craft (HSC), carrying passengers"),
+        HSC_RORO(46,            "High Speed Craft (HSC), Ro-Ro ship (vehicle / rail)"),
+        // 47–48 = Reserved for future use
+        HSC_NO_INFO(49,         "High Speed Craft (HSC), no additional information"),
+
+        // -------------------------------------------------------------------------
+        // Codes 50–59  Special craft (ITU / USCG)
+        // -------------------------------------------------------------------------
+        PILOT_VESSEL(50,        "Pilot vessel"),
+        SEARCH_AND_RESCUE(51,   "Search and rescue vessel"),
+        TUG(52,                 "Tug"),
+        PORT_TENDER(53,         "Port or fish tender"),
+        ANTI_POLLUTION(54,      "Anti-pollution or firefighting responder"),
+        LAW_ENFORCEMENT(55,     "Law enforcement vessel"),
+        SPARE_56(56,            "Spare 1 – for assignments to local vessels"),
+        SPARE_57(57,            "Spare 2 – for assignments to local vessels"),
+        MEDICAL_TRANSPORT(58,   "Medical transport (1949 Geneva Conventions and Additional Protocols)"),
+        NON_COMBATANT(59,       "Ships of States not parties to an armed conflict (per RR 18)"),
+
+        // -------------------------------------------------------------------------
+        // Codes 60–69  Passenger ships
+        // -------------------------------------------------------------------------
+        PASSENGER(60,               "Passenger ship, all ships of this type"),
+        PASSENGER_HAZARD_X(61,      "Passenger ship, carrying DG/MHB/HS/MP, IMO hazard category X (formerly A)"),
+        PASSENGER_HAZARD_Y(62,      "Passenger ship, carrying DG/MHB/HS/MP, IMO hazard category Y (formerly B)"),
+        PASSENGER_HAZARD_Z(63,      "Passenger ship, carrying DG/MHB/HS/MP, IMO hazard category Z (formerly C)"),
+        PASSENGER_HAZARD_OS(64,     "Passenger ship, carrying DG/MHB/HS/MP, IMO hazard category OS (formerly D)"),
+        PASSENGER_CRUISE(65,        "Passenger (cruise) ship"),
+        PASSENGER_FERRY(66,         "Passenger (ferry) ship"),
+        PASSENGER_EXCURSION(67,     "Passenger (excursion) ship (harbour cruise, whale watcher, etc.)"),
+        // 68 = Reserved for future use
+        PASSENGER_NO_INFO(69,       "Passenger ship, no additional information"),
+
+        // -------------------------------------------------------------------------
+        // Codes 70–79  Cargo ships
+        // -------------------------------------------------------------------------
+        CARGO(70,                   "Cargo ship, all ships of this type"),
+        CARGO_HAZARD_X(71,          "Cargo ship, carrying DG/MHB/HS/MP, IMO hazard category X (formerly A)"),
+        CARGO_HAZARD_Y(72,          "Cargo ship, carrying DG/MHB/HS/MP, IMO hazard category Y (formerly B)"),
+        CARGO_HAZARD_Z(73,          "Cargo ship, carrying DG/MHB/HS/MP, IMO hazard category Z (formerly C)"),
+        CARGO_HAZARD_OS(74,         "Cargo ship, carrying DG/MHB/HS/MP, IMO hazard category OS (formerly D)"),
+        CARGO_BULK(75,              "Cargo ship, bulk carrier"),
+        CARGO_CONTAINER(76,         "Cargo ship, container ship"),
+        CARGO_RORO(77,              "Cargo ship, roll-on-roll-off carrier"),
+        CARGO_LANDING_CRAFT(78,     "Cargo ship, landing craft"),
+        CARGO_NO_INFO(79,           "Cargo ship, no additional information"),
+
+        // -------------------------------------------------------------------------
+        // Codes 80–89  Tankers
+        // -------------------------------------------------------------------------
+        TANKER(80,                  "Tanker, all ships of this type"),
+        TANKER_HAZARD_X(81,         "Tanker, carrying DG/MHB/HS/MP, IMO hazard category X (formerly A)"),
+        TANKER_HAZARD_Y(82,         "Tanker, carrying DG/MHB/HS/MP, IMO hazard category Y (formerly B)"),
+        TANKER_HAZARD_Z(83,         "Tanker, carrying DG/MHB/HS/MP, IMO hazard category Z (formerly C)"),
+        TANKER_HAZARD_OS(84,        "Tanker, carrying DG/MHB/HS/MP, IMO hazard category OS (formerly D)"),
+        TANKER_NON_HAZARDOUS(85,    "Tanker, non-hazardous or non-pollutant carrier"),
+        TUG_BARGE_INTEGRATED(86,    "Integrated / articulated tug and tank barge (ABCD values reflect tug and barge dimensions)"),
+        // 87–88 = Reserved for future use
+        TANKER_NO_INFO(89,          "Tanker, no additional information"),
+
+        // -------------------------------------------------------------------------
+        // Codes 90–99  Other types
+        // -------------------------------------------------------------------------
+        OTHER(90,               "Other type, all ships of this type"),
+        OTHER_HAZARD_X(91,      "Other type, carrying DG/MHB/HS/MP, IMO hazard category X (formerly A)"),
+        OTHER_HAZARD_Y(92,      "Other type, carrying DG/MHB/HS/MP, IMO hazard category Y (formerly B)"),
+        OTHER_HAZARD_Z(93,      "Other type, carrying DG/MHB/HS/MP, IMO hazard category Z (formerly C)"),
+        OTHER_HAZARD_OS(94,     "Other type, carrying DG/MHB/HS/MP, IMO hazard category OS (formerly D)"),
+        // 95–98 = Reserved for future use
+        OTHER_NO_INFO(99,       "Other type, no additional information");
+
+        // -------------------------------------------------------------------------
+
+        private final int code;
+        private final String description;
+        private static final Map<Integer, ShipType> LOOKUP = new HashMap<>();
+
+        static {
+            for (ShipType t : values()) LOOKUP.put(t.code, t);
+        }
+
+        ShipType(int code, String description) {
+            this.code = code;
+            this.description = description;
+        }
+
+        public int getCode() { return code; }
+        public String getDescription() { return description; }
+
+        /**
+         * Returns a human-readable description for the given numeric AIS ship type code.
+         * Falls back to range-based "Reserved for future use" labels for codes not
+         * mapped to a named constant.
+         */
+        public static String getDescription(int code) {
+            ShipType t = LOOKUP.get(code);
+            if (t != null) return t.description;
+
+            // Range-based fallbacks for reserved / unassigned codes
+            if (code == 8)                     return "Reserved for future use";
+            if (code == 10)                    return "Reserved for future use";
+            if (code >= 15 && code <= 16)      return "Reserved for future use";
+            if (code >= 25 && code <= 28)      return "Wing in Ground (WIG), reserved for future use";
+            if (code >= 47 && code <= 48)      return "High Speed Craft (HSC), reserved for future use";
+            if (code == 68)                    return "Passenger ship, reserved for future use";
+            if (code >= 87 && code <= 88)      return "Tanker, reserved for future use";
+            if (code >= 95 && code <= 98)      return "Other type, reserved for future use";
+            if (code >= 100 && code <= 199)    return "Reserved for regional use";
+            if (code >= 200 && code <= 255)    return "Reserved for future use";
+
+            return "Unknown ship type " + code;
+        }
+
+        /**
+         * Returns the {@link ShipType} for the given code, or {@code null} if the code
+         * is not mapped to a named constant (e.g. reserved ranges).
+         */
+        public static ShipType fromCode(int code) {
+            return LOOKUP.get(code);
+        }
+    }
+
+    public enum EpfdType {
+        UNDEFINED(0, "Undefined"),
+        GPS(1, "GPS"),
+        GLONASS(2, "GLONASS"),
+        COMBINED_GPS_GLONASS(3, "Combined GPS/GLONASS"),
+        LORAN_C(4, "Loran-C"),
+        CHAYKA(5, "Chayka"),
+        INTEGRATED_NAV(6, "Integrated navigation system"),
+        SURVEYED(7, "Surveyed"),
+        GALILEO(8, "Galileo"),
+        INTERNAL_GNSS(15, "Internal GNSS");
+
+        private final int code;
+        private final String description;
+        private static final Map<Integer, EpfdType> LOOKUP = new HashMap<>();
+
+        static {
+            for (EpfdType e : values()) LOOKUP.put(e.code, e);
+        }
+
+        EpfdType(int code, String description) {
+            this.code = code;
+            this.description = description;
+        }
+
+        public int getCode() { return code; }
+        public String getDescription() { return description; }
+
+        public static String getDescription(int code) {
+            EpfdType e = LOOKUP.get(code);
+            return e != null ? e.description : "Unknown EPFD type " + code;
+        }
+
+        public static EpfdType fromCode(int code) {
+            return LOOKUP.get(code);
+        }
+    }
+
+}
