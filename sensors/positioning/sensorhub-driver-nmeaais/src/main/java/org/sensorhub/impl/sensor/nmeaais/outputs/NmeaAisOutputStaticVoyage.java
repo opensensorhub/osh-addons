@@ -26,6 +26,7 @@ import net.opengis.swe.v20.DataRecord;
 import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.impl.sensor.VarRateSensorOutput;
 import org.sensorhub.impl.sensor.nmeaais.NmeaAisDriver;
+import org.sensorhub.impl.sensor.nmeaais.helpers.AisCodeHelper;
 import org.sensorhub.impl.sensor.nmeaais.helpers.NmeaAisHelper;
 import org.vast.swe.SWEBuilders;
 import org.vast.swe.SWEHelper;
@@ -94,7 +95,7 @@ public class NmeaAisOutputStaticVoyage extends VarRateSensorOutput<NmeaAisDriver
                         .label("Vessel Name")
                         .description("Maximum 20 characters; padded with spaces after. Indicate \"Not available\" if not known")
                         .definition(SWEHelper.getPropertyUri("VesselName")))
-                .addField("shipType", fac.createCount()
+                .addField("shipType", fac.createText()
                         .label("Ship Type")
                         .description("0 = not available or no ship = default; 1-99 per ITU-R M.1371-5 Table 53")
                         .definition(SWEHelper.getPropertyUri("ShipType")))
@@ -163,25 +164,25 @@ public class NmeaAisOutputStaticVoyage extends VarRateSensorOutput<NmeaAisDriver
     }
 
     @Override
-    public void setData(AisMessage5 report, String description) {
+    public void setData(AisMessage5 report) {
         synchronized (processingLock) {
             DataBlock dataBlock = latestRecord == null ? aisReportRecord.createDataBlock() : latestRecord.renew();
 
             dataBlock.setDoubleValue(0, System.currentTimeMillis() / 1000d);
             dataBlock.setIntValue(1,  report.getMsgId());
-            dataBlock.setStringValue(2, description);
+            dataBlock.setStringValue(2, AisCodeHelper.MessageType.getDescription(report.getMsgId()));
             dataBlock.setIntValue(3,  report.getRepeat());
             dataBlock.setStringValue(4,  String.valueOf(report.getUserId()));
             dataBlock.setStringValue(5, String.valueOf(report.getVersion()));
             dataBlock.setLongValue(6,  report.getImo());
             dataBlock.setStringValue(7, report.getCallsign());
             dataBlock.setStringValue(8, report.getName());
-            dataBlock.setIntValue(9,  report.getShipType());
+            dataBlock.setStringValue(9, AisCodeHelper.ShipType.getDescription(report.getShipType()));
             dataBlock.setIntValue(10,  report.getDimBow());
             dataBlock.setIntValue(11, report.getDimStern());
             dataBlock.setIntValue(12, report.getDimPort());
             dataBlock.setIntValue(13, report.getDimStarboard());
-            dataBlock.setStringValue(14, String.valueOf(report.getPosType()));
+            dataBlock.setStringValue(14, AisCodeHelper.EpfdType.getDescription(report.getPosType()));
 
             // ETA is stored as a packed long; getEtaDate() converts to java.util.Date
             int etaMonth = 0, etaDay = 0, etaHour = 24, etaMinute = 60;

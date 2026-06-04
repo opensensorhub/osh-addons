@@ -22,6 +22,7 @@ import net.opengis.swe.v20.DataRecord;
 import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.impl.sensor.VarRateSensorOutput;
 import org.sensorhub.impl.sensor.nmeaais.NmeaAisDriver;
+import org.sensorhub.impl.sensor.nmeaais.helpers.AisCodeHelper;
 import org.sensorhub.impl.sensor.nmeaais.helpers.NmeaAisHelper;
 import org.vast.swe.SWEBuilders;
 import org.vast.swe.SWEHelper;
@@ -198,13 +199,13 @@ public class NmeaAisOutputPositionClassB extends VarRateSensorOutput<NmeaAisDriv
     }
 
     /** Publishes a type 18 (Standard CS) record. Type-19-specific fields are set to zero/empty. */
-    public void setData(AisMessage18 report, String description) {
+    public void setData(AisMessage18 report) {
         synchronized (processingLock) {
             DataBlock dataBlock = latestRecord == null ? aisReportRecord.createDataBlock() : latestRecord.renew();
 
             dataBlock.setDoubleValue(0, System.currentTimeMillis() / 1000d);
             dataBlock.setIntValue(1,  report.getMsgId());
-            dataBlock.setStringValue(2, description);
+            dataBlock.setStringValue(2, AisCodeHelper.MessageType.getDescription(report.getMsgId()));
             dataBlock.setIntValue(3,  report.getRepeat());
             dataBlock.setStringValue(4,  String.valueOf(report.getUserId()));
             dataBlock.setDoubleValue(5,  report.getSog() / 10.0);
@@ -239,13 +240,13 @@ public class NmeaAisOutputPositionClassB extends VarRateSensorOutput<NmeaAisDriv
     }
 
     /** Publishes a type 19 (Extended CS) record. All fields including name, ship type, and dimensions are populated. */
-    public void setData(AisMessage19 report, String description) {
+    public void setData(AisMessage19 report) {
         synchronized (processingLock) {
             DataBlock dataBlock = latestRecord == null ? aisReportRecord.createDataBlock() : latestRecord.renew();
 
             dataBlock.setDoubleValue(0, System.currentTimeMillis() / 1000d);
             dataBlock.setIntValue(1,  report.getMsgId());
-            dataBlock.setStringValue(2, description);
+            dataBlock.setStringValue(2, AisCodeHelper.MessageType.getDescription(report.getMsgId()));
             dataBlock.setIntValue(3,  report.getRepeat());
             dataBlock.setStringValue(4,  String.valueOf(report.getUserId()));
             dataBlock.setDoubleValue(5,  report.getSog() / 10.0);

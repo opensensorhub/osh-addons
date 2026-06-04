@@ -231,55 +231,6 @@ public class NmeaAisDriver extends AbstractSensorModule<NmeaAisConfig> {
         nmeaAisOutputRawMessages.setData(nmeaAisMsg);
     }
 
-    /**
-     * Forwards a decoded Class A position report to the position output for publishing.
-     */
-    void publishPositionAReport(AisPositionMessage report, String description) {
-        nmeaAisOutputPositionClassA.setData(report, description);
-    }
 
-    /**
-     * Forwards a decoded Class B standard position report (type 18) for publishing.
-     */
-    void publishPositionBReport(AisMessage18 report, String description) {
-        nmeaAisOutputPositionClassB.setData(report, description);
-    }
 
-    /**
-     * Forwards a decoded Class B extended position report (type 19) for publishing.
-     */
-    void publishPositionBExtReport(AisMessage19 report, String description) {
-        nmeaAisOutputPositionClassB.setData(report, description);
-    }
-
-    /**
-     * Forwards a decoded base station report (types 4 and 11) to the base station output for publishing.
-     */
-    void publishBaseStationReport(AisMessage4 report, String description) {
-        nmeaAisOutputBaseStation.setData(report, description);
-    }
-
-    /**
-     * Forwards a decoded static and voyage data report (type 5) to the static/voyage output for publishing.
-     */
-    void publishStaticVoyageReport(AisMessage5 report, String description) {
-        nmeaAisOutputStaticVoyage.setData(report, description);
-    }
-
-    /**
-     * Forwards a decoded aid-to-navigation report (type 21) to the aid nav output for publishing.
-     */
-    void publishAidNavReport(AisMessage21 report, String description) {
-        nmeaAisOutputAidNavigation.setData(report, description);
-    }
-
-    /**
-     * Publishes a combined type 24 Part A + Part B record to the Class B static data output.
-     */
-    void publishStaticDataClassBReport(int mmsi, int repeat, String name, String callSign,
-                                       int shipType, int dimBow, int dimStern, int dimPort,
-                                       int dimStarboard, String vendorId, String description) {
-        nmeaAisOutputStaticDataClassB.setData(mmsi, repeat, name, callSign, shipType,
-                dimBow, dimStern, dimPort, dimStarboard, vendorId, description);
-    }
 }

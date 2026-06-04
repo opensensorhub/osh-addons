@@ -55,4 +55,5 @@ public class NmeaAisHelper extends SWEHelper{
                 .description("1 = high (<= 10 m); 0 = low (> 10 m); 0 = default")
                 .definition(SWEHelper.getPropertyUri("PositionAccuracy"));
     }
+
 }

@@ -21,6 +21,7 @@ import net.opengis.swe.v20.DataRecord;
 import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.impl.sensor.VarRateSensorOutput;
 import org.sensorhub.impl.sensor.nmeaais.NmeaAisDriver;
+import org.sensorhub.impl.sensor.nmeaais.helpers.AisCodeHelper;
 import org.sensorhub.impl.sensor.nmeaais.helpers.NmeaAisHelper;
 import org.vast.swe.SWEBuilders;
 import org.vast.swe.SWEHelper;
@@ -143,13 +144,13 @@ public class NmeaAisOutputAidNavigation extends VarRateSensorOutput<NmeaAisDrive
     }
 
     @Override
-    public void setData(AisMessage21 report, String description) {
+    public void setData(AisMessage21 report) {
         synchronized (processingLock) {
             DataBlock dataBlock = latestRecord == null ? aisReportRecord.createDataBlock() : latestRecord.renew();
 
             dataBlock.setDoubleValue(0, System.currentTimeMillis() / 1000d);
             dataBlock.setIntValue(1,  report.getMsgId());
-            dataBlock.setStringValue(2, description);
+            dataBlock.setStringValue(2, AisCodeHelper.MessageType.getDescription(report.getMsgId()));
             dataBlock.setIntValue(3,  report.getRepeat());
             dataBlock.setStringValue(4,  String.valueOf(report.getUserId()));
             dataBlock.setStringValue(5, String.valueOf(report.getAtonType()));

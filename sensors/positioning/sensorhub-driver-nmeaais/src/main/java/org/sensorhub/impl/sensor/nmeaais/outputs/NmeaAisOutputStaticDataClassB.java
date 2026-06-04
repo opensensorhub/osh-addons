@@ -21,6 +21,7 @@ import org.checkerframework.checker.units.qual.N;
 import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.impl.sensor.VarRateSensorOutput;
 import org.sensorhub.impl.sensor.nmeaais.NmeaAisDriver;
+import org.sensorhub.impl.sensor.nmeaais.helpers.AisCodeHelper;
 import org.sensorhub.impl.sensor.nmeaais.helpers.NmeaAisHelper;
 import org.vast.swe.SWEBuilders;
 import org.vast.swe.SWEHelper;
@@ -85,7 +86,7 @@ public class NmeaAisOutputStaticDataClassB extends VarRateSensorOutput<NmeaAisDr
                         .label("Call Sign")
                         .description("Call sign (7 x 6-bit ASCII characters, padded with spaces)")
                         .definition(SWEHelper.getPropertyUri("CallSign")))
-                .addField("shipType", fac.createCount()
+                .addField("shipType", fac.createText()
                         .label("Ship Type")
                         .description("Ship type per ITU-R M.1371-5 Table 53; 0 = not available or no ship = default")
                         .definition(SWEHelper.getPropertyUri("ShipType")))
@@ -131,22 +132,21 @@ public class NmeaAisOutputStaticDataClassB extends VarRateSensorOutput<NmeaAisDr
      * @param dimPort   Dimension to port from Part B
      * @param dimStarboard Dimension to starboard from Part B
      * @param vendorId  Vendor ID from Part B
-     * @param description Message type description
      */
     public void setData(int mmsi, int repeat, String name, String callSign, int shipType,
                         int dimBow, int dimStern, int dimPort, int dimStarboard,
-                        String vendorId, String description) {
+                        String vendorId) {
         synchronized (processingLock) {
             DataBlock dataBlock = latestRecord == null ? aisReportRecord.createDataBlock() : latestRecord.renew();
 
             dataBlock.setDoubleValue(0, System.currentTimeMillis() / 1000d);
             dataBlock.setIntValue(1,  24);
-            dataBlock.setStringValue(2, description);
+            dataBlock.setStringValue(2, AisCodeHelper.MessageType.getDescription(24));
             dataBlock.setIntValue(3,  repeat);
             dataBlock.setStringValue(4,  String.valueOf(mmsi));
             dataBlock.setStringValue(5, name);
             dataBlock.setStringValue(6, callSign);
-            dataBlock.setIntValue(7,  shipType);
+            dataBlock.setStringValue(7, AisCodeHelper.ShipType.getDescription(shipType));
             dataBlock.setIntValue(8,  dimBow);
             dataBlock.setIntValue(9,  dimStern);
             dataBlock.setIntValue(10,  dimPort);
