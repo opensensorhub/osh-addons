@@ -126,11 +126,7 @@ public class NmeaAisOutputPositionClassA extends VarRateSensorOutput<NmeaAisDriv
                                 "2 = engaged in special maneuver\n" +
                                 "(i.e.: regional passing arrangement on Inland Waterway)")
                         .definition(SWEHelper.getPropertyUri("Smi")))
-                .addField("raim", fac.createCategory()
-                        .label("RAIM-flag")
-                        .addAllowedValues(0,1)
-                        .description("Receiver autonomous integrity monitoring (RAIM) flag of electronic position fixing device; 0 = RAIM not in use = default; 1 = RAIM in use. See Table")
-                        .definition(SWEHelper.getPropertyUri("Raim")))
+                .addField("raim", fac.createRAIM())
                 .addField("commState", fac.createCount()
                         .label("Communication State")
                         .description("visit https://www.navcen.uscg.gov/ais-class-a-reports#CommState")
@@ -162,7 +158,7 @@ public class NmeaAisOutputPositionClassA extends VarRateSensorOutput<NmeaAisDriv
             dataBlock.setIntValue(12, report.getTrueHeading());
             dataBlock.setIntValue(13, report.getUtcSec());
             dataBlock.setStringValue(14, String.valueOf(report.getSpecialManIndicator()));
-            dataBlock.setStringValue(15, String.valueOf(report.getRaim()));
+            dataBlock.setStringValue(15, AisCodeHelper.RaimFlag.getDescription(report.getRaim()));
             dataBlock.setIntValue(16, report.getSyncState());
 
             String foiUID = parentSensor.addFoi(String.valueOf(report.getUserId()));

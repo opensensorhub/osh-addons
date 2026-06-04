@@ -62,4 +62,11 @@ public class NmeaAisHelper extends SWEHelper{
                 .definition(SWEHelper.getPropertyUri("Epfd"));
     }
 
+    public TextBuilder createRAIM(){
+        return createText()
+                .label("RAIM Flag")
+                .description("Receiver autonomous integrity monitoring flag; 0 = RAIM not in use; 1 = RAIM in use")
+                .definition(SWEHelper.getPropertyUri("Raim"));
+    }
+
 }

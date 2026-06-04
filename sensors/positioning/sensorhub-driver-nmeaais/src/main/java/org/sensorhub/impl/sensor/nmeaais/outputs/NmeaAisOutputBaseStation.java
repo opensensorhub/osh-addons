@@ -109,11 +109,7 @@ public class NmeaAisOutputBaseStation extends VarRateSensorOutput<NmeaAisDriver>
                 .addField("location", geoFac.createLocationVectorLatLon()
                         .label("Location"))
                 .addField("epfd", fac.createEpfd())
-                .addField("raim", fac.createCategory()
-                        .label("RAIM Flag")
-                        .addAllowedValues(0,1)
-                        .description("Receiver autonomous integrity monitoring flag; 0 = RAIM not in use; 1 = RAIM in use")
-                        .definition(SWEHelper.getPropertyUri("Raim")));
+                .addField("raim", fac.createRAIM());
 
         aisReportRecord = recordBuilder.build();
         dataEncoding = geoFac.newTextEncoding(",", "\n");
@@ -139,7 +135,7 @@ public class NmeaAisOutputBaseStation extends VarRateSensorOutput<NmeaAisDriver>
             dataBlock.setDoubleValue(12, report.getPos().getLatitudeDouble());
             dataBlock.setDoubleValue(13, report.getPos().getLongitudeDouble());
             dataBlock.setStringValue(14, AisCodeHelper.EpfdType.getDescription(report.getPosType()));
-            dataBlock.setStringValue(15, String.valueOf(report.getRaim()));
+            dataBlock.setStringValue(15, AisCodeHelper.RaimFlag.getDescription(report.getRaim()));
 
             String foiUID = parentSensor.addFoi(String.valueOf(report.getUserId()));
 

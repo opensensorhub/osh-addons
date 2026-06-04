@@ -386,7 +386,140 @@ public class AisCodeHelper {
     }
 
     /**
-     * AIS Aid To Navigation Type Descriptions found at <a href="https://www.navcen.uscg.gov/">https://www.navcen.uscg.gov/</a>
+     * AIS Off-Position Indicator per <a href="https://www.navcen.uscg.gov/ais-aton-report">navcen.uscg.gov</a>.
+     * Valid only when UTC second is 0–59; for floating AtoN only.
+     */
+    public enum OffPositionIndicator {
+        ON_POSITION(0,  "On position"),
+        OFF_POSITION(1, "Off position (floating AtoN only)");
+
+        private final int code;
+        private final String description;
+        private static final Map<Integer, OffPositionIndicator> LOOKUP = new HashMap<>();
+
+        static {
+            for (OffPositionIndicator o : values()) LOOKUP.put(o.code, o);
+        }
+
+        OffPositionIndicator(int code, String description) {
+            this.code = code;
+            this.description = description;
+        }
+
+        public int getCode() { return code; }
+        public String getDescription() { return description; }
+
+        public static String getDescription(int code) {
+            OffPositionIndicator o = LOOKUP.get(code);
+            return o != null ? o.description : "Unknown off-position indicator: " + code;
+        }
+
+        public static OffPositionIndicator fromCode(int code) {
+            return LOOKUP.get(code);
+        }
+    }
+
+    /**
+     * AIS RAIM (Receiver Autonomous Integrity Monitoring) flag per <a href="https://www.navcen.uscg.gov/ais-aton-report">navcen.uscg.gov</a>.
+     */
+    public enum RaimFlag {
+        NOT_IN_USE(0, "RAIM not in use (default)"),
+        IN_USE(1,     "RAIM in use");
+
+        private final int code;
+        private final String description;
+        private static final Map<Integer, RaimFlag> LOOKUP = new HashMap<>();
+
+        static {
+            for (RaimFlag r : values()) LOOKUP.put(r.code, r);
+        }
+
+        RaimFlag(int code, String description) {
+            this.code = code;
+            this.description = description;
+        }
+
+        public int getCode() { return code; }
+        public String getDescription() { return description; }
+
+        public static String getDescription(int code) {
+            RaimFlag r = LOOKUP.get(code);
+            return r != null ? r.description : "Unknown RAIM flag: " + code;
+        }
+
+        public static RaimFlag fromCode(int code) {
+            return LOOKUP.get(code);
+        }
+    }
+
+    /**
+     * AIS Virtual AtoN flag per <a href="https://www.navcen.uscg.gov/ais-aton-report">navcen.uscg.gov</a>.
+     */
+    public enum VirtualAtoN {
+        REAL(0,    "Default = real AtoN at indicated position"),
+        VIRTUAL(1, "Virtual AtoN, does not physically exist");
+
+        private final int code;
+        private final String description;
+        private static final Map<Integer, VirtualAtoN> LOOKUP = new HashMap<>();
+
+        static {
+            for (VirtualAtoN v : values()) LOOKUP.put(v.code, v);
+        }
+
+        VirtualAtoN(int code, String description) {
+            this.code = code;
+            this.description = description;
+        }
+
+        public int getCode() { return code; }
+        public String getDescription() { return description; }
+
+        public static String getDescription(int code) {
+            VirtualAtoN v = LOOKUP.get(code);
+            return v != null ? v.description : "Unknown virtual AtoN flag: " + code;
+        }
+
+        public static VirtualAtoN fromCode(int code) {
+            return LOOKUP.get(code);
+        }
+    }
+
+    /**
+     * AIS Assigned Mode flag per <a href="https://www.navcen.uscg.gov/ais-aton-report">navcen.uscg.gov</a>.
+     */
+    public enum AssignedMode {
+        AUTONOMOUS(0, "Station operating in autonomous and continuous mode (default)"),
+        ASSIGNED(1,   "Station operating in assigned mode");
+
+        private final int code;
+        private final String description;
+        private static final Map<Integer, AssignedMode> LOOKUP = new HashMap<>();
+
+        static {
+            for (AssignedMode a : values()) LOOKUP.put(a.code, a);
+        }
+
+        AssignedMode(int code, String description) {
+            this.code = code;
+            this.description = description;
+        }
+
+        public int getCode() { return code; }
+        public String getDescription() { return description; }
+
+        public static String getDescription(int code) {
+            AssignedMode a = LOOKUP.get(code);
+            return a != null ? a.description : "Unknown assigned mode flag: " + code;
+        }
+
+        public static AssignedMode fromCode(int code) {
+            return LOOKUP.get(code);
+        }
+    }
+
+    /**
+     * AIS Aid To Navigation Type Descriptions found at <a href="https://www.navcen.uscg.gov/ais-aton-report">navcen.uscg.gov</a>
      */
     public enum AtoNType {
         DEFAULT(0,                  "Default, Type of AtoN not specified"),

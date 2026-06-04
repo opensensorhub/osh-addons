@@ -135,11 +135,7 @@ public class NmeaAisOutputPositionClassB extends VarRateSensorOutput<NmeaAisDriv
                         .addAllowedValues(0,1)
                         .description("0 = Autonomous and continuous mode = default; 1 = Assigned mode")
                         .definition(SWEHelper.getPropertyUri("ModeFlag")))
-                .addField("raim", fac.createCategory()
-                        .label("RAIM Flag")
-                        .addAllowedValues(0,1)
-                        .description("0 = RAIM not in use = default; 1 = RAIM in use")
-                        .definition(SWEHelper.getPropertyUri("Raim")))
+                .addField("raim", fac.createRAIM())
                 .addField("commStateFlag", fac.createCategory()
                         .label("Communication State Selector Flag")
                         .addAllowedValues(0,1)
@@ -217,7 +213,7 @@ public class NmeaAisOutputPositionClassB extends VarRateSensorOutput<NmeaAisDriv
             dataBlock.setStringValue(15, String.valueOf(report.getClassBBandFlag()));
             dataBlock.setStringValue(16, String.valueOf(report.getClassBMsg22Flag()));
             dataBlock.setStringValue(17, String.valueOf(report.getModeFlag()));
-            dataBlock.setStringValue(18, String.valueOf(report.getRaim()));
+            dataBlock.setStringValue(18, AisCodeHelper.RaimFlag.getDescription(report.getRaim()));
             dataBlock.setStringValue(19, String.valueOf(report.getCommStateSelectorFlag()));
             dataBlock.setIntValue(20, report.getCommState());
             // type-19-only fields — not present in type 18

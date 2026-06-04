@@ -119,11 +119,7 @@ public class NmeaAisOutputAidNavigation extends VarRateSensorOutput<NmeaAisDrive
                         .addAllowedValues(0,1)
                         .description("For floating aids-to-navigation: 0 = on position; 1 = off position. Only valid if UTC second is 0-59")
                         .definition(SWEHelper.getPropertyUri("OffPositionIndicator")))
-                .addField("raim", fac.createCategory()
-                        .label("RAIM Flag")
-                        .addAllowedValues(0,1)
-                        .description("Receiver autonomous integrity monitoring flag; 0 = RAIM not in use; 1 = RAIM in use")
-                        .definition(SWEHelper.getPropertyUri("Raim")))
+                .addField("raim", fac.createRAIM())
                 .addField("virtualAid", fac.createCategory()
                         .label("Virtual Aid Flag")
                         .addAllowedValues(0,1)
@@ -160,10 +156,10 @@ public class NmeaAisOutputAidNavigation extends VarRateSensorOutput<NmeaAisDrive
             dataBlock.setIntValue(13, report.getDimStarboard());
             dataBlock.setStringValue(14, AisCodeHelper.EpfdType.getDescription(report.getPosType()));
             dataBlock.setIntValue(15, report.getUtcSec());
-            dataBlock.setStringValue(16, String.valueOf(report.getOffPosition()));
-            dataBlock.setStringValue(17, String.valueOf(report.getRaim()));
-            dataBlock.setStringValue(18, String.valueOf(report.getVirtual()));
-            dataBlock.setStringValue(19, String.valueOf(report.getAssigned()));
+            dataBlock.setStringValue(16, AisCodeHelper.OffPositionIndicator.getDescription(report.getOffPosition()));
+            dataBlock.setStringValue(17, AisCodeHelper.RaimFlag.getDescription(report.getRaim()));
+            dataBlock.setStringValue(18, AisCodeHelper.VirtualAtoN.getDescription(report.getVirtual()));
+            dataBlock.setStringValue(19, AisCodeHelper.AssignedMode.getDescription(report.getAssigned()));
 
             String foiUID = parentSensor.addFoi(String.valueOf(report.getUserId()));
 
