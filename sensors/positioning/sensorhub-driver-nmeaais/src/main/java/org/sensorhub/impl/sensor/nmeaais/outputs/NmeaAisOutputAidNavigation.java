@@ -77,10 +77,9 @@ public class NmeaAisOutputAidNavigation extends VarRateSensorOutput<NmeaAisDrive
                 .addField("reportDescription", fac.createReportDescription())
                 .addField("repeat", fac.createRepeatIndicator())
                 .addField("mmsi", fac.createMssi())
-                .addField("typeOfAidsToNav", fac.createCategory()
+                .addField("typeOfAidsToNav", fac.createText()
                         .label("Type of Aid-to-Nav")
-                        .description("1 = Default/unspecified; 2 = Reference point; 3 = RACON; 4 = Fixed structure; 5-20 = Fixed; 21-29 = Floating; 30-31 = Landfall/Coast/Inland")
-                        .addAllowedValues(IntStream.rangeClosed(0, 31).toArray())
+                        .description("Type of Aid to Navigation based on IALA Maritime Buyage System")
                         .definition(SWEHelper.getPropertyUri("TypeOfAidsToNav")))
                 .addField("name", fac.createText()
                         .label("Name of Aid-to-Nav")
@@ -153,7 +152,7 @@ public class NmeaAisOutputAidNavigation extends VarRateSensorOutput<NmeaAisDrive
             dataBlock.setStringValue(2, AisCodeHelper.MessageType.getDescription(report.getMsgId()));
             dataBlock.setIntValue(3,  report.getRepeat());
             dataBlock.setStringValue(4,  String.valueOf(report.getUserId()));
-            dataBlock.setStringValue(5, String.valueOf(report.getAtonType()));
+            dataBlock.setStringValue(5, AisCodeHelper.AtoNType.getDescription(report.getAtonType()));
             dataBlock.setStringValue(6, report.getName());
             dataBlock.setStringValue(7, AisCodeHelper.PosAcc.getDescription(report.getPosAcc()));
             dataBlock.setDoubleValue(8,  report.getPos().getLatitudeDouble());

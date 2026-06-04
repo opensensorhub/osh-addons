@@ -356,7 +356,7 @@ public class AisCodeHelper {
     }
 
     /**
-     * AIS Message Descriptions found at <a href="https://www.navcen.uscg.gov/ais-messages">navcen.uscg.gov</a>
+     * AIS Position Accuracy Descriptions found at <a href="https://www.navcen.uscg.gov/ais-messages">navcen.uscg.gov</a>
      */
     public enum PosAcc {
         LOW(0, "Low (> 10 m) or Default"),
@@ -381,6 +381,66 @@ public class AisCodeHelper {
         }
 
         public static PosAcc fromCode(int code) {
+            return LOOKUP.get(code);
+        }
+    }
+
+    /**
+     * AIS Position Accuracy Descriptions found at <a href="https://www.navcen.uscg.gov/ais-aton-report">https://www.navcen.uscg.gov/ais-aton-report</a>
+     */
+    public enum AtoNType {
+        DEFAULT(0,                  "Default, Type of AtoN not specified"),
+        REFERENCE_POINT(1,          "Reference point"),
+        RACON(2,                    "RACON"),
+        FIXED_STRUCTURE(3,          "Fixed structures off-shore, such as oil platforms, wind farms"),
+        EMERGENCY_WRECK(4,          "Emergency Wreck Marking Buoy"),
+        LIGHT_NO_SECTORS(5,         "Light, without sectors"),
+        LIGHT_WITH_SECTORS(6,       "Light, with sectors"),
+        LEADING_LIGHT_FRONT(7,      "Leading Light Front"),
+        LEADING_LIGHT_REAR(8,       "Leading Light Rear"),
+        BEACON_CARDINAL_N(9,        "Beacon, Cardinal N"),
+        BEACON_CARDINAL_E(10,       "Beacon, Cardinal E"),
+        BEACON_CARDINAL_S(11,       "Beacon, Cardinal S"),
+        BEACON_CARDINAL_W(12,       "Beacon, Cardinal W"),
+        BEACON_PORT(13,             "Beacon, Port hand"),
+        BEACON_STARBOARD(14,        "Beacon, Starboard hand"),
+        BEACON_PREF_PORT(15,        "Beacon, Preferred Channel port hand"),
+        BEACON_PREF_STARBOARD(16,   "Beacon, Preferred Channel starboard hand"),
+        BEACON_ISOLATED_DANGER(17,  "Beacon, Isolated danger"),
+        BEACON_SAFE_WATER(18,       "Beacon, Safe water"),
+        BEACON_SPECIAL(19,          "Beacon, Special mark"),
+        CARDINAL_N(20,              "Cardinal Mark N"),
+        CARDINAL_E(21,              "Cardinal Mark E"),
+        CARDINAL_S(22,              "Cardinal Mark S"),
+        CARDINAL_W(23,              "Cardinal Mark W"),
+        PORT_HAND(24,               "Port hand Mark"),
+        STARBOARD_HAND(25,          "Starboard hand Mark"),
+        PREF_CHANNEL_PORT(26,       "Preferred Channel Port hand"),
+        PREF_CHANNEL_STARBOARD(27,  "Preferred Channel Starboard hand"),
+        ISOLATED_DANGER(28,         "Isolated danger"),
+        SAFE_WATER(29,              "Safe Water"),
+        SPECIAL_MARK(30,            "Special Mark"),
+        LIGHT_VESSEL(31,            "Light Vessel/LANBY/Rigs");
+
+        private final int code;
+        private final String description;
+        private static final Map<Integer, AtoNType> LOOKUP = new HashMap<>();
+
+        static {
+            for (AtoNType a : values()) LOOKUP.put(a.code, a);
+        }
+
+        AtoNType(int code, String description) {
+            this.code = code;
+            this.description = description;
+        }
+
+        public static String getDescription(int code) {
+            AtoNType p = LOOKUP.get(code);
+            return p != null ? p.description : "Unknown Type of Aid to Navigation code: " + code;
+        }
+
+        public static AtoNType fromCode(int code) {
             return LOOKUP.get(code);
         }
     }
