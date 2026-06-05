@@ -86,6 +86,7 @@ public class NmeaAisOutputPositionClassA extends VarRateSensorOutput<NmeaAisDriv
                         .definition(SWEHelper.getPropertyUri("NavStatus")))
                 .addField("rot", fac.createQuantity()
                         .label("Rate of Turn")
+                        .uom("deg/min")
                         .description(
                                 "0 to +126 = turning right at up to 708 deg per min or higher\n" +
                                 "0 to -126 = turning left at up to 708 deg per min or higher Values between 0 and 708 deg per min coded by ROTAIS = 4.733 SQRT(ROTsensor) degrees per min\n" +
@@ -96,6 +97,10 @@ public class NmeaAisOutputPositionClassA extends VarRateSensorOutput<NmeaAisDriv
                                 "ROT data should not be derived from COG information."
                         )
                         .definition(SWEHelper.getPropertyUri("Rot")))
+                .addField("roti", fac.createText()
+                        .label("Rate of Turn Indicator")
+                        .description("Determines if external Rate of Turn Indicator is available")
+                        .definition(SWEHelper.getPropertyUri("RotIndicator")))
                 .addField("sog", fac.createQuantity()
                         .label("Speed Over Ground")
                         .description("Speed over ground in knots (0–102.2 knots, 102.3 = not available, 102.3+ should not be used)")
@@ -149,17 +154,21 @@ public class NmeaAisOutputPositionClassA extends VarRateSensorOutput<NmeaAisDriv
             dataBlock.setIntValue(3,  report.getRepeat());
             dataBlock.setStringValue(4,  String.valueOf(report.getUserId()));
             dataBlock.setStringValue(5, AisCodeHelper.NavigationalStatus.getDescription(report.getNavStatus()));
-            dataBlock.setIntValue(6,  report.getRot());
-            dataBlock.setDoubleValue(7,  report.getSog() / 10.0);
-            dataBlock.setStringValue(8, AisCodeHelper.PosAcc.getDescription(report.getPosAcc()));
-            dataBlock.setDoubleValue(9,  report.getPos().getLatitudeDouble());
-            dataBlock.setDoubleValue(10,  report.getPos().getLongitudeDouble());
-            dataBlock.setDoubleValue(11,  report.getCog() / 10.0);
-            dataBlock.setIntValue(12, report.getTrueHeading());
-            dataBlock.setIntValue(13, report.getUtcSec());
-            dataBlock.setStringValue(14, String.valueOf(report.getSpecialManIndicator()));
-            dataBlock.setStringValue(15, AisCodeHelper.RaimFlag.getDescription(report.getRaim()));
-            dataBlock.setIntValue(16, report.getSyncState());
+            // Get Rot values
+            AisCodeHelper.RotRecord rotData = AisCodeHelper.getRotData(report.getRot());
+            dataBlock.setDoubleValue(6,  rotData.rot());
+            dataBlock.setStringValue(7,  rotData.roti());
+
+            dataBlock.setDoubleValue(8,  report.getSog() / 10.0);
+            dataBlock.setStringValue(9, AisCodeHelper.PosAcc.getDescription(report.getPosAcc()));
+            dataBlock.setDoubleValue(10,  report.getPos().getLatitudeDouble());
+            dataBlock.setDoubleValue(11,  report.getPos().getLongitudeDouble());
+            dataBlock.setDoubleValue(12,  report.getCog() / 10.0);
+            dataBlock.setIntValue(13, report.getTrueHeading());
+            dataBlock.setIntValue(14, report.getUtcSec());
+            dataBlock.setStringValue(15, String.valueOf(report.getSpecialManIndicator()));
+            dataBlock.setStringValue(16, AisCodeHelper.RaimFlag.getDescription(report.getRaim()));
+            dataBlock.setIntValue(17, report.getSyncState());
 
             String foiUID = parentSensor.addFoi(String.valueOf(report.getUserId()));
 

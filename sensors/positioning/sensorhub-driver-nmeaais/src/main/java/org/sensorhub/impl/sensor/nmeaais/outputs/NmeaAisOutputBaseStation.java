@@ -26,7 +26,11 @@ import org.sensorhub.impl.sensor.nmeaais.helpers.NmeaAisHelper;
 import org.vast.swe.SWEBuilders;
 import org.vast.swe.SWEHelper;
 import org.vast.swe.helper.GeoPosHelper;
+import org.vast.util.DateTime;
 
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 import java.util.stream.IntStream;
 
 public class NmeaAisOutputBaseStation extends VarRateSensorOutput<NmeaAisDriver> implements NmeaAisReportInterface<AisMessage4> {
@@ -76,35 +80,10 @@ public class NmeaAisOutputBaseStation extends VarRateSensorOutput<NmeaAisDriver>
                 .addField("reportDescription", fac.createReportDescription())
                 .addField("repeat", fac.createRepeatIndicator())
                 .addField("mmsi", fac.createMssi())
-                .addField("utcYear", sweFactory.createCount()
-                        .label("UTC Year")
-                        .description("UTC Year (1-9999, 0 = not available = default)")
+                .addField("utcDateTime", sweFactory.createTime()
+                        .label("UTC Date Time")
+                        .description("UTC Date Time")
                         .definition(SWEHelper.getPropertyUri("UtcYear")))
-                .addField("utcMonth", sweFactory.createCount()
-                        .label("UTC Month")
-                        .addAllowedValues(IntStream.rangeClosed(0, 12).toArray())
-                        .description("UTC Month (1-12, 0 = not available = default)")
-                        .definition(SWEHelper.getPropertyUri("UtcMonth")))
-                .addField("utcDay", sweFactory.createCount()
-                        .label("UTC Day")
-                        .addAllowedValues(IntStream.rangeClosed(0, 31).toArray())
-                        .description("UTC Day (1-31, 0 = not available = default)")
-                        .definition(SWEHelper.getPropertyUri("UtcDay")))
-                .addField("utcHour", sweFactory.createCount()
-                        .label("UTC Hour")
-                        .addAllowedValues(IntStream.rangeClosed(0, 24).toArray())
-                        .description("UTC Hour (0-23, 24 = not available = default)")
-                        .definition(SWEHelper.getPropertyUri("UtcHour")))
-                .addField("utcMinute", sweFactory.createCount()
-                        .label("UTC Minute")
-                        .addAllowedValues(IntStream.rangeClosed(0, 60).toArray())
-                        .description("UTC Minute (0-59, 60 = not available = default)")
-                        .definition(SWEHelper.getPropertyUri("UtcMinute")))
-                .addField("utcSecond", sweFactory.createCount()
-                        .label("UTC Second")
-                        .addAllowedValues(IntStream.rangeClosed(0, 60).toArray())
-                        .description("UTC Second (0-59, 60 = not available = default)")
-                        .definition(SWEHelper.getPropertyUri("UtcSecond")))
                 .addField("positionAccuracy", fac.createPositionAccuracy())
                 .addField("location", geoFac.createLocationVectorLatLon()
                         .label("Location"))
@@ -125,17 +104,23 @@ public class NmeaAisOutputBaseStation extends VarRateSensorOutput<NmeaAisDriver>
             dataBlock.setStringValue(2, AisCodeHelper.MessageType.getDescription(report.getMsgId()));
             dataBlock.setIntValue(3,  report.getRepeat());
             dataBlock.setStringValue(4,  String.valueOf(report.getUserId()));
-            dataBlock.setIntValue(5,  report.getUtcYear());
-            dataBlock.setIntValue(6,  report.getUtcMonth());
-            dataBlock.setIntValue(7,  report.getUtcDay());
-            dataBlock.setIntValue(8,  report.getUtcHour());
-            dataBlock.setIntValue(9,  report.getUtcMinute());
-            dataBlock.setIntValue(10,  report.getUtcSecond());
-            dataBlock.setStringValue(11, AisCodeHelper.PosAcc.getDescription(report.getPosAcc()));
-            dataBlock.setDoubleValue(12, report.getPos().getLatitudeDouble());
-            dataBlock.setDoubleValue(13, report.getPos().getLongitudeDouble());
-            dataBlock.setStringValue(14, AisCodeHelper.EpfdType.getDescription(report.getPosType()));
-            dataBlock.setStringValue(15, AisCodeHelper.RaimFlag.getDescription(report.getRaim()));
+            // Create DateTime for UtcTime Values
+            ZonedDateTime utcDateTime = ZonedDateTime.of(
+                    report.getUtcYear(),
+                    report.getUtcMonth(),
+                    report.getUtcDay(),
+                    report.getUtcHour(),
+                    report.getUtcMinute(),
+                    report.getUtcSecond(),
+                    0,
+                    ZoneOffset.UTC
+            );
+            dataBlock.setDateTime(5,  utcDateTime.toOffsetDateTime());
+            dataBlock.setStringValue(6, AisCodeHelper.PosAcc.getDescription(report.getPosAcc()));
+            dataBlock.setDoubleValue(7, report.getPos().getLatitudeDouble());
+            dataBlock.setDoubleValue(8, report.getPos().getLongitudeDouble());
+            dataBlock.setStringValue(9, AisCodeHelper.EpfdType.getDescription(report.getPosType()));
+            dataBlock.setStringValue(10, AisCodeHelper.RaimFlag.getDescription(report.getRaim()));
 
             String foiUID = parentSensor.addFoi(String.valueOf(report.getUserId()));
 

@@ -13,6 +13,8 @@
  ******************************* END LICENSE BLOCK ***************************/
 package org.sensorhub.impl.sensor.nmeaais.helpers;
 
+import net.opengis.swe.v20.Quantity;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -578,5 +580,32 @@ public class AisCodeHelper {
         }
     }
 
+    public record RotRecord(Double rot, String roti){}
+
+    public static RotRecord getRotData(int code){
+        Double rot;
+        String roti;
+        double sign = Math.signum(code);
+
+        switch (code){
+            case -128:
+                rot = null;
+                roti = "Not Available";
+                break;
+            case 127:
+                rot = 10.00;
+                roti = ">10 deg/min; No TI available";
+                break;
+            case -127:
+                rot = -10.00;
+                roti = "<-10 deg/min; No TI available";
+                break;
+            default:
+                rot = sign * Math.pow(code/4.733,2);
+                roti = "TI available";
+        }
+
+        return new RotRecord(rot, roti);
+    }
 
 }
