@@ -78,10 +78,8 @@ public class NmeaAisOutputStaticDataClassB extends VarRateSensorOutput<NmeaAisDr
                 .addField("reportDescription", fac.createReportDescription())
                 .addField("repeat", fac.createRepeatIndicator())
                 .addField("mmsi", fac.createMssi())
-                .addField("name", fac.createText()
-                        .label("Vessel Name")
-                        .description("Vessel name from Part A (20 characters max); empty if Part A not yet received")
-                        .definition(SWEHelper.getPropertyUri("VesselName")))
+                .addField("name", fac.createVesselName()
+                        .description("Vessel name from Part A; empty if Part A not yet received"))
                 .addField("callSign", fac.createText()
                         .label("Call Sign")
                         .description("Call sign (7 x 6-bit ASCII characters, padded with spaces)")
@@ -144,7 +142,7 @@ public class NmeaAisOutputStaticDataClassB extends VarRateSensorOutput<NmeaAisDr
             dataBlock.setStringValue(2, AisCodeHelper.MessageType.getDescription(24));
             dataBlock.setIntValue(3,  repeat);
             dataBlock.setStringValue(4,  String.valueOf(mmsi));
-            dataBlock.setStringValue(5, name);
+            dataBlock.setStringValue(5, AisCodeHelper.cleanVesselName(name));
             dataBlock.setStringValue(6, callSign);
             dataBlock.setStringValue(7, AisCodeHelper.ShipType.getDescription(shipType));
             dataBlock.setIntValue(8,  dimBow);

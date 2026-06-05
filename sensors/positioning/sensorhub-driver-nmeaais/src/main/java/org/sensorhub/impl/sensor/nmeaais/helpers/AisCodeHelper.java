@@ -641,5 +641,249 @@ public class AisCodeHelper {
             return LOOKUP.get(code);
         }
     }
+    /**
+     *CLASS B UNIT FLAG per <a href="https://www.navcen.uscg.gov/ais-class-b-reports">navcen.uscg.gov</a>.
+     */
+    public enum ClassBUnitFlag {
+        SOTDMA(0, "Class B SOTDMA unit"),
+        CS(1, "Class B 'CS' unit");
+
+        private final int code;
+        private final String description;
+        private static final Map<Integer, ClassBUnitFlag> LOOKUP = new HashMap<>();
+
+        static {
+            for (ClassBUnitFlag f : values()) LOOKUP.put(f.code, f);
+        }
+
+        ClassBUnitFlag(int code, String description) {
+            this.code = code;
+            this.description = description;
+        }
+
+        public int getCode() { return code; }
+        public String getDescription() { return description; }
+
+        public static String getDescription(int code) {
+            ClassBUnitFlag a = LOOKUP.get(code);
+            return a != null ? a.description : "Unknown Class B Unit Flag Value: " + code;
+        }
+
+        public static ClassBUnitFlag fromCode(int code) {
+            return LOOKUP.get(code);
+        }
+    }
+
+    /**
+     * Class B Display Flag per <a href="https://www.navcen.uscg.gov/ais-class-b-reports">navcen.uscg.gov</a>.
+     */
+    public enum DisplayFlag {
+        NO_DISPLAY(0, "No display available (default)"),
+        HAS_DISPLAY(1, "Equipped with display for Message 12 and 14");
+
+        private final int code;
+        private final String description;
+        private static final Map<Integer, DisplayFlag> LOOKUP = new HashMap<>();
+
+        static {
+            for (DisplayFlag f : values()) LOOKUP.put(f.code, f);
+        }
+
+        DisplayFlag(int code, String description) {
+            this.code = code;
+            this.description = description;
+        }
+
+        public int getCode() { return code; }
+        public String getDescription() { return description; }
+
+        public static String getDescription(int code) {
+            DisplayFlag f = LOOKUP.get(code);
+            return f != null ? f.description : "Unknown Display Flag value: " + code;
+        }
+
+        public static DisplayFlag fromCode(int code) {
+            return LOOKUP.get(code);
+        }
+    }
+
+    /**
+     * Class B DSC Flag per <a href="https://www.navcen.uscg.gov/ais-class-b-reports">navcen.uscg.gov</a>.
+     */
+    public enum DscFlag {
+        NOT_EQUIPPED(0, "Not equipped with DSC function (default)"),
+        EQUIPPED(1,     "Equipped with DSC function");
+
+        private final int code;
+        private final String description;
+        private static final Map<Integer, DscFlag> LOOKUP = new HashMap<>();
+
+        static {
+            for (DscFlag f : values()) LOOKUP.put(f.code, f);
+        }
+
+        DscFlag(int code, String description) {
+            this.code = code;
+            this.description = description;
+        }
+
+        public int getCode() { return code; }
+        public String getDescription() { return description; }
+
+        public static String getDescription(int code) {
+            DscFlag f = LOOKUP.get(code);
+            return f != null ? f.description : "Unknown DSC Flag value: " + code;
+        }
+
+        public static DscFlag fromCode(int code) {
+            return LOOKUP.get(code);
+        }
+    }
+
+    /**
+     * Class B Band Flag per <a href="https://www.navcen.uscg.gov/ais-class-b-reports">navcen.uscg.gov</a>.
+     */
+    public enum BandFlag {
+        UPPER_BAND(0,  "Capable of operating over the upper 525 kHz band of the marine band (default)"),
+        WHOLE_BAND(1,  "Capable of operating over the whole marine band");
+
+        private final int code;
+        private final String description;
+        private static final Map<Integer, BandFlag> LOOKUP = new HashMap<>();
+
+        static {
+            for (BandFlag f : values()) LOOKUP.put(f.code, f);
+        }
+
+        BandFlag(int code, String description) {
+            this.code = code;
+            this.description = description;
+        }
+
+        public int getCode() { return code; }
+        public String getDescription() { return description; }
+
+        public static String getDescription(int code) {
+            BandFlag f = LOOKUP.get(code);
+            return f != null ? f.description : "Unknown Band Flag value: " + code;
+        }
+
+        public static BandFlag fromCode(int code) {
+            return LOOKUP.get(code);
+        }
+    }
+
+    /**
+     * Class B Message 22 Flag per <a href="https://www.navcen.uscg.gov/ais-class-b-reports">navcen.uscg.gov</a>.
+     */
+    public enum Message22Flag {
+        NO_FREQ_MGMT(0, "No frequency management via Message 22 (default)"),
+        FREQ_MGMT(1,    "Frequency management via Message 22");
+
+        private final int code;
+        private final String description;
+        private static final Map<Integer, Message22Flag> LOOKUP = new HashMap<>();
+
+        static {
+            for (Message22Flag f : values()) LOOKUP.put(f.code, f);
+        }
+
+        Message22Flag(int code, String description) {
+            this.code = code;
+            this.description = description;
+        }
+
+        public int getCode() { return code; }
+        public String getDescription() { return description; }
+
+        public static String getDescription(int code) {
+            Message22Flag f = LOOKUP.get(code);
+            return f != null ? f.description : "Unknown Message 22 Flag value: " + code;
+        }
+
+        public static Message22Flag fromCode(int code) {
+            return LOOKUP.get(code);
+        }
+    }
+
+    /**
+     * Communication State Selector Flag per <a href="https://www.navcen.uscg.gov/ais-class-b-reports">navcen.uscg.gov</a>.
+     * Always 1 (ITDMA) for Class B CS units.
+     */
+    public enum CommStateSelectorFlag {
+        SOTDMA(0, "SOTDMA communication state follows (default)"),
+        ITDMA(1,  "ITDMA communication state follows (always 1 for Class B CS)");
+
+        private final int code;
+        private final String description;
+        private static final Map<Integer, CommStateSelectorFlag> LOOKUP = new HashMap<>();
+
+        static {
+            for (CommStateSelectorFlag f : values()) LOOKUP.put(f.code, f);
+        }
+
+        CommStateSelectorFlag(int code, String description) {
+            this.code = code;
+            this.description = description;
+        }
+
+        public int getCode() { return code; }
+        public String getDescription() { return description; }
+
+        public static String getDescription(int code) {
+            CommStateSelectorFlag f = LOOKUP.get(code);
+            return f != null ? f.description : "Unknown Comm State Selector Flag value: " + code;
+        }
+
+        public static CommStateSelectorFlag fromCode(int code) {
+            return LOOKUP.get(code);
+        }
+    }
+
+    /**
+     * DTE (Data Terminal Equipment) flag per ITU-R M.1371-5.
+     * Used in Message 5 and Message 19.
+     */
+    public enum Dte {
+        AVAILABLE(0,     "Data terminal equipment available (default)"),
+        NOT_AVAILABLE(1, "Data terminal equipment not available");
+
+        private final int code;
+        private final String description;
+        private static final Map<Integer, Dte> LOOKUP = new HashMap<>();
+
+        static {
+            for (Dte d : values()) LOOKUP.put(d.code, d);
+        }
+
+        Dte(int code, String description) {
+            this.code = code;
+            this.description = description;
+        }
+
+        public int getCode() { return code; }
+        public String getDescription() { return description; }
+
+        public static String getDescription(int code) {
+            Dte d = LOOKUP.get(code);
+            return d != null ? d.description : "Unknown DTE value: " + code;
+        }
+
+        public static Dte fromCode(int code) {
+            return LOOKUP.get(code);
+        }
+    }
+
+    /**
+     * Strips AIS '@' padding characters and trims whitespace from a vessel name or
+     * destination string. The AIS character set uses '@' as a null/filler character.
+     *
+     * @param raw the raw string from the AIS library (may be null)
+     * @return cleaned string, or empty string if null/blank
+     */
+    public static String cleanVesselName(String raw) {
+        if (raw == null) return "";
+        return raw.replace("@", "").trim();
+    }
 
 }

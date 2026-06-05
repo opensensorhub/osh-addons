@@ -13,11 +13,12 @@
  ******************************* END LICENSE BLOCK ***************************/
 package org.sensorhub.impl.sensor.nmeaais.helpers;
 
-import net.opengis.swe.v20.Text;
 import org.vast.swe.SWEBuilders.*;
 import org.vast.swe.SWEHelper;
 
-
+/**
+ * The NmeaAisFieldHelper is used to help standardize building NMEA AIS fields that are used in multiple AIS Reports
+ */
 public class NmeaAisHelper extends SWEHelper{
 
     public CountBuilder createNmeaMessageId() {
@@ -75,5 +76,19 @@ public class NmeaAisHelper extends SWEHelper{
                 .label("Assigned Mode Flag")
                 .description("0 = station operating in autonomous and continuous mode = default; 1 = station operating in assigned mode")
                 .definition(SWEHelper.getPropertyUri("AssignedMode"));
+    }
+
+    public TextBuilder createDte(){
+        return createText()
+                .label("DTE")
+                .description("Data terminal equipment (DTE) available; 0 = available; 1 = not available = default")
+                .definition(SWEHelper.getPropertyUri("Dte"));
+    }
+
+    public TextBuilder createVesselName() {
+        return createText()
+                .label("Vessel Name")
+                .description("Maximum 20 characters per ITU-R M.1371-5; '@' padding stripped")
+                .definition(SWEHelper.getPropertyUri("VesselName"));
     }
 }

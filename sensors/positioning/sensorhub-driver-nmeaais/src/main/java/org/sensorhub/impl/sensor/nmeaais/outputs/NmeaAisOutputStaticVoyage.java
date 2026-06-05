@@ -91,10 +91,7 @@ public class NmeaAisOutputStaticVoyage extends VarRateSensorOutput<NmeaAisDriver
                         .label("Call Sign")
                         .description("7 x 6 bit ASCII characters, padded with spaces after")
                         .definition(SWEHelper.getPropertyUri("CallSign")))
-                .addField("name", fac.createText()
-                        .label("Vessel Name")
-                        .description("Maximum 20 characters; padded with spaces after. Indicate \"Not available\" if not known")
-                        .definition(SWEHelper.getPropertyUri("VesselName")))
+                .addField("name", fac.createVesselName())
                 .addField("shipType", fac.createText()
                         .label("Ship Type")
                         .description("0 = not available or no ship = default; 1-99 per ITU-R M.1371-5 Table 53")
@@ -149,11 +146,7 @@ public class NmeaAisOutputStaticVoyage extends VarRateSensorOutput<NmeaAisDriver
                         .label("Destination")
                         .description("Maximum 20 characters; padded with spaces after. Indicate \"Not available\" if not known")
                         .definition(SWEHelper.getPropertyUri("Destination")))
-                .addField("dte", fac.createCategory()
-                        .label("DTE")
-                        .addAllowedValues(0,1)
-                        .description("Data terminal equipment (DTE) available; 0 = available; 1 = not available = default")
-                        .definition(SWEHelper.getPropertyUri("Dte")));
+                .addField("dte", fac.createDte());
 
         aisReportRecord = recordBuilder.build();
         dataEncoding = geoFac.newTextEncoding(",", "\n");
@@ -172,7 +165,7 @@ public class NmeaAisOutputStaticVoyage extends VarRateSensorOutput<NmeaAisDriver
             dataBlock.setStringValue(5, String.valueOf(report.getVersion()));
             dataBlock.setLongValue(6,  report.getImo());
             dataBlock.setStringValue(7, report.getCallsign());
-            dataBlock.setStringValue(8, report.getName());
+            dataBlock.setStringValue(8, AisCodeHelper.cleanVesselName(report.getName()));
             dataBlock.setStringValue(9, AisCodeHelper.ShipType.getDescription(report.getShipType()));
             dataBlock.setIntValue(10,  report.getDimBow());
             dataBlock.setIntValue(11, report.getDimStern());
@@ -196,8 +189,8 @@ public class NmeaAisOutputStaticVoyage extends VarRateSensorOutput<NmeaAisDriver
             dataBlock.setIntValue(17, etaHour);
             dataBlock.setIntValue(18, etaMinute);
             dataBlock.setDoubleValue(19, report.getDraught() / 10.0);
-            dataBlock.setStringValue(20, report.getDest());
-            dataBlock.setStringValue(21, String.valueOf(report.getDte()));
+            dataBlock.setStringValue(20, AisCodeHelper.cleanVesselName(report.getDest()));
+            dataBlock.setStringValue(21, AisCodeHelper.Dte.getDescription(report.getDte()));
 
             String foiUID = parentSensor.addFoi(String.valueOf(report.getUserId()));
 
