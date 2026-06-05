@@ -608,4 +608,38 @@ public class AisCodeHelper {
         return new RotRecord(rot, roti);
     }
 
+    /**
+     * Special Maneuver Indicator per <a href="https://www.navcen.uscg.gov/ais-class-a-reports">navcen.uscg.gov</a>.
+     */
+    public enum Spi {
+        DEFAULT(0, "Data Not Available (Deafult)"),
+        NOT_ENGAGED(1, "Not Engaged in Special Maneuver"),
+        ENGAGED(2,   "Engaged in Special Maneuver");
+
+        private final int code;
+        private final String description;
+        private static final Map<Integer, Spi> LOOKUP = new HashMap<>();
+
+        static {
+            for (Spi S : values()) LOOKUP.put(S.code, S);
+        }
+
+        Spi(int code, String description) {
+            this.code = code;
+            this.description = description;
+        }
+
+        public int getCode() { return code; }
+        public String getDescription() { return description; }
+
+        public static String getDescription(int code) {
+            Spi a = LOOKUP.get(code);
+            return a != null ? a.description : "Unknown SPI Value: " + code;
+        }
+
+        public static Spi fromCode(int code) {
+            return LOOKUP.get(code);
+        }
+    }
+
 }
