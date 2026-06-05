@@ -25,6 +25,18 @@ public class SelectEntriesQuery extends EntriesQuery<SelectFilterQueryGenerator>
             return self();
         }
 
+        public T withFields(Set<? extends ValueField> valueFields, boolean useDefaultId) {
+            if(valueFields != null && !valueFields.isEmpty()) {
+                filterQueryGenerator.setSelectedFields(valueFields.stream().map(ValueField::toString).collect(Collectors.toList()));
+                if(useDefaultId) {
+                    filterQueryGenerator.addSelectField("id");
+                }
+            } else {
+                filterQueryGenerator.addSelectField("*");
+            }
+            return self();
+        }
+
         public T withLimit(long limit) {
             if(limit != Long.MAX_VALUE) {
                 filterQueryGenerator.setLimit(limit);
@@ -36,6 +48,16 @@ public class SelectEntriesQuery extends EntriesQuery<SelectFilterQueryGenerator>
             if(offset != 0) {
                 filterQueryGenerator.setOffset(offset);
             }
+            return self();
+        }
+
+        public T useDistinct() {
+            filterQueryGenerator.setUseDistinct(true);
+            return self();
+        }
+
+        public T useOrderBy(boolean useOrderBy) {
+            filterQueryGenerator.setUseOrderBy(useOrderBy);
             return self();
         }
 

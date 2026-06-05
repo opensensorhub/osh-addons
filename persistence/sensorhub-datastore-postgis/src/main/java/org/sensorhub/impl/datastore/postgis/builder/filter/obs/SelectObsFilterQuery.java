@@ -46,7 +46,11 @@ public class SelectObsFilterQuery extends BaseObsFilterQuery<SelectFilterQueryGe
     }
 
     protected void handleSorted(TemporalFilter temporalFilter) {
-        this.filterQueryGenerator.addOrderBy(this.tableName+".phenomenonTime "+PostgisUtils.getTimeOrder(temporalFilter));
+        if(temporalFilter != null) {
+            this.filterQueryGenerator.addOrderBy(this.tableName + ".phenomenonTime " + PostgisUtils.getTimeOrder(temporalFilter));
+        } else {
+            this.filterQueryGenerator.addOrderBy(this.tableName + ".phenomenonTime ASC");
+        }
     }
 
     protected void handleDataStreamFilter(DataStreamFilter dataStreamFilter) {
@@ -80,7 +84,7 @@ public class SelectObsFilterQuery extends BaseObsFilterQuery<SelectFilterQueryGe
             if (temporalFilter.isLatestTime()) {
                 filterQueryGenerator.addDistinct(this.tableName + ".datastreamid");
                 filterQueryGenerator.addOrderBy(this.tableName + ".datastreamid");
-                filterQueryGenerator.addOrderBy(this.tableName + ".phenomenonTime DESC ");
+                filterQueryGenerator.addOrderBy(this.tableName + ".phenomenonTime "+PostgisUtils.getTimeOrder(temporalFilter));
             } else {
                 String min = PostgisUtils.checkAndGetValidInstant(temporalFilter.getMin());
                 String max = PostgisUtils.checkAndGetValidInstant(temporalFilter.getMax());
@@ -101,7 +105,7 @@ public class SelectObsFilterQuery extends BaseObsFilterQuery<SelectFilterQueryGe
             if (temporalFilter.isLatestTime()) {
                 filterQueryGenerator.addDistinct(this.tableName + ".datastreamid");
                 filterQueryGenerator.addOrderBy(this.tableName + ".datastreamid");
-                filterQueryGenerator.addOrderBy(this.tableName + ".phenomenonTime DESC ");
+                filterQueryGenerator.addOrderBy(this.tableName + ".phenomenonTime "+PostgisUtils.getTimeOrder(temporalFilter));
             } else {
                 String min = PostgisUtils.checkAndGetValidInstant(temporalFilter.getMin());
                 String max = PostgisUtils.checkAndGetValidInstant(temporalFilter.getMax());

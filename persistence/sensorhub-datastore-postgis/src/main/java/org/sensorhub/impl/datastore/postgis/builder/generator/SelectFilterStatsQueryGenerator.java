@@ -40,9 +40,9 @@ public class SelectFilterStatsQueryGenerator extends SelectFilterQueryGenerator 
             }
             sb.append(this.orConditions.stream().collect(Collectors.joining(" OR ")));
         }
-        if (this.orderBy != null && !this.orderBy.isEmpty()) {
+        if (this.orderByList != null && !this.orderByList.isEmpty()) {
             sb.append(" ORDER BY ");
-            sb.append(this.orderBy.stream().collect(Collectors.joining(", ")));
+            sb.append(this.orderByList.stream().collect(Collectors.joining(", ")));
         }
         if (this.limit >= 0 && this.limit != Long.MAX_VALUE) {
             sb.append(" LIMIT ").append(this.limit);

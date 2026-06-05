@@ -76,6 +76,10 @@ public class QueryBuilderObsStore extends QueryBuilder {
         return "CREATE INDEX IF NOT EXISTS "+this.getStoreTableName()+"_foi_idx on "+this.getStoreTableName()+" ("+ FOI_ID +")";
     }
 
+    public String createFoiAndDatastreamIndexQuery() {
+        return "CREATE INDEX IF NOT EXISTS "+this.getStoreTableName()+"_foi_datatstream_idx on "+this.getStoreTableName()+" ("+ DATASTREAM_ID + ", " + FOI_ID +")";
+    }
+
     public String insertObsQuery() {
         return "INSERT INTO "+this.getStoreTableName()+" " +
                 "(id,"+DATASTREAM_ID+", "+FOI_ID+", "+PHENOMENON_TIME+", "+RESULT_TIME+", "+RESULT+") VALUES (${1},${2},${3},${4},${5},${6}) "+

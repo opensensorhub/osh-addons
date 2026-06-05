@@ -50,7 +50,6 @@ import static org.sensorhub.api.datastore.obs.IObsStore.ObsField.*;
 
 public class PostgisObsStoreImpl extends PostgisStore<QueryBuilderObsStore> implements IObsStore {
     private static final Logger logger = LoggerFactory.getLogger(PostgisObsStoreImpl.class);
-    public static final int STREAM_FETCH_SIZE = 20_000;
     public static final String DEFAULT_TABLE_NAME = QueryBuilderObsStore.OBS_STORE_TABLE_NAME;
 
     protected IDataStreamStore dataStreamStore;
@@ -79,7 +78,8 @@ public class PostgisObsStoreImpl extends PostgisStore<QueryBuilderObsStore> impl
                         queryBuilder.createPhenomenonTimeSimpleIndexQuery(),
                         queryBuilder.createResultTimeIndexQuery(),
                         queryBuilder.createFoiIndexQuery(),
-                        queryBuilder.createUniqueConstraint()
+                        queryBuilder.createUniqueConstraint(),
+                        queryBuilder.createFoiAndDatastreamIndexQuery()
                 }
         );
     }
@@ -107,14 +107,12 @@ public class PostgisObsStoreImpl extends PostgisStore<QueryBuilderObsStore> impl
             hashSet = null;
         }
 
-        logger.warn("Limit={}",filter.getLimit());
         String queryStr = queryBuilder.createSelectEntriesQuery(filter, hashSet);
         IteratorResultSet<Entry<BigId, IObsData>> iteratorResultSet =
                 new IteratorResultSet<>(
                         queryStr,
                         connectionManager,
                         filter.getLimit(),
-                        0,
                         (ResultSet resultSet) -> resultSetToEntry(resultSet, fields),
                         (entry) -> (filter.getValuePredicate() == null || filter.getValuePredicate().test(entry.getValue())));
         return StreamSupport.stream(Spliterators.spliteratorUnknownSize(iteratorResultSet, Spliterator.ORDERED), false);
