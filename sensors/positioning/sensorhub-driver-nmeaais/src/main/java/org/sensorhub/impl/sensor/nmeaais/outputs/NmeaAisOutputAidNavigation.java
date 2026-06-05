@@ -27,8 +27,6 @@ import org.vast.swe.SWEBuilders;
 import org.vast.swe.SWEHelper;
 import org.vast.swe.helper.GeoPosHelper;
 
-import java.util.stream.IntStream;
-
 public class NmeaAisOutputAidNavigation extends VarRateSensorOutput<NmeaAisDriver> implements NmeaAisReportInterface<AisMessage21> {
     private DataRecord aisReportRecord;
     private DataEncoding dataEncoding;
@@ -49,15 +47,15 @@ public class NmeaAisOutputAidNavigation extends VarRateSensorOutput<NmeaAisDrive
      *
      * Flat index map:
      *   0  = samplingTime         1  = messageId             2  = reportDescription
-     *   3  = repeat               4  = mmsi                  5  = typeOfAidsToNav (Category)
+     *   3  = repeat               4  = mmsi                  5  = typeOfAidsToNav
      *   6  = name
-     *   7  = positionAccuracy (Category)
+     *   7  = positionAccuracy
      *   8  = latitude  (lat component of location vector)
      *   9  = longitude (lon component of location vector)
      *   10 = dimBow               11 = dimStern              12 = dimPort
-     *   13 = dimStarboard         14 = epfd (Category)       15 = utcSecond
-     *   16 = offPositionIndicator (Category)                 17 = raim (Category)
-     *   18 = virtualAid (Category)                           19 = assignedMode (Category)
+     *   13 = dimStarboard         14 = epfd                  15 = utcSecond
+     *   16 = offPositionIndicator 17 = raim
+     *   18 = virtualAid           19 = assignedMode
      */
     public void doInit() {
         GeoPosHelper geoFac = new GeoPosHelper();
@@ -114,15 +112,13 @@ public class NmeaAisOutputAidNavigation extends VarRateSensorOutput<NmeaAisDrive
                         .uom("s")
                         .description("UTC second when report was generated (0-59); 60 = not available = default")
                         .definition(SWEHelper.getPropertyUri("UtcSecond")))
-                .addField("offPositionIndicator", fac.createCategory()
+                .addField("offPositionIndicator", fac.createText()
                         .label("Off Position Indicator")
-                        .addAllowedValues(0,1)
                         .description("For floating aids-to-navigation: 0 = on position; 1 = off position. Only valid if UTC second is 0-59")
                         .definition(SWEHelper.getPropertyUri("OffPositionIndicator")))
                 .addField("raim", fac.createRAIM())
-                .addField("virtualAid", fac.createCategory()
+                .addField("virtualAid", fac.createText()
                         .label("Virtual Aid Flag")
-                        .addAllowedValues(0,1)
                         .description("0 = default; 1 = virtual aid to navigation simulated by nearby AIS station")
                         .definition(SWEHelper.getPropertyUri("VirtualAid")))
                 .addField("assignedMode", fac.createAssignedMode());
@@ -142,7 +138,7 @@ public class NmeaAisOutputAidNavigation extends VarRateSensorOutput<NmeaAisDrive
             dataBlock.setIntValue(3,  report.getRepeat());
             dataBlock.setStringValue(4,  String.valueOf(report.getUserId()));
             dataBlock.setStringValue(5, AisCodeHelper.AtoNType.getDescription(report.getAtonType()));
-            dataBlock.setStringValue(6, report.getName());
+            dataBlock.setStringValue(6, AisCodeHelper.cleanVesselName(report.getName()));
             dataBlock.setStringValue(7, AisCodeHelper.PosAcc.getDescription(report.getPosAcc()));
             dataBlock.setDoubleValue(8,  report.getPos().getLatitudeDouble());
             dataBlock.setDoubleValue(9,  report.getPos().getLongitudeDouble());

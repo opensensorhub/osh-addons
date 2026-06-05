@@ -27,8 +27,6 @@ import org.vast.swe.SWEBuilders;
 import org.vast.swe.SWEHelper;
 import org.vast.swe.helper.GeoPosHelper;
 
-import java.util.stream.IntStream;
-
 public class NmeaAisOutputPositionClassA extends VarRateSensorOutput<NmeaAisDriver> implements NmeaAisReportInterface<AisPositionMessage> {
     private DataRecord aisReportRecord;
     private DataEncoding dataEncoding;

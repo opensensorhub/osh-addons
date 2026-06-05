@@ -13,12 +13,6 @@
  ******************************* END LICENSE BLOCK ***************************/
 package org.sensorhub.impl.sensor.nmeaais;
 
-import dk.dma.ais.message.AisMessage18;
-import dk.dma.ais.message.AisMessage19;
-import dk.dma.ais.message.AisMessage21;
-import dk.dma.ais.message.AisMessage4;
-import dk.dma.ais.message.AisMessage5;
-import dk.dma.ais.message.AisPositionMessage;
 import dk.dma.ais.reader.AisReader;
 import dk.dma.ais.reader.AisReaders;
 import org.sensorhub.api.comm.ICommProvider;

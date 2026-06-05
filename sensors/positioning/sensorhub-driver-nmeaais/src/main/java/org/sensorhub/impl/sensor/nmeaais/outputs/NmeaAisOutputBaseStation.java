@@ -26,12 +26,8 @@ import org.sensorhub.impl.sensor.nmeaais.helpers.NmeaAisHelper;
 import org.vast.swe.SWEBuilders;
 import org.vast.swe.SWEHelper;
 import org.vast.swe.helper.GeoPosHelper;
-import org.vast.util.DateTime;
-
-import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
-import java.util.stream.IntStream;
 
 public class NmeaAisOutputBaseStation extends VarRateSensorOutput<NmeaAisDriver> implements NmeaAisReportInterface<AisMessage4> {
     private DataRecord aisReportRecord;
@@ -53,13 +49,11 @@ public class NmeaAisOutputBaseStation extends VarRateSensorOutput<NmeaAisDriver>
      *
      * Flat index map:
      *   0  = samplingTime       1  = messageId            2  = reportDescription
-     *   3  = repeat             4  = mmsi                 5  = utcYear
-     *   6  = utcMonth           7  = utcDay               8  = utcHour
-     *   9  = utcMinute          10 = utcSecond
-     *   11 = positionAccuracy (Category)
-     *   12 = latitude  (lat component of location vector)
-     *   13 = longitude (lon component of location vector)
-     *   14 = epfd (Category)    15 = raim (Category)
+     *   3  = repeat             4  = mmsi                 5  = utcDateTime
+     *   6  = positionAccuracy
+     *   7  = latitude  (lat component of location vector)
+     *   8  = longitude (lon component of location vector)
+     *   9  = epfd               10 = raim
      */
     public void doInit() {
         GeoPosHelper geoFac = new GeoPosHelper();
@@ -83,7 +77,7 @@ public class NmeaAisOutputBaseStation extends VarRateSensorOutput<NmeaAisDriver>
                 .addField("utcDateTime", sweFactory.createTime()
                         .label("UTC Date Time")
                         .description("UTC Date Time")
-                        .definition(SWEHelper.getPropertyUri("UtcYear")))
+                        .definition(SWEHelper.getPropertyUri("UtcDateTime")))
                 .addField("positionAccuracy", fac.createPositionAccuracy())
                 .addField("location", geoFac.createLocationVectorLatLon()
                         .label("Location"))

@@ -52,13 +52,13 @@ public class NmeaAisOutputStaticVoyage extends VarRateSensorOutput<NmeaAisDriver
      *
      * Flat index map:
      *   0  = samplingTime        1  = messageId               2  = reportDescription
-     *   3  = repeat              4  = mmsi                    5  = aisVersion (Category)
+     *   3  = repeat              4  = mmsi                    5  = aisVersion
      *   6  = imoNumber           7  = callSign                8  = name
      *   9  = shipType            10 = dimBow                  11 = dimStern
-     *   12 = dimPort             13 = dimStarboard            14 = epfd (Category)
+     *   12 = dimPort             13 = dimStarboard            14 = epfd
      *   15 = etaMonth            16 = etaDay                  17 = etaHour
      *   18 = etaMinute           19 = draught                 20 = destination
-     *   21 = dte (Category)
+     *   21 = dte
      */
     public void doInit() {
         GeoPosHelper geoFac = new GeoPosHelper();

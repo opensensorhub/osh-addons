@@ -21,8 +21,6 @@ import dk.dma.ais.message.AisMessage24;
 import dk.dma.ais.message.AisMessage4;
 import dk.dma.ais.message.AisMessage5;
 import dk.dma.ais.message.AisPositionMessage;
-import org.sensorhub.impl.sensor.nmeaais.helpers.AisCodeHelper;
-
 import java.util.HashMap;
 import java.util.Map;
 
@@ -89,7 +87,4 @@ public class NmeaAisHandler {
         }
     }
 
-    private String getReportDescription(int messageId) {
-        return AisCodeHelper.MessageType.getDescription(messageId);
-    }
 }

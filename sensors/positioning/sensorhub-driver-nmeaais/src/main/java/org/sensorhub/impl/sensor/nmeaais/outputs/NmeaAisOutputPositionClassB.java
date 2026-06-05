@@ -50,18 +50,18 @@ public class NmeaAisOutputPositionClassB extends VarRateSensorOutput<NmeaAisDriv
      * Flat index map (common to types 18 and 19):
      *   0  = samplingTime          1  = messageId              2  = reportDescription
      *   3  = repeat                4  = mmsi                   5  = sog
-     *   6  = positionAccuracy (Category)
+     *   6  = positionAccuracy
      *   7  = latitude  (lat component of location vector)
      *   8  = longitude (lon component of location vector)
-     *   9  = cog                   10 = heading                11 = utcSecond (Count)
-     *   12 = unitFlag (Category)   13 = displayFlag (Category) 14 = dscFlag (Category)
-     *   15 = bandFlag (Category)   16 = message22Flag (Category) 17 = modeFlag (Category)
-     *   18 = raim (Category)       19 = commStateFlag (Category) 20 = commState
+     *   9  = cog                   10 = heading                11 = utcSecond
+     *   12 = unitFlag              13 = displayFlag            14 = dscFlag
+     *   15 = bandFlag              16 = message22Flag          17 = modeFlag
+     *   18 = raim                  19 = commStateFlag          20 = commState
      *
      * Additional fields populated only for type 19 (empty/zero for type 18):
      *   21 = name             22 = shipType            23 = dimBow
      *   24 = dimStern         25 = dimPort             26 = dimStarboard
-     *   27 = epfd (Category)  28 = dte (Category)      29 = assignedMode (Category)
+     *   27 = epfd             28 = dte                 29 = assignedMode
      */
     public void doInit() {
         GeoPosHelper geoFac = new GeoPosHelper();
