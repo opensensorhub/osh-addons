@@ -33,7 +33,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 
-public class AirNavADSBSensor extends AbstractSensorModule<AdsbConfig>
+public class AirNavADSBSensor extends AbstractSensorModule<AirNavADSBConfig>
 {
     static final String SENSOR_UID_PREFIX = "urn:osh:sensor:adsb:";
 

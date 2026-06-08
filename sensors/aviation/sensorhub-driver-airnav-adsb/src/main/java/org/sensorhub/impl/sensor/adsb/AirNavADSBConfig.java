@@ -20,7 +20,7 @@ import org.sensorhub.api.sensor.SensorConfig;
 import org.sensorhub.impl.comm.TCPCommProviderConfig;
 
 
-public class AdsbConfig extends SensorConfig {
+public class AirNavADSBConfig extends SensorConfig {
     @DisplayInfo.Required
     @DisplayInfo(desc = "Serial number or unique identifier for this ADS-B receiver")
     public String serialNumber = "adsb001";
