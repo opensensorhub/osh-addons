@@ -75,7 +75,7 @@ public class NmeaAisOutputRawMessages extends VarRateSensorOutput<NmeaAisDriver>
                         .label("Sequential Id")
                         .description("Id to link multipart messages")
                         .definition(SWEHelper.getPropertyUri("SequentialId")))
-                .addField("channel", sweFactory.createText()
+                .addField("channel", sweFactory.createCategory()
                         .label("AIS Channel")
                         .description("AIS channel used: A (161.975 MHz) or B (162.025 MHz)")
                         .definition(SWEHelper.getPropertyUri("Channel")))
@@ -110,7 +110,7 @@ public class NmeaAisOutputRawMessages extends VarRateSensorOutput<NmeaAisDriver>
             int fragmentNumber  = Integer.parseInt(nmea[2]);
             String sequentialId = nmea[3];
             String channel      = nmea[4];
-            double channelFreq  = Objects.equals(channel, "A") ? 161.975 : 162.025;
+            double channelFreq  = "A".equals(channel) ? 161.975 : 162.025;
             String rawPayload   = nmea[5];
             String[] lastField  = nmea[6].split("\\*");
             int fillBits        = Integer.parseInt(lastField[0].trim());
