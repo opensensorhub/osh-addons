@@ -47,6 +47,14 @@ public abstract class QueryBuilderBaseFeatureStore<V extends IFeature,VF extends
                 "data JSONB)";
     }
 
+    public String createSpatialIndex() {
+        return "CREATE INDEX IF NOT EXISTS "+this.getStoreTableName()+"_features_geometry ON "+this.getStoreTableName()+" USING GIST ("+GEOMETRY+");";
+    }
+
+    public String createParentIdIndex() {
+        return "CREATE INDEX IF NOT EXISTS "+this.getStoreTableName()+"_features_parentId ON "+this.getStoreTableName()+" (parentId);";
+    }
+
     public String insertFeatureQuery() {
         return "INSERT INTO "+this.getStoreTableName()+" (parentId,"+GEOMETRY+", "+VALID_TIME+", data) VALUES (?,?,?,?)";
     }
@@ -123,6 +131,10 @@ public abstract class QueryBuilderBaseFeatureStore<V extends IFeature,VF extends
         return "CREATE INDEX IF NOT EXISTS  "+this.getStoreTableName()+"_feature_valid_time_0_idx ON "+this.getStoreTableName()+ " using GIST (validTime)";
     }
 
+    public String createLowerValidTimeIndexQuery() {
+        return "CREATE INDEX IF NOT EXISTS  "+this.getStoreTableName()+"_feature_valid_time_lower_desc_idx ON "+this.getStoreTableName()+ "  ((lower(validTime)) DESC, id DESC)";
+    }
+
     public String createIdIndexQuery() {
         return "CREATE INDEX IF NOT EXISTS "+this.getStoreTableName()+"_feature_id_idx ON "+this.getStoreTableName()+" (id)";
     }
@@ -132,11 +144,7 @@ public abstract class QueryBuilderBaseFeatureStore<V extends IFeature,VF extends
     }
 
     public String createTrigramDescriptionFullTextIndexQuery() {
-        return "CREATE INDEX IF NOT EXISTS "+this.getStoreTableName()+"_feature_desc_full_text_datastream_idx ON  "+this.getStoreTableName()+" USING GIN ((data->'properties'->>'description') gin_trgm_ops)";
-    }
-
-    public String createTrigramUidFullTextIndexQuery() {
-        return "CREATE INDEX IF NOT EXISTS "+this.getStoreTableName()+"_feature_uid_full_text_datastream_idx ON  "+this.getStoreTableName()+" USING GIN ((data->'properties'->>'uid') gin_trgm_ops)";
+        return "CREATE INDEX IF NOT EXISTS "+this.getStoreTableName()+"_feature_desc_full_text_datastream_idx ON  "+this.getStoreTableName()+" USING GIN ((data::text) gin_trgm_ops)";
     }
 
     public abstract String createSelectEntriesQuery(F filter, Set<VF> fields);

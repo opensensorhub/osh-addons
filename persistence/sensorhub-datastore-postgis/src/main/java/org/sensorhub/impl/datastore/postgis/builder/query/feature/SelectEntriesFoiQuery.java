@@ -39,13 +39,13 @@ public class SelectEntriesFoiQuery extends SelectEntriesQuery {
             if (filter != null) {
                 SelectFoiFilterQuery filterQuery = new SelectFoiFilterQuery(this.tableName, filterQueryGenerator);
                 if(systemDescStore != null) {
-                    filterQuery.setSysDescTableName(systemDescStore.getDatastoreName());
+                    filterQuery.setSystemDescStore(systemDescStore);
                 }
                 if(dataStreamStore != null) {
-                    filterQuery.setDataStreamTableName(dataStreamStore.getDatastoreName());
+                    filterQuery.setDataStreamStore(dataStreamStore);
                 }
                 if(obsStore != null) {
-                    filterQuery.setObsTableName(obsStore.getDatastoreName());
+                    filterQuery.setObsStore(obsStore);
                 }
 
                 filterQueryGenerator = filterQuery.build(filter);

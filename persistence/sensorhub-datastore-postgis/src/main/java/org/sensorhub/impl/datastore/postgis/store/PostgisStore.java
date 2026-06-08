@@ -53,10 +53,8 @@ public abstract class PostgisStore<T extends QueryBuilder> {
     public IdProviderType idProviderType;
     protected  IdProvider idProvider;
     protected AtomicLong lastId = new AtomicLong(0);
-    private TimerTask timerTask;
 
     protected boolean useBatch;
-    private long autoCommitPeriod = 3600*1000L;
     public static final int STREAM_FETCH_SIZE = 1000;
 
     protected PostgisStore(int idScope, IdProviderType dsIdProviderType, T queryBuilder, boolean useBatch) {
@@ -72,6 +70,8 @@ public abstract class PostgisStore<T extends QueryBuilder> {
     }
 
     private void initStore(String[] initScripts) {
+        logger.info("Executing init queries..");
+        logger.error(String.join(";", initScripts));
         try (Connection connection = this.connectionManager.getConnection()) {
 //            if (!PostgisUtils.checkTable(connection, queryBuilder.getStoreTableName())) {
                 // create table
@@ -82,7 +82,6 @@ public abstract class PostgisStore<T extends QueryBuilder> {
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
-
         try {
             this.initIdProvider();
         } catch (DataStoreException e) {
@@ -207,10 +206,6 @@ public abstract class PostgisStore<T extends QueryBuilder> {
     public void close() {
         try {
             commit();
-
-            if(timerTask != null) {
-                timerTask.cancel();
-            }
         } catch (Exception ex) {
             ex.printStackTrace();
         }

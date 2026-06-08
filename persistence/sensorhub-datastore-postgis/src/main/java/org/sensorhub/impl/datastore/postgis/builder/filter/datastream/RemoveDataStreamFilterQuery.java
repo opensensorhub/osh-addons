@@ -34,11 +34,11 @@ public class RemoveDataStreamFilterQuery extends DataStreamFilterQuery<RemoveFil
                 String min = PostgisUtils.checkAndGetValidInstant(temporalFilter.getMin());
                 String max = PostgisUtils.checkAndGetValidInstant(temporalFilter.getMax());
 
-                String sb = "tsrange((" +
+                String sb = "tsrange(parse_utc_timestamp(" +
                         tableName +
-                        ".data->'validTime'->>'begin')::timestamp,(" +
+                        ".data->'validTime'->>'begin'),parse_utc_timestamp(" +
                         tableName +
-                        ".data->'validTime'->>'end')::timestamp)" +
+                        ".data->'validTime'->>'end'))" +
                         " "+PostgisUtils.getOperator(temporalFilter)+" " +
                         "'[" + min + "," + max + "]'::tsrange";
                 addCondition(sb);

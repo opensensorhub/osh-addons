@@ -15,7 +15,9 @@
 package org.sensorhub.impl.datastore.postgis.builder.filter.feature;
 
 import org.sensorhub.api.datastore.feature.FeatureFilter;
+import org.sensorhub.api.datastore.obs.ObsFilter;
 import org.sensorhub.api.datastore.system.SystemFilter;
+import org.sensorhub.impl.datastore.postgis.builder.filter.obs.SelectObsFilterQuery;
 import org.sensorhub.impl.datastore.postgis.builder.generator.SelectFilterQueryGenerator;
 import org.vast.ogc.gml.IFeature;
 
@@ -52,4 +54,5 @@ public class SelectFeatureFilterQuery extends BaseFeatureFilterQuery<IFeature,Fe
     protected void handleParentFilter(SystemFilter parentFilter) {
         throw new UnsupportedOperationException();
     }
+
 }

@@ -29,22 +29,20 @@ import java.util.function.Function;
 public class IteratorResultSet<T> implements Iterator<T> {
     private static final Logger logger = LoggerFactory.getLogger(IteratorResultSet.class);
 
-    private long limit = Long.MAX_VALUE;
-
+    private long limit = 10_000;
     private long offset = 0;
-
+    private long maxElements = 0;
+    private long totalFetchedElements = 0;
     private String query;
-
     private ConnectionManager connectionManager;
-
     private final Function<ResultSet, T> parsingFn;
-
     private ConcurrentLinkedQueue<T> records = new ConcurrentLinkedQueue<>();
-
     private boolean ended = false;
-
     private final Function<T, Boolean> predicateValidator;
-    private final boolean useInternalLimit;
+    private static final long MAX_FAILED = 5;
+    private long currentFailed = 0;
+
+    private boolean disableLimit = false;
 
     public IteratorResultSet(String query,
                              ConnectionManager connectionManager,
@@ -52,36 +50,40 @@ public class IteratorResultSet<T> implements Iterator<T> {
                              Function<ResultSet, T> parsingFn,
                              Function<T, Boolean> predicateValidator
     ) {
-        this.query = query;
-        this.limit = limit;
+        QueryCleaner queryCleaner = new QueryCleaner(query);
+        this.query = queryCleaner.removeNoLimit().removeSqlLimit().build();
+        this.disableLimit = queryCleaner.isDisableLimit();
+        this.limit = Math.min(limit,this.limit);
+        this.maxElements = limit;
         this.parsingFn = parsingFn;
         this.connectionManager = connectionManager;
         this.predicateValidator = predicateValidator;
-        this.useInternalLimit = !query.contains("LIMIT");
+    }
+
+    private boolean checkFailed() {
+        return (currentFailed <= MAX_FAILED);
     }
 
     @Override
     public boolean hasNext() {
+        if(!checkFailed()) {
+            logger.error("Max Failed reached, skipping..");
+            return false;
+        }
         if(!records.isEmpty()) {
             return true;
         }
         if (ended) {
             return false;
         }
-        while(records.isEmpty() && !ended) {
+        while(records.isEmpty() && !ended && checkFailed()) {
             this.makeRequest();
         }
         return !records.isEmpty();
     }
 
     private String getQuery() {
-        if(useInternalLimit) {
-            return query + " LIMIT " + limit + " OFFSET " + offset;
-        } else {
-            // limit set by the filter itself
-            return query + " OFFSET " + offset;
-        }
-
+        return (!this.disableLimit) ? query + " LIMIT " + limit + " OFFSET " + offset : query;
     }
 
     @Override
@@ -91,9 +93,10 @@ public class IteratorResultSet<T> implements Iterator<T> {
 
     private void makeRequest() {
         long countRes = 0;
+        String nextQuery="";
         try (Connection connection = connectionManager.getConnection()) {
             try(Statement statement = connection.createStatement()) {
-                String nextQuery = getQuery();
+                nextQuery = getQuery();
                 if(logger.isDebugEnabled()) {
                     logger.debug(nextQuery);
                 }
@@ -108,11 +111,44 @@ public class IteratorResultSet<T> implements Iterator<T> {
                     offset += limit;
                 }
             }
-            if(countRes == 0 || countRes < limit) {
+            totalFetchedElements += countRes;
+            if(countRes == 0 || countRes < limit || totalFetchedElements >= maxElements) {
                 ended = true;
             }
         } catch (SQLException e) {
-            throw new RuntimeException(e);
+            logger.error("Cannot Execute the request {}, currentFailed={}",query,currentFailed);
+            currentFailed++;
+        }
+    }
+
+    public static class QueryCleaner {
+        private String value;
+        private boolean disableLimit = false;
+        public QueryCleaner(String value) {
+            this.value = value;
+        }
+
+        public QueryCleaner removeNoLimit() {
+            if (this.value != null && this.value.contains("DISABLE_LIMIT")) {
+                this.disableLimit = true;
+                this.value = this.value.replace("DISABLE_LIMIT", "");
+            }
+            return this;
+        }
+
+        public QueryCleaner removeSqlLimit() {
+            if (this.value != null) {
+                this.value = this.value.replaceAll("(?i)\\s+LIMIT\\s+\\d+(\\s+OFFSET\\s+\\d+)?", "");
+            }
+            return this;
+        }
+
+        public String build() {
+            return this.value;
+        }
+
+        public boolean isDisableLimit() {
+            return disableLimit;
         }
     }
 }

@@ -22,12 +22,17 @@ import org.sensorhub.api.datastore.SpatialFilter;
 import org.sensorhub.api.datastore.TemporalFilter;
 import org.sensorhub.api.datastore.feature.FeatureFilter;
 import org.sensorhub.api.datastore.feature.FeatureFilterBase;
+import org.sensorhub.api.datastore.obs.DataStreamFilter;
+import org.sensorhub.api.datastore.obs.ObsFilter;
 import org.sensorhub.api.datastore.system.SystemFilter;
 import org.sensorhub.impl.datastore.postgis.builder.filter.FilterQuery;
+import org.sensorhub.impl.datastore.postgis.builder.filter.obs.SelectObsFilterQuery;
 import org.sensorhub.impl.datastore.postgis.builder.generator.FilterQueryGenerator;
 import org.sensorhub.impl.datastore.postgis.utils.PostgisUtils;
 import org.vast.ogc.gml.IFeature;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.SortedSet;
 import java.util.stream.Collectors;
 
@@ -65,13 +70,15 @@ public abstract class BaseFeatureFilterQuery<V extends IFeature,F extends Featur
 
     protected void handleFullTextFilter(FullTextFilter fullTextFilter) {
         if (fullTextFilter != null) {
-            // can use directly ~* for fast lookup
-            // https://www.postgresql.org/docs/current/pgtrgm.html
             if(fullTextFilter.getKeywords() != null) {
-                String sb = "(" + tableName + ".data->'properties'->>'description') ~* '(" +
-                        fullTextFilter.getKeywords().stream().collect(Collectors.joining("|")) +
-                        ")'";
-                addCondition(sb);
+                List<String> sqlKeywords  = fullTextFilter.getKeywords()
+                        .stream()
+                        .map(k -> {
+                            String start = (k.startsWith("*") ? "" : "%");
+                            String end = (k.endsWith("*") ? "" : "%");;
+                            return tableName + ".data::text ILIKE '" + start + k.replaceAll("\\*", "%") + end + "'";
+                        }).toList();
+                addCondition(" ( "+sqlKeywords.stream().collect(Collectors.joining(" OR "))+" ) ");
             }
         }
     }
