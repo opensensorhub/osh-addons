@@ -50,7 +50,7 @@ public class NmeaAisOutputBaseStation extends VarRateSensorOutput<NmeaAisDriver>
      * Flat index map:
      *   0  = samplingTime       1  = messageId            2  = reportDescription
      *   3  = repeat             4  = mmsi                 5  = utcDateTime
-     *   6  = positionAccuracy
+     *   6  = positionAccuracy (boolean)
      *   7  = latitude  (lat component of location vector)
      *   8  = longitude (lon component of location vector)
      *   9  = epfd               10 = raim (boolean)
@@ -110,7 +110,7 @@ public class NmeaAisOutputBaseStation extends VarRateSensorOutput<NmeaAisDriver>
                     ZoneOffset.UTC
             );
             dataBlock.setDateTime(5,  utcDateTime.toOffsetDateTime());
-            dataBlock.setStringValue(6, AisCodeHelper.PosAcc.getDescription(report.getPosAcc()));
+            dataBlock.setBooleanValue(6, report.getPosAcc() == 1);
             dataBlock.setDoubleValue(7, report.getPos().getLatitudeDouble());
             dataBlock.setDoubleValue(8, report.getPos().getLongitudeDouble());
             dataBlock.setStringValue(9, AisCodeHelper.EpfdType.getDescription(report.getPosType()));

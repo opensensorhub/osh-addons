@@ -51,11 +51,46 @@ public class NmeaAisHelper extends SWEHelper{
                 .definition(SWEHelper.getPropertyUri("Mmsi"));
     }
 
-    public TextBuilder createPositionAccuracy() {
-        return createText()
+    public BooleanBuilder createPositionAccuracy() {
+        return createBoolean()
                 .label("Position Accuracy")
-                .description("1 = high (<= 10 m); 0 = low (> 10 m); 0 = default")
+                .description("true = high (<=10 m); false = low (>10 m) = default")
                 .definition(SWEHelper.getPropertyUri("PositionAccuracy"));
+    }
+
+    public BooleanBuilder createDisplayAvailable() {
+        return createBoolean()
+                .label("Class B Display Availability")
+                .description("true = equipped with display for Message 12 and 14; false = no display available")
+                .definition(SWEHelper.getPropertyUri("DisplayAvailable"));
+    }
+
+    public BooleanBuilder createDscEquipped() {
+        return createBoolean()
+                .label("Class B DSC Equipped")
+                .description("true = equipped with DSC function; false = not equipped")
+                .definition(SWEHelper.getPropertyUri("DscEquipped"));
+    }
+
+    public BooleanBuilder createWidebandCapable() {
+        return createBoolean()
+                .label("Class B Wideband Capable")
+                .description("true = capable of operating over whole marine band; false = upper 525 kHz band only")
+                .definition(SWEHelper.getPropertyUri("WidebandCapable"));
+    }
+
+    public BooleanBuilder createMessage22Capable() {
+        return createBoolean()
+                .label("Class B Message 22 Capable")
+                .description("true = frequency management via Message 22; false = no frequency management via Message 22")
+                .definition(SWEHelper.getPropertyUri("Message22Capable"));
+    }
+
+    public BooleanBuilder createVirtualAid() {
+        return createBoolean()
+                .label("Virtual Aid Flag")
+                .description("true = virtual aid to navigation simulated by nearby AIS station; false = real AtoN at indicated position")
+                .definition(SWEHelper.getPropertyUri("VirtualAid"));
     }
 
     public CategoryBuilder createEpfd() {
@@ -85,6 +120,19 @@ public class NmeaAisHelper extends SWEHelper{
                 .addNilValue(AisCodeHelper.UtcSecondStatus.MANUAL_INPUT.getCode(),   SWEConstants.NIL_INAPPLICABLE)
                 .addNilValue(AisCodeHelper.UtcSecondStatus.DEAD_RECKONING.getCode(), SWEConstants.NIL_INAPPLICABLE)
                 .addNilValue(AisCodeHelper.UtcSecondStatus.INOPERATIVE.getCode(),    SWEConstants.NIL_MISSING);
+    }
+
+    public CategoryBuilder createSyncState() {
+        return createCategory()
+                .label("Sync State")
+                .description("TDMA synchronization state (2 bits): source used to acquire TDMA synchronization")
+                .definition(SWEHelper.getPropertyUri("SyncState"))
+                .addAllowedValues(
+                    AisCodeHelper.SyncState.UTC_DIRECT.getDescription(),
+                    AisCodeHelper.SyncState.UTC_INDIRECT.getDescription(),
+                    AisCodeHelper.SyncState.BASE_STATION.getDescription(),
+                    AisCodeHelper.SyncState.OTHER_STATION.getDescription()
+                );
     }
 
     public CategoryBuilder createOffPositionIndicator() {

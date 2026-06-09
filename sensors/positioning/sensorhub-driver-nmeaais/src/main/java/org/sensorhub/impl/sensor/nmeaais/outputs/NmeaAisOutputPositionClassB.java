@@ -54,8 +54,8 @@ public class NmeaAisOutputPositionClassB extends VarRateSensorOutput<NmeaAisDriv
      *   7  = latitude  (lat component of location vector)
      *   8  = longitude (lon component of location vector)
      *   9  = cog                   10 = heading                11 = utcSecond
-     *   12 = unitFlag              13 = displayFlag            14 = dscFlag
-     *   15 = bandFlag              16 = message22Flag          17 = modeFlag
+     *   12 = unitFlag              13 = displayAvailable (boolean)  14 = dscEquipped (boolean)
+     *   15 = widebandCapable (boolean)  16 = message22Capable (boolean)  17 = modeFlag
      *   18 = raim                  19 = commStateFlag          20 = commState
      *
      * Additional fields populated only for type 19 (empty/zero for type 18):
@@ -106,22 +106,10 @@ public class NmeaAisOutputPositionClassB extends VarRateSensorOutput<NmeaAisDriv
                         .label("Class B Unit Flag")
                         .description("0 = Class B SOTDMA unit; 1 = Class B CS unit")
                         .definition(SWEHelper.getPropertyUri("UnitFlag")))
-                .addField("displayFlag", fac.createText()
-                        .label("Class B Display Flag")
-                        .description("0 = No display available; 1 = Equipped with display for Message 12 and 14")
-                        .definition(SWEHelper.getPropertyUri("DisplayFlag")))
-                .addField("dscFlag", fac.createText()
-                        .label("Class B DSC Flag")
-                        .description("0 = Not equipped with DSC function; 1 = Equipped with DSC function")
-                        .definition(SWEHelper.getPropertyUri("DscFlag")))
-                .addField("bandFlag", fac.createText()
-                        .label("Class B Band Flag")
-                        .description("0 = Capable of operating over upper 525 kHz band; 1 = Capable of operating over whole marine band")
-                        .definition(SWEHelper.getPropertyUri("BandFlag")))
-                .addField("message22Flag", fac.createText()
-                        .label("Class B Message 22 Flag")
-                        .description("0 = No frequency management via Message 22; 1 = Frequency management via Message 22")
-                        .definition(SWEHelper.getPropertyUri("Message22Flag")))
+                .addField("displayAvailable", fac.createDisplayAvailable())
+                .addField("dscEquipped", fac.createDscEquipped())
+                .addField("widebandCapable", fac.createWidebandCapable())
+                .addField("message22Capable", fac.createMessage22Capable())
                 .addField("modeFlag", fac.createText()
                         .label("Mode Flag")
                         .description("0 = Autonomous and continuous mode = default; 1 = Assigned mode")
@@ -181,17 +169,17 @@ public class NmeaAisOutputPositionClassB extends VarRateSensorOutput<NmeaAisDriv
             dataBlock.setIntValue(3,  report.getRepeat());
             dataBlock.setStringValue(4,  String.valueOf(report.getUserId()));
             dataBlock.setDoubleValue(5,  report.getSog() / 10.0);
-            dataBlock.setStringValue(6, AisCodeHelper.PosAcc.getDescription(report.getPosAcc()));
+            dataBlock.setBooleanValue(6, report.getPosAcc() == 1);
             dataBlock.setDoubleValue(7,  report.getPos().getLatitudeDouble());
             dataBlock.setDoubleValue(8,  report.getPos().getLongitudeDouble());
             dataBlock.setDoubleValue(9,  report.getCog() / 10.0);
             dataBlock.setIntValue(10,  report.getTrueHeading());
             dataBlock.setIntValue(11, report.getUtcSec());
             dataBlock.setStringValue(12, AisCodeHelper.ClassBUnitFlag.getDescription(report.getClassBUnitFlag()));
-            dataBlock.setStringValue(13, AisCodeHelper.DisplayFlag.getDescription(report.getClassBDisplayFlag()));
-            dataBlock.setStringValue(14, AisCodeHelper.DscFlag.getDescription(report.getClassBDscFlag()));
-            dataBlock.setStringValue(15, AisCodeHelper.BandFlag.getDescription(report.getClassBBandFlag()));
-            dataBlock.setStringValue(16, AisCodeHelper.Message22Flag.getDescription(report.getClassBMsg22Flag()));
+            dataBlock.setBooleanValue(13, report.getClassBDisplayFlag() == 1);
+            dataBlock.setBooleanValue(14, report.getClassBDscFlag() == 1);
+            dataBlock.setBooleanValue(15, report.getClassBBandFlag() == 1);
+            dataBlock.setBooleanValue(16, report.getClassBMsg22Flag() == 1);
             dataBlock.setStringValue(17, AisCodeHelper.AssignedMode.getDescription(report.getModeFlag()));
             dataBlock.setBooleanValue(18, report.getRaim() == 1);
             dataBlock.setStringValue(19, AisCodeHelper.CommStateSelectorFlag.getDescription(report.getCommStateSelectorFlag()));
@@ -222,18 +210,18 @@ public class NmeaAisOutputPositionClassB extends VarRateSensorOutput<NmeaAisDriv
             dataBlock.setIntValue(3,  report.getRepeat());
             dataBlock.setStringValue(4,  String.valueOf(report.getUserId()));
             dataBlock.setDoubleValue(5,  report.getSog() / 10.0);
-            dataBlock.setStringValue(6, AisCodeHelper.PosAcc.getDescription(report.getPosAcc()));
+            dataBlock.setBooleanValue(6, report.getPosAcc() == 1);
             dataBlock.setDoubleValue(7,  report.getPos().getLatitudeDouble());
             dataBlock.setDoubleValue(8,  report.getPos().getLongitudeDouble());
             dataBlock.setDoubleValue(9,  report.getCog() / 10.0);
             dataBlock.setIntValue(10,  report.getTrueHeading());
             dataBlock.setIntValue(11, report.getUtcSec());
-            // type 19 does not carry Class B CS radio flags — set to 0
+            // type 19 does not carry Class B CS radio flags — default to false
             dataBlock.setStringValue(12, "0");
-            dataBlock.setStringValue(13, "0");
-            dataBlock.setStringValue(14, "0");
-            dataBlock.setStringValue(15, "0");
-            dataBlock.setStringValue(16, "0");
+            dataBlock.setBooleanValue(13, false);
+            dataBlock.setBooleanValue(14, false);
+            dataBlock.setBooleanValue(15, false);
+            dataBlock.setBooleanValue(16, false);
             dataBlock.setStringValue(17, AisCodeHelper.AssignedMode.getDescription(report.getModeFlag()));
             dataBlock.setBooleanValue(18, report.getRaim() == 1);
             dataBlock.setStringValue(19, "0");

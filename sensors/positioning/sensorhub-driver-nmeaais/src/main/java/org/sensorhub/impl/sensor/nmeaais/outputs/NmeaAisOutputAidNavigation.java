@@ -49,13 +49,13 @@ public class NmeaAisOutputAidNavigation extends VarRateSensorOutput<NmeaAisDrive
      *   0  = samplingTime         1  = messageId             2  = reportDescription
      *   3  = repeat               4  = mmsi                  5  = typeOfAidsToNav
      *   6  = name
-     *   7  = positionAccuracy
+     *   7  = positionAccuracy (boolean)
      *   8  = latitude  (lat component of location vector)
      *   9  = longitude (lon component of location vector)
      *   10 = dimBow               11 = dimStern              12 = dimPort
      *   13 = dimStarboard         14 = epfd                  15 = utcSecond
      *   16 = offPositionIndicator 17 = raim (boolean)
-     *   18 = virtualAid           19 = assignedMode
+     *   18 = virtualAid (boolean) 19 = assignedMode
      */
     public void doInit() {
         GeoPosHelper geoFac = new GeoPosHelper();
@@ -110,10 +110,7 @@ public class NmeaAisOutputAidNavigation extends VarRateSensorOutput<NmeaAisDrive
                 .addField("utcSecond", fac.createUtcSecond())
                 .addField("offPositionIndicator", fac.createOffPositionIndicator())
                 .addField("raim", fac.createRAIM())
-                .addField("virtualAid", fac.createText()
-                        .label("Virtual Aid Flag")
-                        .description("0 = default; 1 = virtual aid to navigation simulated by nearby AIS station")
-                        .definition(SWEHelper.getPropertyUri("VirtualAid")))
+                .addField("virtualAid", fac.createVirtualAid())
                 .addField("assignedMode", fac.createAssignedMode());
 
         aisReportRecord = recordBuilder.build();
@@ -132,7 +129,7 @@ public class NmeaAisOutputAidNavigation extends VarRateSensorOutput<NmeaAisDrive
             dataBlock.setStringValue(4,  String.valueOf(report.getUserId()));
             dataBlock.setStringValue(5, AisCodeHelper.AtoNType.getDescription(report.getAtonType()));
             dataBlock.setStringValue(6, AisCodeHelper.cleanVesselName(report.getName()));
-            dataBlock.setStringValue(7, AisCodeHelper.PosAcc.getDescription(report.getPosAcc()));
+            dataBlock.setBooleanValue(7, report.getPosAcc() == 1);
             dataBlock.setDoubleValue(8,  report.getPos().getLatitudeDouble());
             dataBlock.setDoubleValue(9,  report.getPos().getLongitudeDouble());
             dataBlock.setIntValue(10,  report.getDimBow());
@@ -145,7 +142,7 @@ public class NmeaAisOutputAidNavigation extends VarRateSensorOutput<NmeaAisDrive
                     ? "N/A"
                     : AisCodeHelper.OffPositionIndicator.getDescription(report.getOffPosition()));
             dataBlock.setBooleanValue(17, report.getRaim()==1);
-            dataBlock.setStringValue(18, AisCodeHelper.VirtualAtoN.getDescription(report.getVirtual()));
+            dataBlock.setBooleanValue(18, report.getVirtual() == 1);
             dataBlock.setStringValue(19, AisCodeHelper.AssignedMode.getDescription(report.getAssigned()));
 
             String foiUID = parentSensor.addFoi(String.valueOf(report.getUserId()));

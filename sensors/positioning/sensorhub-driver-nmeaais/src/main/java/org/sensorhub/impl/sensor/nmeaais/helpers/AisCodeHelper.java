@@ -811,6 +811,42 @@ public class AisCodeHelper {
     }
 
     /**
+     * AIS Sync State per ITU-R M.1371-5 (2 bits, values 0–3).
+     * Indicates the source used to acquire TDMA synchronization.
+     */
+    public enum SyncState {
+        UTC_DIRECT(0,    "UTC direct"),
+        UTC_INDIRECT(1,  "UTC indirect"),
+        BASE_STATION(2,  "Synchronized to base station"),
+        OTHER_STATION(3, "Synchronized to another station");
+
+        private final int code;
+        private final String description;
+        private static final Map<Integer, SyncState> LOOKUP = new HashMap<>();
+
+        static {
+            for (SyncState s : values()) LOOKUP.put(s.code, s);
+        }
+
+        SyncState(int code, String description) {
+            this.code = code;
+            this.description = description;
+        }
+
+        public int getCode() { return code; }
+        public String getDescription() { return description; }
+
+        public static String getDescription(int code) {
+            SyncState s = LOOKUP.get(code);
+            return s != null ? s.description : "Unknown sync state: " + code;
+        }
+
+        public static SyncState fromCode(int code) {
+            return LOOKUP.get(code);
+        }
+    }
+
+    /**
      * Communication State Selector Flag per <a href="https://www.navcen.uscg.gov/ais-class-b-reports">navcen.uscg.gov</a>.
      * Always 1 (ITDMA) for Class B CS units.
      */

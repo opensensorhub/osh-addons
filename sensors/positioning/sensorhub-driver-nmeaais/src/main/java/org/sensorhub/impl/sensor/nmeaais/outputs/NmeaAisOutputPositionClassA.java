@@ -47,13 +47,13 @@ public class NmeaAisOutputPositionClassA extends VarRateSensorOutput<NmeaAisDriv
      *
      * Flat index map:
      *   0  = samplingTime          1  = messageId              2  = reportDescription
-     *   3  = repeat                4  = mmsi                   5  = navStatus (Category)
-     *   6  = rot                   7  = sog
-     *   8  = positionAccuracy (Category)
-     *   9  = latitude  (lat component of location vector)
-     *   10 = longitude (lon component of location vector)
-     *   11 = cog                   12 = heading                13 = utcSecond (Count)
-     *   14 = smi (Category)        15 = raim (boolean)        16 = commState
+     *   3  = repeat                4  = mmsi                   5  = navStatus
+     *   6  = rot                   7  = roti                   8  = sog
+     *   9  = positionAccuracy (boolean)
+     *   10 = latitude  (lat component of location vector)
+     *   11 = longitude (lon component of location vector)
+     *   12 = cog                   13 = heading                14 = utcSecond (Count)
+     *   15 = smi                   16 = raim (boolean)         17 = syncState (Category)
      */
     public void doInit() {
         GeoPosHelper geoFac = new GeoPosHelper();
@@ -95,7 +95,8 @@ public class NmeaAisOutputPositionClassA extends VarRateSensorOutput<NmeaAisDriv
                 .addField("location", geoFac.createLocationVectorLatLon()
                         .label("Location"))
                 .addField("cog", fac.createQuantity()
-                        .label("COG")
+                        .label("Course Over Ground")
+                        .uom("deg")
                         .description("Course over ground in 1/10 = (0-3599). 3600 (E10h) = not available = default. 3601-4095 should not be used")
                         .definition(SWEHelper.getPropertyUri("Cog")))
                 .addField("heading", fac.createQuantity()
@@ -109,10 +110,7 @@ public class NmeaAisOutputPositionClassA extends VarRateSensorOutput<NmeaAisDriv
                         .description("Special Maneuver Indicator as defined by https://www.navcen.uscg.gov/ais-class-a-reports")
                         .definition(SWEHelper.getPropertyUri("Smi")))
                 .addField("raim", fac.createRAIM())
-                .addField("commState", fac.createCount()
-                        .label("Communication State")
-                        .description("visit https://www.navcen.uscg.gov/ais-class-a-reports#CommState")
-                        .definition(SWEHelper.getPropertyUri("CommState")))
+                .addField("syncState", fac.createSyncState())
                 ;
 
         aisReportRecord = recordBuilder.build();
@@ -137,7 +135,7 @@ public class NmeaAisOutputPositionClassA extends VarRateSensorOutput<NmeaAisDriv
             dataBlock.setStringValue(7,  rotData.roti());
 
             dataBlock.setDoubleValue(8,  report.getSog() / 10.0);
-            dataBlock.setStringValue(9, AisCodeHelper.PosAcc.getDescription(report.getPosAcc()));
+            dataBlock.setBooleanValue(9, report.getPosAcc() == 1);
             dataBlock.setDoubleValue(10,  report.getPos().getLatitudeDouble());
             dataBlock.setDoubleValue(11,  report.getPos().getLongitudeDouble());
             dataBlock.setDoubleValue(12,  report.getCog() / 10.0);
@@ -145,7 +143,7 @@ public class NmeaAisOutputPositionClassA extends VarRateSensorOutput<NmeaAisDriv
             dataBlock.setIntValue(14, report.getUtcSec());
             dataBlock.setStringValue(15, AisCodeHelper.Spi.getDescription(report.getSpecialManIndicator()));
             dataBlock.setBooleanValue(16, report.getRaim() == 1);
-            dataBlock.setIntValue(17, report.getSyncState());
+            dataBlock.setStringValue(17, AisCodeHelper.SyncState.getDescription(report.getSyncState()));
 
             String foiUID = parentSensor.addFoi(String.valueOf(report.getUserId()));
 
