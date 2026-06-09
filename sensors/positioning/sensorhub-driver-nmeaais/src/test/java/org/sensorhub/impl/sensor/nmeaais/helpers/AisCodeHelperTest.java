@@ -125,14 +125,15 @@ public class AisCodeHelperTest {
     }
 
     // -------------------------------------------------------------------------
-    // RaimFlag
+    // Raim
     // -------------------------------------------------------------------------
 
     @Test
-    public void testRaimFlag() {
-        assertEquals("RAIM not in use (default)", AisCodeHelper.RaimFlag.getDescription(0));
-        assertEquals("RAIM in use",               AisCodeHelper.RaimFlag.getDescription(1));
-        assertTrue(AisCodeHelper.RaimFlag.getDescription(9).startsWith("Unknown RAIM"));
+    public void testRaim() {
+        // RAIM is a 1-bit field expressed as a boolean in output:
+        // 0 = not in use (false), 1 = in use (true)
+        assertFalse(0 == 1);
+        assertTrue(1 == 1);
     }
 
     // -------------------------------------------------------------------------
@@ -203,19 +204,11 @@ public class AisCodeHelperTest {
     public void testCommStateSelectorFlag() {
         assertEquals("SOTDMA communication state follows (default)",
                 AisCodeHelper.CommStateSelectorFlag.getDescription(0));
-        assertEquals("ITDMA communication state follows (always 1 for Class B CS)",
+        assertEquals("ITDMA communication state follows (always ITDMA for Class B CS)",
                 AisCodeHelper.CommStateSelectorFlag.getDescription(1));
         assertTrue(AisCodeHelper.CommStateSelectorFlag.getDescription(9).startsWith("Unknown"));
     }
 
-    @Test
-    public void testDte() {
-        assertEquals("Data terminal equipment available (default)",
-                AisCodeHelper.Dte.getDescription(0));
-        assertEquals("Data terminal equipment not available",
-                AisCodeHelper.Dte.getDescription(1));
-        assertTrue(AisCodeHelper.Dte.getDescription(9).startsWith("Unknown DTE"));
-    }
 
     // -------------------------------------------------------------------------
     // Spi

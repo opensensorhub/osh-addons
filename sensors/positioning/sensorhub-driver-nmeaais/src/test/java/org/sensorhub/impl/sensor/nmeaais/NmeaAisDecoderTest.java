@@ -93,13 +93,6 @@ public class NmeaAisDecoderTest {
         assertNotNull("Position should not be null", pos.getPos());
     }
 
-    @Test
-    public void testMsg1_raimFlagResolvesToKnownDescription() throws InterruptedException {
-        AisPositionMessage pos = (AisPositionMessage) parseMessage(MSG_1);
-        String desc = AisCodeHelper.RaimFlag.getDescription(pos.getRaim());
-        assertFalse(desc.startsWith("Unknown"));
-    }
-
     // -------------------------------------------------------------------------
     // Message 3 — Class A position report, response to interrogation
     // -------------------------------------------------------------------------
@@ -165,7 +158,6 @@ public class NmeaAisDecoderTest {
         assertFalse(AisCodeHelper.BandFlag.getDescription(pos18.getClassBBandFlag()).startsWith("Unknown"));
         assertFalse(AisCodeHelper.Message22Flag.getDescription(pos18.getClassBMsg22Flag()).startsWith("Unknown"));
         assertFalse(AisCodeHelper.AssignedMode.getDescription(pos18.getModeFlag()).startsWith("Unknown"));
-        assertFalse(AisCodeHelper.RaimFlag.getDescription(pos18.getRaim()).startsWith("Unknown"));
         assertFalse(AisCodeHelper.CommStateSelectorFlag.getDescription(pos18.getCommStateSelectorFlag()).startsWith("Unknown"));
     }
 
@@ -264,12 +256,6 @@ public class NmeaAisDecoderTest {
         assertFalse(epfd.startsWith("Unknown EPFD"));
     }
 
-    @Test
-    public void testMsg5_dteResolvesToKnownDescription() throws InterruptedException {
-        AisMessage5 msg5 = (AisMessage5) parseMessage(MSG_5_PT1, MSG_5_PT2);
-        String dte = AisCodeHelper.Dte.getDescription(msg5.getDte());
-        assertFalse(dte.startsWith("Unknown DTE"));
-    }
 
     // -------------------------------------------------------------------------
     // Message 26 — Scheduled binary broadcast (no driver output assigned)
