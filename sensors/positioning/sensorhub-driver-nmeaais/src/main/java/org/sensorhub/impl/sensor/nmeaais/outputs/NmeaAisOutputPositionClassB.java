@@ -102,7 +102,7 @@ public class NmeaAisOutputPositionClassB extends VarRateSensorOutput<NmeaAisDriv
                         .description("Degrees (0-359); 511 = not available = default")
                         .definition(SWEHelper.getPropertyUri("heading")))
                 .addField("utcSecond", fac.createUtcSecond())
-                .addField("unitFlag", fac.createText()
+                .addField("unitFlag", fac.createCategory()
                         .label("Class B Unit Flag")
                         .description("0 = Class B SOTDMA unit; 1 = Class B CS unit")
                         .definition(SWEHelper.getPropertyUri("UnitFlag")))
@@ -115,7 +115,7 @@ public class NmeaAisOutputPositionClassB extends VarRateSensorOutput<NmeaAisDriv
                         .description("0 = Autonomous and continuous mode = default; 1 = Assigned mode")
                         .definition(SWEHelper.getPropertyUri("ModeFlag")))
                 .addField("raim", fac.createRAIM())
-                .addField("commStateFlag", fac.createText()
+                .addField("commStateFlag", fac.createCategory()
                         .label("Communication State Selector Flag")
                         .description("0 = SOTDMA communication state follows; 1 = ITDMA (always 1 for Class B CS)")
                         .definition(SWEHelper.getPropertyUri("CommStateFlag")))
@@ -179,7 +179,7 @@ public class NmeaAisOutputPositionClassB extends VarRateSensorOutput<NmeaAisDriv
             dataBlock.setBooleanValue(13, report.getClassBDisplayFlag() == 1);
             dataBlock.setBooleanValue(14, report.getClassBDscFlag() == 1);
             dataBlock.setBooleanValue(15, report.getClassBBandFlag() == 1);
-            dataBlock.setBooleanValue(16, report.getClassBMsg22Flag() == 1);
+            dataBlock.setBooleanValue(16, report.getClassBMsg22Flag() == 1      );
             dataBlock.setStringValue(17, AisCodeHelper.AssignedMode.getDescription(report.getModeFlag()));
             dataBlock.setBooleanValue(18, report.getRaim() == 1);
             dataBlock.setStringValue(19, AisCodeHelper.CommStateSelectorFlag.getDescription(report.getCommStateSelectorFlag()));

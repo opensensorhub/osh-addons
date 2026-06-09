@@ -852,7 +852,7 @@ public class AisCodeHelper {
      */
     public enum CommStateSelectorFlag {
         SOTDMA(0, "SOTDMA communication state follows (default)"),
-        ITDMA(1,  "ITDMA communication state follows (always 1 for Class B CS)");
+        ITDMA(1,  "ITDMA communication state follows (always ITDMA for Class B CS)");
 
         private final int code;
         private final String description;
