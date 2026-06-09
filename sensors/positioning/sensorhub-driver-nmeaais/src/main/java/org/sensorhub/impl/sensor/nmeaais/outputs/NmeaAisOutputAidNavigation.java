@@ -107,15 +107,8 @@ public class NmeaAisOutputAidNavigation extends VarRateSensorOutput<NmeaAisDrive
                         .uom("m")
                         .definition(SWEHelper.getPropertyUri("AtoNDimStarboard")))
                 .addField("epfd", fac.createEpfd())
-                .addField("utcSecond", fac.createQuantity()
-                        .label("UTC Second")
-                        .uom("s")
-                        .description("UTC second when report was generated (0-59); 60 = not available = default")
-                        .definition(SWEHelper.getPropertyUri("UtcSecond")))
-                .addField("offPositionIndicator", fac.createText()
-                        .label("Off Position Indicator")
-                        .description("For floating aids-to-navigation: 0 = on position; 1 = off position. Only valid if UTC second is 0-59")
-                        .definition(SWEHelper.getPropertyUri("OffPositionIndicator")))
+                .addField("utcSecond", fac.createUtcSecond())
+                .addField("offPositionIndicator", fac.createOffPositionIndicator())
                 .addField("raim", fac.createRAIM())
                 .addField("virtualAid", fac.createText()
                         .label("Virtual Aid Flag")
@@ -148,7 +141,9 @@ public class NmeaAisOutputAidNavigation extends VarRateSensorOutput<NmeaAisDrive
             dataBlock.setIntValue(13, report.getDimStarboard());
             dataBlock.setStringValue(14, AisCodeHelper.EpfdType.getDescription(report.getPosType()));
             dataBlock.setIntValue(15, report.getUtcSec());
-            dataBlock.setStringValue(16, AisCodeHelper.OffPositionIndicator.getDescription(report.getOffPosition()));
+            dataBlock.setStringValue(16, report.getUtcSec() >= 60
+                    ? "N/A"
+                    : AisCodeHelper.OffPositionIndicator.getDescription(report.getOffPosition()));
             dataBlock.setBooleanValue(17, report.getRaim()==1);
             dataBlock.setStringValue(18, AisCodeHelper.VirtualAtoN.getDescription(report.getVirtual()));
             dataBlock.setStringValue(19, AisCodeHelper.AssignedMode.getDescription(report.getAssigned()));

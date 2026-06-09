@@ -422,6 +422,43 @@ public class AisCodeHelper {
     }
 
     /**
+     * AIS UTC Second special status codes per ITU-R M.1371-5.
+     * Values 0–59 are valid UTC seconds. Values 60–63 are status codes indicating
+     * the timestamp is not a real UTC second and the offPositionIndicator is inapplicable.
+     */
+    public enum UtcSecondStatus {
+        NOT_AVAILABLE(60, "Not available (default)"),
+        MANUAL_INPUT(61,  "Manual input mode"),
+        DEAD_RECKONING(62, "Dead reckoning mode"),
+        INOPERATIVE(63,   "Positioning system inoperative");
+
+        private final int code;
+        private final String description;
+        private static final Map<Integer, UtcSecondStatus> LOOKUP = new HashMap<>();
+
+        static {
+            for (UtcSecondStatus s : values()) LOOKUP.put(s.code, s);
+        }
+
+        UtcSecondStatus(int code, String description) {
+            this.code = code;
+            this.description = description;
+        }
+
+        public int getCode() { return code; }
+        public String getDescription() { return description; }
+
+        public static String getDescription(int code) {
+            UtcSecondStatus s = LOOKUP.get(code);
+            return s != null ? s.description : "UTC second: " + code;
+        }
+
+        public static UtcSecondStatus fromCode(int code) {
+            return LOOKUP.get(code);
+        }
+    }
+
+    /**
      * AIS Virtual AtoN flag per <a href="https://www.navcen.uscg.gov/ais-aton-report">navcen.uscg.gov</a>.
      */
     public enum VirtualAtoN {
