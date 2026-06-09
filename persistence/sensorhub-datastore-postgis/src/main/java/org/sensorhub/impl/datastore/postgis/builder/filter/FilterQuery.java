@@ -15,6 +15,12 @@
 package org.sensorhub.impl.datastore.postgis.builder.filter;
 
 import org.sensorhub.api.common.BigId;
+import org.sensorhub.api.datastore.command.ICommandStore;
+import org.sensorhub.api.datastore.deployment.IDeploymentStore;
+import org.sensorhub.api.datastore.feature.IFoiStore;
+import org.sensorhub.api.datastore.obs.IDataStreamStore;
+import org.sensorhub.api.datastore.obs.IObsStore;
+import org.sensorhub.api.datastore.system.ISystemDescStore;
 import org.sensorhub.impl.datastore.postgis.builder.generator.FilterQueryGenerator;
 
 import java.util.SortedSet;
@@ -28,8 +34,15 @@ public abstract class FilterQuery<F extends FilterQueryGenerator> {
     protected String dataStreamTableName;
     protected String foiTableName;
     protected String obsTableName;
-
     protected String tableName;
+
+    // store
+    protected IFoiStore foiStore;
+    protected ISystemDescStore systemDescStore;
+    protected IDataStreamStore dataStreamStore;
+    protected IObsStore obsStore;
+    protected ICommandStore commandStore;
+    protected IDeploymentStore deploymentStore;
 
     protected F filterQueryGenerator;
 
@@ -52,6 +65,10 @@ public abstract class FilterQuery<F extends FilterQueryGenerator> {
 
     protected void addCondition(String condition) {
         filterQueryGenerator.addCondition(condition);
+    }
+
+    protected void orCondition(String condition) {
+        filterQueryGenerator.orCondition(condition);
     }
 
     public void setCommandStreamTableName(String commandStreamTableName) {
@@ -80,6 +97,34 @@ public abstract class FilterQuery<F extends FilterQueryGenerator> {
 
     public void setObsTableName(String obsTableName) {
         this.obsTableName = obsTableName;
+    }
+
+    public void setFoiStore(IFoiStore foiStore) {
+        this.foiStore = foiStore;
+        this.foiTableName = this.foiStore.getDatastoreName();
+    }
+
+    public void setSystemDescStore(ISystemDescStore systemDescStore) {
+        this.systemDescStore = systemDescStore;
+        this.sysDescTableName = this.systemDescStore.getDatastoreName();
+    }
+
+    public void setDataStreamStore(IDataStreamStore dataStreamStore) {
+        this.dataStreamStore = dataStreamStore;
+        this.dataStreamTableName = this.dataStreamStore.getDatastoreName();
+    }
+
+    public void setObsStore(IObsStore obsStore) {
+        this.obsStore = obsStore;
+        this.obsTableName = this.obsStore.getDatastoreName();
+    }
+
+    public void setCommandStore(ICommandStore commandStore) {
+        this.commandStore = commandStore;
+    }
+
+    public void setDeploymentStore(IDeploymentStore deploymentStore) {
+        this.deploymentStore = deploymentStore;
     }
 
 }

@@ -19,23 +19,31 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public class SelectFilterQueryGenerator extends FilterQueryGenerator {
-    protected List<String> orderBy;
+    protected List<String> orderByList;
     protected List<String> groupBy;
     protected List<String> distinct;
     protected List<String> innerJoin;
+    protected boolean useDistinct = false;
+    protected boolean useOrderBy = true;
 
     public String toQuery() {
         StringBuilder sb = new StringBuilder();
         if (selectFields != null) {
             // filters fields or *
             sb.append("SELECT ");
-            if (distinct != null && !distinct.isEmpty()) {
+            if(useDistinct) {
+                sb.append(" DISTINCT ");
+            } else if (distinct != null && !distinct.isEmpty()) {
                 sb.append("DISTINCT on (").append(this.distinct.stream().collect(Collectors.joining(","))).append(")");
             }
 
             // to get count and use it with LIMIT and OFFSET
             if (this.selectFields != null && !this.selectFields.isEmpty()) {
-                sb.append(selectFields.stream().map(fieldName -> this.tableName+"."+fieldName).collect(Collectors.joining(",")));
+                if (this.selectFields.contains("1")) {
+                    sb.append("1");
+                } else {
+                    sb.append(selectFields.stream().map(fieldName -> this.tableName + "." + fieldName).collect(Collectors.joining(",")));
+                }
             } else {
                 sb.append(" ").append(this.tableName).append(".* ");
             }
@@ -56,19 +64,25 @@ public class SelectFilterQueryGenerator extends FilterQueryGenerator {
         if (this.orConditions != null && !this.orConditions.isEmpty()) {
             if (addConditions == null || addConditions.isEmpty()) {
                 sb.append(" WHERE ");
+            } else {
+                sb.append(" AND ");
             }
-            sb.append(this.orConditions.stream().collect(Collectors.joining(" OR ")));
+
+            sb.append(" ( ").append(this.orConditions.stream().collect(Collectors.joining(" OR "))).append(" ) ");
         }
         if (this.groupBy != null && !this.groupBy.isEmpty()) {
             sb.append(" GROUP BY ");
             sb.append(this.groupBy.stream().collect(Collectors.joining(", ")));
         }
 
-        if (this.orderBy != null && !this.orderBy.isEmpty()) {
+        if (isUseOrderBy() && this.orderByList != null && !this.orderByList.isEmpty()) {
             sb.append(" ORDER BY ");
-            sb.append(this.orderBy.stream().collect(Collectors.joining(", ")));
+            sb.append(this.orderByList.stream().collect(Collectors.joining(", ")));
         }
-        if (this.limit >= 0) {
+//        if (this.offset >= 0) {
+//            sb.append(" OFFSET ").append(this.offset);
+//        }
+        if (!this.disableLimit && this.limit >= 0) {
             sb.append(" LIMIT ").append(this.limit);
         }
 
@@ -101,7 +115,9 @@ public class SelectFilterQueryGenerator extends FilterQueryGenerator {
             sb.append(" GROUP BY ");
             sb.append(this.groupBy.stream().collect(Collectors.joining(", ")));
         }
-        if (this.limit >= 0) {
+        if(this.disableLimit) {
+            sb.append(" DISABLE_LIMIT ");
+        } else if (this.limit >= 0) {
             sb.append(" LIMIT ").append(this.limit);
         }
 
@@ -116,8 +132,8 @@ public class SelectFilterQueryGenerator extends FilterQueryGenerator {
     }
 
     private void checkOrderBy() {
-        if (this.orderBy == null) {
-            this.orderBy = new ArrayList<>();
+        if (this.orderByList == null) {
+            this.orderByList = new ArrayList<>();
         }
     }
 
@@ -139,7 +155,7 @@ public class SelectFilterQueryGenerator extends FilterQueryGenerator {
 
     public void addOrderBy(String orderBy) {
         this.checkOrderBy();
-        this.orderBy.add(orderBy);
+        this.orderByList.add(orderBy);
     }
 
     public void addInnerJoin(String innerJoin) {
@@ -151,5 +167,21 @@ public class SelectFilterQueryGenerator extends FilterQueryGenerator {
         if (this.innerJoin == null) {
             this.innerJoin = new ArrayList<>();
         }
+    }
+
+    public boolean isUseDistinct() {
+        return useDistinct;
+    }
+
+    public void setUseDistinct(boolean useDistinct) {
+        this.useDistinct = useDistinct;
+    }
+
+    public boolean isUseOrderBy() {
+        return useOrderBy;
+    }
+
+    public void setUseOrderBy(boolean useOrderBy) {
+        this.useOrderBy = useOrderBy;
     }
 }

@@ -191,12 +191,12 @@ public class PostgisUtils {
     }
     protected static Instant getInstantFromPGFormat(String pgDataValueStr) {
         if (pgDataValueStr.equals("-infinity")) {
-            return Instant.MIN.truncatedTo(ChronoUnit.SECONDS);
+            return Instant.MIN;
         } else if (pgDataValueStr.equals("infinity")) {
-            return Instant.MAX.truncatedTo(ChronoUnit.SECONDS);
+            return Instant.MAX;
         } else {
             LocalDateTime ldt = LocalDateTime.parse(pgDataValueStr, FLEXIBLE_FORMATTER);
-            return ldt.toInstant(ZoneOffset.UTC).truncatedTo(ChronoUnit.SECONDS);
+            return ldt.toInstant(ZoneOffset.UTC);
         }
     }
     public static String getPgTimestampFromInstant(Instant instant) {
@@ -218,7 +218,7 @@ public class PostgisUtils {
         } else if(instant.getEpochSecond() > PostgisUtils.MAX_INSTANT.getEpochSecond()) {
             return "infinity";
         } else {
-            return instant.truncatedTo(ChronoUnit.SECONDS).toString();
+            return instant.toString();
         }
     }
 
@@ -233,7 +233,7 @@ public class PostgisUtils {
         if (min.getEpochSecond() < MIN_INSTANT.getEpochSecond()) {
             rangeValue.append("-infinity");
         } else {
-            rangeValue.append(PostgisUtils.writeInstantToString(min.truncatedTo(ChronoUnit.SECONDS), false));
+            rangeValue.append(PostgisUtils.writeInstantToString(min, false));
         }
 
         rangeValue.append(",");
@@ -241,7 +241,7 @@ public class PostgisUtils {
         if (max.getEpochSecond() > MAX_INSTANT.getEpochSecond()) {
             rangeValue.append("infinity");
         } else {
-            rangeValue.append(PostgisUtils.writeInstantToString(max.truncatedTo(ChronoUnit.SECONDS), false));
+            rangeValue.append(PostgisUtils.writeInstantToString(max, false));
         }
         rangeValue.append("]");
         range.setValue(rangeValue.toString());
@@ -290,11 +290,13 @@ public class PostgisUtils {
         int hour = zdt.getHour();
         int minute = zdt.getMinute();
         int second = zdt.getSecond();
+
         int nano = zdt.getNano();
+        int milli = nano / 1_000_000;
 
         String fraction = "";
-        if (nano != 0) {
-            fraction = "." + Integer.toString(nano).replaceAll("0+$", "");
+        if (milli != 0) {
+            fraction = "." + String.format("%03d", milli).replaceAll("0+$", "");
         }
 
         String result = String.format("%04d-%02d-%02d %02d:%02d:%02d%s+00",
@@ -326,5 +328,9 @@ public class PostgisUtils {
         int correctedYear = -(y - 1);
         ldt = ldt.withYear(correctedYear);
         return ldt.toInstant(ZoneOffset.UTC);
+    }
+
+    public static String getTimeOrder(TemporalFilter temporalFilter) {
+        return (temporalFilter != null && temporalFilter.isDescendingOrder()) ? "DESC": "ASC";
     }
 }
