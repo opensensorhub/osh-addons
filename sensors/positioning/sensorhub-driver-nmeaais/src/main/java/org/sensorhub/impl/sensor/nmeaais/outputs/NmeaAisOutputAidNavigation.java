@@ -54,7 +54,7 @@ public class NmeaAisOutputAidNavigation extends VarRateSensorOutput<NmeaAisDrive
      *   9  = longitude (lon component of location vector)
      *   10 = dimBow               11 = dimStern              12 = dimPort
      *   13 = dimStarboard         14 = epfd                  15 = utcSecond
-     *   16 = offPositionIndicator 17 = raim
+     *   16 = offPositionIndicator 17 = raim (boolean)
      *   18 = virtualAid           19 = assignedMode
      */
     public void doInit() {
@@ -87,25 +87,25 @@ public class NmeaAisOutputAidNavigation extends VarRateSensorOutput<NmeaAisDrive
                 .addField("location", geoFac.createLocationVectorLatLon()
                         .label("Location"))
                 .addField("dimBow", fac.createQuantity()
-                        .label("Dimension to Bow")
+                        .label("Dimension to Bow from AtoN Position")
                         .description("Size of the aid-to-navigation, bow to GPS antenna in metres; 0 = not available = default")
                         .uom("m")
-                        .definition(SWEHelper.getPropertyUri("DimBow")))
+                        .definition(SWEHelper.getPropertyUri("AtoNDimBow")))
                 .addField("dimStern", fac.createQuantity()
-                        .label("Dimension to Stern")
+                        .label("Dimension to Ster from AtoN Positionn")
                         .description("Size of the aid-to-navigation, GPS antenna to stern in metres; 0 = not available = default")
                         .uom("m")
-                        .definition(SWEHelper.getPropertyUri("DimStern")))
+                        .definition(SWEHelper.getPropertyUri("AtoNDimStern")))
                 .addField("dimPort", fac.createQuantity()
-                        .label("Dimension to Port")
+                        .label("Dimension to Port from AtoN Position")
                         .description("Size of the aid-to-navigation, GPS antenna to port side in metres; 0 = not available = default")
                         .uom("m")
-                        .definition(SWEHelper.getPropertyUri("DimPort")))
+                        .definition(SWEHelper.getPropertyUri("AtoNDimPort")))
                 .addField("dimStarboard", fac.createQuantity()
-                        .label("Dimension to Starboard")
+                        .label("Dimension to Starboard from AtoN Position")
                         .description("Size of the aid-to-navigation, GPS antenna to starboard side in metres; 0 = not available = default")
                         .uom("m")
-                        .definition(SWEHelper.getPropertyUri("DimStarboard")))
+                        .definition(SWEHelper.getPropertyUri("AtoNDimStarboard")))
                 .addField("epfd", fac.createEpfd())
                 .addField("utcSecond", fac.createQuantity()
                         .label("UTC Second")
@@ -149,7 +149,7 @@ public class NmeaAisOutputAidNavigation extends VarRateSensorOutput<NmeaAisDrive
             dataBlock.setStringValue(14, AisCodeHelper.EpfdType.getDescription(report.getPosType()));
             dataBlock.setIntValue(15, report.getUtcSec());
             dataBlock.setStringValue(16, AisCodeHelper.OffPositionIndicator.getDescription(report.getOffPosition()));
-            dataBlock.setStringValue(17, AisCodeHelper.RaimFlag.getDescription(report.getRaim()));
+            dataBlock.setBooleanValue(17, report.getRaim()==1);
             dataBlock.setStringValue(18, AisCodeHelper.VirtualAtoN.getDescription(report.getVirtual()));
             dataBlock.setStringValue(19, AisCodeHelper.AssignedMode.getDescription(report.getAssigned()));
 

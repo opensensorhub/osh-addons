@@ -53,7 +53,7 @@ public class NmeaAisOutputPositionClassA extends VarRateSensorOutput<NmeaAisDriv
      *   9  = latitude  (lat component of location vector)
      *   10 = longitude (lon component of location vector)
      *   11 = cog                   12 = heading                13 = utcSecond (Count)
-     *   14 = smi (Category)        15 = raim (Category)        16 = commState
+     *   14 = smi (Category)        15 = raim (boolean)        16 = commState
      */
     public void doInit() {
         GeoPosHelper geoFac = new GeoPosHelper();
@@ -148,7 +148,7 @@ public class NmeaAisOutputPositionClassA extends VarRateSensorOutput<NmeaAisDriv
             dataBlock.setIntValue(13, report.getTrueHeading());
             dataBlock.setIntValue(14, report.getUtcSec());
             dataBlock.setStringValue(15, AisCodeHelper.Spi.getDescription(report.getSpecialManIndicator()));
-            dataBlock.setStringValue(16, AisCodeHelper.RaimFlag.getDescription(report.getRaim()));
+            dataBlock.setBooleanValue(16, report.getRaim() == 1);
             dataBlock.setIntValue(17, report.getSyncState());
 
             String foiUID = parentSensor.addFoi(String.valueOf(report.getUserId()));

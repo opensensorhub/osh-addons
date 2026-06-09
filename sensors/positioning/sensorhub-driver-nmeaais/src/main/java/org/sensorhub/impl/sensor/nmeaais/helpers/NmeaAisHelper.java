@@ -21,8 +21,8 @@ import org.vast.swe.SWEHelper;
  */
 public class NmeaAisHelper extends SWEHelper{
 
-    public CountBuilder createNmeaMessageId() {
-        return createCount()
+    public CategoryBuilder createNmeaMessageId() {
+        return createCategory()
                 .label("Message Id")
                 .description("AIS Message Identifier")
                 .definition(getPropertyUri("MessageId"));
@@ -57,17 +57,17 @@ public class NmeaAisHelper extends SWEHelper{
                 .definition(SWEHelper.getPropertyUri("PositionAccuracy"));
     }
 
-    public TextBuilder createEpfd() {
-        return createText()
+    public CategoryBuilder createEpfd() {
+        return createCategory()
                 .label("EPFD Type")
                 .description("Type of Electronic Position Fixing Device: 0 = undefined, 1 = GPS, 2 = GLONASS, 3 = Combined GPS/GLONASS, 4 = Loran-C, 5 = Chayka, 6 = Integrated navigation system, 7 = Surveyed, 8 = Galileo, 15 = internal GNSS")
-                .definition(SWEHelper.getPropertyUri("Epfd"));
+                .definition(SWEHelper.getPropertyUri("EpfdType"));
     }
 
-    public TextBuilder createRAIM(){
-        return createText()
-                .label("RAIM Flag")
-                .description("Receiver autonomous integrity monitoring flag; 0 = RAIM not in use; 1 = RAIM in use")
+    public BooleanBuilder createRAIM(){
+        return createBoolean()
+                .label("Receiver Autonomous Integrity Monitoring")
+                .description("false = RAIM not in use; true = RAIM in use")
                 .definition(SWEHelper.getPropertyUri("Raim"));
     }
 
@@ -78,10 +78,10 @@ public class NmeaAisHelper extends SWEHelper{
                 .definition(SWEHelper.getPropertyUri("AssignedMode"));
     }
 
-    public TextBuilder createDte(){
-        return createText()
-                .label("DTE")
-                .description("Data terminal equipment (DTE) available; 0 = available; 1 = not available = default")
+    public BooleanBuilder createDte(){
+        return createBoolean()
+                .label("Data Terminal Equipment")
+                .description("Data terminal equipment (DTE) available; 0 = true = available; 1 = false = not available = default")
                 .definition(SWEHelper.getPropertyUri("Dte"));
     }
 

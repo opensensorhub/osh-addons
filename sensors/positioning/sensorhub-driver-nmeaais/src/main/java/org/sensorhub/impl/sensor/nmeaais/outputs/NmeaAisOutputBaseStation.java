@@ -53,7 +53,7 @@ public class NmeaAisOutputBaseStation extends VarRateSensorOutput<NmeaAisDriver>
      *   6  = positionAccuracy
      *   7  = latitude  (lat component of location vector)
      *   8  = longitude (lon component of location vector)
-     *   9  = epfd               10 = raim
+     *   9  = epfd               10 = raim (boolean)
      */
     public void doInit() {
         GeoPosHelper geoFac = new GeoPosHelper();
@@ -114,7 +114,7 @@ public class NmeaAisOutputBaseStation extends VarRateSensorOutput<NmeaAisDriver>
             dataBlock.setDoubleValue(7, report.getPos().getLatitudeDouble());
             dataBlock.setDoubleValue(8, report.getPos().getLongitudeDouble());
             dataBlock.setStringValue(9, AisCodeHelper.EpfdType.getDescription(report.getPosType()));
-            dataBlock.setStringValue(10, AisCodeHelper.RaimFlag.getDescription(report.getRaim()));
+            dataBlock.setBooleanValue(10, report.getRaim()==1);
 
             String foiUID = parentSensor.addFoi(String.valueOf(report.getUserId()));
 

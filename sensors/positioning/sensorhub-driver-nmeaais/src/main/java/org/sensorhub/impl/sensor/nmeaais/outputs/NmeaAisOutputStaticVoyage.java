@@ -190,7 +190,7 @@ public class NmeaAisOutputStaticVoyage extends VarRateSensorOutput<NmeaAisDriver
             dataBlock.setIntValue(18, etaMinute);
             dataBlock.setDoubleValue(19, report.getDraught() / 10.0);
             dataBlock.setStringValue(20, AisCodeHelper.cleanVesselName(report.getDest()));
-            dataBlock.setStringValue(21, AisCodeHelper.Dte.getDescription(report.getDte()));
+            dataBlock.setBooleanValue(21, report.getDte() != 1);
 
             String foiUID = parentSensor.addFoi(String.valueOf(report.getUserId()));
 

@@ -422,39 +422,6 @@ public class AisCodeHelper {
     }
 
     /**
-     * AIS RAIM (Receiver Autonomous Integrity Monitoring) flag per <a href="https://www.navcen.uscg.gov/ais-aton-report">navcen.uscg.gov</a>.
-     */
-    public enum RaimFlag {
-        NOT_IN_USE(0, "RAIM not in use (default)"),
-        IN_USE(1,     "RAIM in use");
-
-        private final int code;
-        private final String description;
-        private static final Map<Integer, RaimFlag> LOOKUP = new HashMap<>();
-
-        static {
-            for (RaimFlag r : values()) LOOKUP.put(r.code, r);
-        }
-
-        RaimFlag(int code, String description) {
-            this.code = code;
-            this.description = description;
-        }
-
-        public int getCode() { return code; }
-        public String getDescription() { return description; }
-
-        public static String getDescription(int code) {
-            RaimFlag r = LOOKUP.get(code);
-            return r != null ? r.description : "Unknown RAIM flag: " + code;
-        }
-
-        public static RaimFlag fromCode(int code) {
-            return LOOKUP.get(code);
-        }
-    }
-
-    /**
      * AIS Virtual AtoN flag per <a href="https://www.navcen.uscg.gov/ais-aton-report">navcen.uscg.gov</a>.
      */
     public enum VirtualAtoN {
@@ -836,40 +803,6 @@ public class AisCodeHelper {
         }
 
         public static CommStateSelectorFlag fromCode(int code) {
-            return LOOKUP.get(code);
-        }
-    }
-
-    /**
-     * DTE (Data Terminal Equipment) flag per ITU-R M.1371-5.
-     * Used in Message 5 and Message 19.
-     */
-    public enum Dte {
-        AVAILABLE(0,     "Data terminal equipment available (default)"),
-        NOT_AVAILABLE(1, "Data terminal equipment not available");
-
-        private final int code;
-        private final String description;
-        private static final Map<Integer, Dte> LOOKUP = new HashMap<>();
-
-        static {
-            for (Dte d : values()) LOOKUP.put(d.code, d);
-        }
-
-        Dte(int code, String description) {
-            this.code = code;
-            this.description = description;
-        }
-
-        public int getCode() { return code; }
-        public String getDescription() { return description; }
-
-        public static String getDescription(int code) {
-            Dte d = LOOKUP.get(code);
-            return d != null ? d.description : "Unknown DTE value: " + code;
-        }
-
-        public static Dte fromCode(int code) {
             return LOOKUP.get(code);
         }
     }

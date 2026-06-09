@@ -196,7 +196,7 @@ public class NmeaAisOutputPositionClassB extends VarRateSensorOutput<NmeaAisDriv
             dataBlock.setStringValue(15, AisCodeHelper.BandFlag.getDescription(report.getClassBBandFlag()));
             dataBlock.setStringValue(16, AisCodeHelper.Message22Flag.getDescription(report.getClassBMsg22Flag()));
             dataBlock.setStringValue(17, AisCodeHelper.AssignedMode.getDescription(report.getModeFlag()));
-            dataBlock.setStringValue(18, AisCodeHelper.RaimFlag.getDescription(report.getRaim()));
+            dataBlock.setBooleanValue(18, report.getRaim() == 1);
             dataBlock.setStringValue(19, AisCodeHelper.CommStateSelectorFlag.getDescription(report.getCommStateSelectorFlag()));
             dataBlock.setIntValue(20, report.getCommState());
             // type-19-only fields — not present in type 18
@@ -238,7 +238,7 @@ public class NmeaAisOutputPositionClassB extends VarRateSensorOutput<NmeaAisDriv
             dataBlock.setStringValue(15, "0");
             dataBlock.setStringValue(16, "0");
             dataBlock.setStringValue(17, AisCodeHelper.AssignedMode.getDescription(report.getModeFlag()));
-            dataBlock.setStringValue(18, AisCodeHelper.RaimFlag.getDescription(report.getRaim()));
+            dataBlock.setBooleanValue(18, report.getRaim() == 1);
             dataBlock.setStringValue(19, "0");
             dataBlock.setIntValue(20, 0);
             // type-19-only fields
@@ -249,7 +249,7 @@ public class NmeaAisOutputPositionClassB extends VarRateSensorOutput<NmeaAisDriv
             dataBlock.setIntValue(25, report.getDimPort());
             dataBlock.setIntValue(26, report.getDimStarboard());
             dataBlock.setStringValue(27, AisCodeHelper.EpfdType.getDescription(report.getPosType()));
-            dataBlock.setStringValue(28, AisCodeHelper.Dte.getDescription(report.getDte()));
+            dataBlock.setBooleanValue(28, report.getDte() != 1);
             dataBlock.setStringValue(29, AisCodeHelper.AssignedMode.getDescription(report.getModeFlag()));
 
             publish(dataBlock, String.valueOf(report.getUserId()));
