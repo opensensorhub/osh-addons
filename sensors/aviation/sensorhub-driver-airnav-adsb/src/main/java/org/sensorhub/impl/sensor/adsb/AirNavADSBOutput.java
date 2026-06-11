@@ -14,7 +14,6 @@
 
 package org.sensorhub.impl.sensor.adsb;
 
-import net.opengis.gml.v32.Point;
 import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.DataEncoding;
@@ -56,6 +55,7 @@ public class AirNavADSBOutput extends AbstractSensorOutput<AirNavADSBSensor> {
                 .addField("callsign", aeroHelper.createCallSign())
                 .addField("pos", aeroHelper.createAircraftLocation())
                 .addField("alt_baro", aeroHelper.createBaroAlt())
+//                .addField("alt_geo", aeroHelper.createGeomAlt())
                 .addField("gs", aeroHelper.createGroundSpeed())
                 .addField("track", aeroHelper.createTrueTrack())
                 .addField("alt_rate", aeroHelper.createVerticalRate())
@@ -81,8 +81,7 @@ public class AirNavADSBOutput extends AbstractSensorOutput<AirNavADSBSensor> {
     }
 
     protected synchronized void publishAircraftState(AircraftState state) {
-        Point geometry = parentSensor.getGeometry(state.lat, state.lon);
-        var foiUID = parentSensor.addFoi(state.icao, state.callsign, geometry);
+        var foiUID = parentSensor.addFoi(state.icao, state.callsign);
 
         DataBlock dataBlock;
         if (latestRecord == null)
@@ -97,6 +96,7 @@ public class AirNavADSBOutput extends AbstractSensorOutput<AirNavADSBSensor> {
         dataBlock.setDoubleValue(idx++, state.lat);
         dataBlock.setDoubleValue(idx++, state.lon);
         dataBlock.setDoubleValue(idx++, state.altFt);
+//        dataBlock.setDoubleValue(idx++, Double.NaN);  // alt_geo not available from SBS
         dataBlock.setDoubleValue(idx++, state.groundSpeed);
         dataBlock.setDoubleValue(idx++, state.track);
         dataBlock.setDoubleValue(idx++, state.verticalRate);

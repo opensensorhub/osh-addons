@@ -31,6 +31,9 @@ public class AirNavADSBConfig extends SensorConfig {
     @DisplayInfo(desc = "ADS-B Receiver Location")
     public PositionConfig positionConfig = new PositionConfig();
 
+    @DisplayInfo(label="ICAO Address Lookup URL", desc = "URL to query the ICAO Address of an aircraft")
+    public String icaoAddressLookupUrl = "https://api.adsbdb.com/v0/aircraft/"; //"https://hexdb.io/api/v1/aircraft/";
+
     @Override
     public PositionConfig.LLALocation getLocation(){return positionConfig.location;}
     @Override
