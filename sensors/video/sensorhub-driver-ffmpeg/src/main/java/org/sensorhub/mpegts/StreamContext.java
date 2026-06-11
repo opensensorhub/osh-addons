@@ -1,17 +1,11 @@
 package org.sensorhub.mpegts;
 
-import org.bytedeco.ffmpeg.avcodec.AVCodec;
-import org.bytedeco.ffmpeg.avcodec.AVCodecContext;
-import org.bytedeco.ffmpeg.avcodec.AVCodecParameters;
-import org.bytedeco.ffmpeg.avcodec.AVPacket;
+import org.bytedeco.ffmpeg.avcodec.*;
 import org.bytedeco.ffmpeg.avformat.AVFormatContext;
 import org.bytedeco.ffmpeg.global.avcodec;
-import org.bytedeco.javacpp.BytePointer;
 import org.bytedeco.javacpp.PointerPointer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.ByteArrayOutputStream;
 
 public class StreamContext {
 
@@ -43,9 +37,13 @@ public class StreamContext {
 
     private int codecId;
 
-    private byte[] extraData = null;
+    private AVBSFContext bsfContext = null;
 
     private boolean isInjectingExtradata = false;
+
+    private volatile boolean isOpen = false;
+
+    private final Object lock = new Object();
 
     /**
      * Returns the ID of the stream associated with this context.
@@ -132,6 +130,54 @@ public class StreamContext {
         return streamId != INVALID_STREAM_ID;
     }
 
+    private String selectBsfName(int codecId, AVFormatContext avFormatContext) {
+        boolean needsMp4Bsf = needsMp4Bsf(avFormatContext);
+        boolean isAvi = isAviContainer(avFormatContext);
+
+        // Best guess at useful BSFs. If a video format does not work, may
+        // need to add a corresponding BSF here.
+        return switch (codecId) {
+            case avcodec.AV_CODEC_ID_H264 ->
+                    needsMp4Bsf ? "h264_mp4toannexb" : "dump_extra";
+            case avcodec.AV_CODEC_ID_HEVC ->
+                    needsMp4Bsf ? "hevc_mp4toannexb" : "dump_extra";
+            case avcodec.AV_CODEC_ID_VVC ->
+                    needsMp4Bsf ? "vvc_mp4toannexb" : "dump_extra";
+            case avcodec.AV_CODEC_ID_EVC ->
+                    needsMp4Bsf ? "evc_mp4toannexb" : "dump_extra";
+            case avcodec.AV_CODEC_ID_MPEG4 ->
+                    isAvi ? "mpeg4_unpack_bframes" : "dump_extra";
+            case avcodec.AV_CODEC_ID_MPEG2VIDEO ->
+                    "dump_extra";
+            case avcodec.AV_CODEC_ID_VC1, avcodec.AV_CODEC_ID_WMV3 ->
+                    "dump_extra";
+            case avcodec.AV_CODEC_ID_MJPEG ->
+                    needsMp4Bsf ? "mjpeg2jpeg" : null;
+            case avcodec.AV_CODEC_ID_VP9 ->
+                    needsMp4Bsf ? "vp9_superframe_split" : null;
+            case avcodec.AV_CODEC_ID_AV1 ->
+                    "av1_frame_split";
+            default -> null;
+        };
+    }
+
+    private boolean isAviContainer(AVFormatContext avFormatContext) {
+        if (avFormatContext.iformat() == null) return false;
+        String name = avFormatContext.iformat().name().getString();
+        return name != null && name.equals("avi");
+    }
+
+    private boolean needsMp4Bsf(AVFormatContext avFormatContext) {
+        if (avFormatContext.iformat() == null) return false;
+        String name = avFormatContext.iformat().name().getString();
+        if (name == null) return false;
+        // All containers that use AVCC/HVCC length-prefix framing
+        return name.contains("mov")        // mp4, mov, m4a, 3gp, 3g2, mj2
+                || name.contains("matroska")   // mkv, webm
+                || name.equals("flv")          // flv, rtmp
+                || name.equals("mxf");         // professional broadcast format
+    }
+
     /**
      * Opens the codec context, and sets it up according to the {@link StreamContext#streamId}.
      * This method must be called before any packets are decoded.
@@ -139,33 +185,46 @@ public class StreamContext {
      * @throws IllegalStateException if the codec is unsupported or cannot be opened.
      */
     public void openCodecContext(AVFormatContext avFormatContext) throws IllegalStateException {
-        if (!hasStream()) return;
+        synchronized (lock) {
+            if (!isOpen) return;
+            if (!hasStream()) return;
 
-        AVCodecParameters params = avFormatContext.streams(getStreamId()).codecpar();
+            AVCodecParameters params = avFormatContext.streams(getStreamId()).codecpar();
 
-        // Get the associated codec from the ID stored in the context
-        AVCodec codec = avcodec.avcodec_find_decoder(params.codec_id());
+            // Get the associated codec from the ID stored in the context
+            AVCodec codec = avcodec.avcodec_find_decoder(params.codec_id());
 
-        if (codec == null) {
-            throw new IllegalStateException("Unsupported codec");
-        }
-
-        // Store the codec name
-        setCodecName(codec.name().getString());
-        setCodecId(codec.id());
-
-        if (isInjectingExtradata) {
-            BytePointer extra = params.extradata();
-            int extraLen = params.extradata_size();
-            if (codecId == avcodec.AV_CODEC_ID_H264) {
-                extraData = getAnnexBExtradata(extra, extraLen);
-            } else if (codecId == avcodec.AV_CODEC_ID_HEVC) {
-                extraData = getHvccAnnexBExtradata(extra, extraLen);
-            } else {
-                extraData = null;
+            if (codec == null) {
+                throw new IllegalStateException("Unsupported codec");
             }
-        } else {
-            extraData = null;
+
+            // Store the codec name
+            setCodecName(codec.name().getString());
+            setCodecId(codec.id());
+
+            if (isInjectingExtradata) {
+                String bsfName = selectBsfName(codecId, avFormatContext);
+
+                if (bsfName != null) {
+                    AVBitStreamFilter filter = avcodec.av_bsf_get_by_name(bsfName);
+                    if (filter == null) {
+                        throw new IllegalStateException("BSF not found: " + bsfName);
+                    }
+                    PointerPointer<AVBSFContext> bsfPtr = new PointerPointer<>(1);
+                    avcodec.av_bsf_alloc(filter, bsfPtr);
+                    bsfContext = bsfPtr.get(AVBSFContext.class);
+                    avcodec.avcodec_parameters_copy(bsfContext.par_in(), params);
+                    bsfContext.time_base_in(avFormatContext.streams(getStreamId()).time_base());
+                    if (avcodec.av_bsf_init(bsfContext) < 0) {
+                        throw new IllegalStateException("Failed to initialize BSF: " + bsfName);
+                    }
+                    logger.debug("Using BSF {} for codec {} (format: {})",
+                            bsfName, codecName, avFormatContext.iformat().name().getString());
+                } else {
+                    logger.debug("No BSF needed for codec {}", codecName);
+                }
+            }
+            isOpen = true;
         }
     }
 
@@ -176,134 +235,45 @@ public class StreamContext {
      * @param avPacket The packet to process
      */
     public void processPacket(AVPacket avPacket) {
-        if (getStreamId() == INVALID_STREAM_ID) return;
-        if (getDataBufferListener() == null) return;
-        if (avPacket.stream_index() != getStreamId()) return;
+        synchronized (lock) {
+            if (!isOpen) return;
+            if (getStreamId() == INVALID_STREAM_ID) return;
+            if (getDataBufferListener() == null) return;
+            if (avPacket.stream_index() != getStreamId()) return;
 
-        // Extract the data buffer from the packet
-        byte[] dataBuffer = new byte[avPacket.size()];
-        avPacket.data().get(dataBuffer);
 
-        // Prepend cached parameter sets ahead of every keyframe so late-join
-        // decoders have the VPS/SPS/PPS they need. Applies to both H.264 (SPS/PPS)
-        // and HEVC (VPS/SPS/PPS) when extradata injection is enabled.
-        if (extraData != null && (avPacket.flags() & avcodec.AV_PKT_FLAG_KEY) != 0) {
-            getDataBufferListener().onDataBuffer(new DataBufferRecord(avPacket.pts() * getStreamTimeBase(), extraData));
-        }
-        // Pass data buffer to the interested listener
-        getDataBufferListener().onDataBuffer(new DataBufferRecord(avPacket.pts() * getStreamTimeBase(), dataBuffer));
-    }
-
-    /**
-     * Converts the given H.264 extradata from AVCC format (AVCDecoderConfigurationRecord,
-     * ISO/IEC 14496-15 §5.2.4.1) to Annex B format. If the data is already in Annex B format,
-     * it is returned directly.
-     *
-     * @param extradata A BytePointer containing the codec extradata. Must not be null.
-     * @param size The size of the extradata in bytes.
-     * @return A byte array containing the Annex B formatted extradata, or {@code null} if the data
-     *         is invalid, cannot be processed, or if an error occurs during processing.
-     */
-    private byte[] getAnnexBExtradata(BytePointer extradata, int size) {
-        if (extradata == null || size < 7) return null;
-
-        byte[] data = new byte[size];
-        extradata.get(data);
-
-        // Check for Annex B start code, either 0x000001 or 0x00000001
-        if (data[0] == 0x00 && data[1] == 0x00 && (data[2] == 0x01 || (data[2] == 0x00 && data[3] == 0x01))) {
-            // Already in Annex B format, use directly
-            return data;
-        }
-
-        // Otherwise, we need to convert AVCC to Annex B format
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        int pos = 5;
-        int numSps = data[pos++] & 0x1F;
-        try {
-            for (int i = 0; i < numSps; i++) {
-                if (pos + 2 > data.length) return null;
-                int spsLen = ((data[pos++] & 0xFF) << 8) | (data[pos++] & 0xFF);
-                if (pos + spsLen > data.length) return null;
-                out.write(new byte[]{0x00, 0x00, 0x00, 0x01});
-                out.write(data, pos, spsLen);
-                pos += spsLen;
-            }
-
-            int numPps = data[pos++] & 0xFF;
-            for (int i = 0; i < numPps; i++) {
-                if (pos + 2 > data.length) return null;
-                int ppsLen = ((data[pos++] & 0xFF) << 8) | (data[pos++] & 0xFF);
-                if (pos + ppsLen > data.length) return null;
-                out.write(new byte[]{0x00, 0x00, 0x00, 0x01});
-                out.write(data, pos, ppsLen);
-                pos += ppsLen;
-            }
-        } catch (Exception e) {
-            logger.error("Error extracting SPS and PPS from AVCC extradata", e);
-        }
-        return out.toByteArray();
-    }
-
-    /**
-     * Converts HEVC extradata from HVCC format (HEVCDecoderConfigurationRecord,
-     * ISO/IEC 14496-15 §8.3.3.1.2) to Annex B format. Walks the {@code numOfArrays}
-     * table and emits every contained NAL (typically VPS=32, SPS=33, PPS=34) prefixed
-     * with the 4-byte 0x00000001 start code so that downstream pipelines can decode
-     * without out-of-band parameter sets.
-     * <p>
-     * If the data is already in Annex B format, it is returned directly.
-     *
-     * @param extradata A BytePointer containing the codec extradata. Must not be null.
-     * @param size The size of the extradata in bytes.
-     * @return A byte array containing the Annex B formatted VPS/SPS/PPS NALs, or
-     *         {@code null} if the data is invalid, too short, or cannot be parsed.
-     */
-    private byte[] getHvccAnnexBExtradata(BytePointer extradata, int size) {
-        // HVCC has a 22-byte fixed header followed by numOfArrays (1 byte),
-        // so the minimum useful size is 23 bytes.
-        if (extradata == null || size < 23) return null;
-
-        byte[] data = new byte[size];
-        extradata.get(data);
-
-        // If already Annex B, pass straight through.
-        if (data[0] == 0x00 && data[1] == 0x00 && (data[2] == 0x01 || (data[2] == 0x00 && data[3] == 0x01))) {
-            return data;
-        }
-
-        // configurationVersion must be 1 per ISO/IEC 14496-15.
-        if ((data[0] & 0xFF) != 1) {
-            logger.warn("Unsupported HVCC configurationVersion: {}", data[0] & 0xFF);
-            return null;
-        }
-
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        try {
-            int pos = 22;
-            int numOfArrays = data[pos++] & 0xFF;
-
-            for (int i = 0; i < numOfArrays; i++) {
-                if (pos + 3 > data.length) return null;
-
-                pos++;
-                int numNalus = ((data[pos++] & 0xFF) << 8) | (data[pos++] & 0xFF);
-
-                for (int j = 0; j < numNalus; j++) {
-                    if (pos + 2 > data.length) return null;
-                    int nalLen = ((data[pos++] & 0xFF) << 8) | (data[pos++] & 0xFF);
-                    if (nalLen <= 0 || pos + nalLen > data.length) return null;
-                    out.write(new byte[]{0x00, 0x00, 0x00, 0x01});
-                    out.write(data, pos, nalLen);
-                    pos += nalLen;
+            if (bsfContext != null) {
+                AVPacket filtered = avcodec.av_packet_alloc();
+                try {
+                    avcodec.av_bsf_send_packet(bsfContext, avPacket);
+                    while (avcodec.av_bsf_receive_packet(bsfContext, filtered) >= 0) {
+                        byte[] dataBuffer = new byte[filtered.size()];
+                        filtered.data().get(dataBuffer);
+                        getDataBufferListener().onDataBuffer(
+                                new DataBufferRecord(filtered.pts() * getStreamTimeBase(), dataBuffer));
+                        avcodec.av_packet_unref(filtered);
+                    }
+                } finally {
+                    avcodec.av_packet_free(filtered);
                 }
+            } else {
+                // Extract the data buffer from the packet
+                byte[] dataBuffer = new byte[avPacket.size()];
+                avPacket.data().get(dataBuffer);
+                getDataBufferListener().onDataBuffer(new DataBufferRecord(avPacket.pts() * getStreamTimeBase(), dataBuffer));
             }
-        } catch (Exception e) {
-            logger.error("Error extracting VPS/SPS/PPS from HVCC extradata", e);
-            return null;
         }
+    }
 
-        byte[] result = out.toByteArray();
-        return result.length == 0 ? null : result;
+    public void close() {
+        synchronized (lock) {
+            if (!isOpen) return;
+            isOpen = false;
+
+            if (bsfContext != null) {
+                avcodec.av_bsf_free(bsfContext);
+                bsfContext = null;
+            }
+        }
     }
 }
