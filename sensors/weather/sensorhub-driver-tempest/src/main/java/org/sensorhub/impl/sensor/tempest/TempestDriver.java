@@ -19,10 +19,8 @@ import org.sensorhub.impl.sensor.AbstractSensorModule;
 import org.sensorhub.impl.sensor.tempest.outputs.*;
 import org.vast.ogc.om.MovingFeature;
 
-import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -172,17 +170,39 @@ public class TempestDriver extends AbstractSensorModule<TempestConfig> {
         return foiUID;
     }
 
-    private void processStream(InputStream inputStream) throws IOException
+    private void processStream(InputStream inputStream)
     {
-        try (BufferedReader reader =
-                     new BufferedReader(new InputStreamReader(inputStream)))
-        {
-            String line;
-
-            while (started && (line = reader.readLine()) != null)
-            {
-                decodeMessage(line);
+        StringBuilder sb = new StringBuilder();
+        int depth = 0;
+        boolean inString = false;
+        boolean escape = false;
+        try {
+            int b;
+            while (started && (b = inputStream.read()) != -1) {
+                char c = (char) b;
+                if (escape) {
+                    escape = false;
+                } else if (c == '\\' && inString) {
+                    escape = true;
+                } else if (c == '"') {
+                    inString = !inString;
+                } else if (!inString) {
+                    if (c == '{') depth++;
+                    else if (c == '}') {
+                        depth--;
+                        if (depth == 0) {
+                            sb.append(c);
+                            decodeMessage(sb.toString().trim());
+                            sb.setLength(0);
+                            continue;
+                        }
+                    }
+                }
+                sb.append(c);
             }
+        } catch (IOException e) {
+            if (started)
+                getLogger().error("Error reading Tempest data stream", e);
         }
     }
 
