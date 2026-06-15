@@ -42,7 +42,10 @@ public interface IWaypoint
     /**
      * @return Type of waypoint (null if unknown)
      */
-    String getType();
+    default String getType()
+    {
+        return "UKN";
+    }
     
     /**
      * @return Geodetic latitude of waypoint (deg, WGS84)
@@ -57,10 +60,16 @@ public interface IWaypoint
     /**
      * @return Barometric altitude at waypoint (ft)
      */
-    double getBaroAltitude();
+    default double getBaroAltitude()
+    {
+        return Double.NaN;
+    }
     
     /**
      * @return Waypoint info (null if none provided)
      */
-    String getInfo();
+    default String getInfo()
+    {
+        return null;
+    }
 }
