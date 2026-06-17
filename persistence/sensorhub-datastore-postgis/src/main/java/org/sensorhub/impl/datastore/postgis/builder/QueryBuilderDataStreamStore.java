@@ -38,7 +38,7 @@ public class QueryBuilderDataStreamStore extends QueryBuilder {
     }
 
     public String createIndexQuery() {
-        return "CREATE INDEX IF NOT EXISTS " + this.getStoreTableName() + "_data_idx on " + this.getStoreTableName() + " USING GIN(data)";
+        return "CREATE INDEX IF NOT EXISTS " + this.getStoreTableName() + "_data_idx on " + this.getStoreTableName() + " USING GIN(data jsonb_ops)";
     }
 
     public String createUniqueIndexQuery() {
@@ -46,20 +46,18 @@ public class QueryBuilderDataStreamStore extends QueryBuilder {
                 + " USING BTREE((data->'name'), (data->'system@id'), (data->'validTime'))";
     }
 
-    public String createDateRangeIndexQuery() {
-        return "CREATE INDEX IF NOT EXISTS "+this.getStoreTableName()+"_date_range_idx ON " + this.getStoreTableName() +
-                " USING gist (int8range( " +
-                "(data->'validTime'->'begin')::bigint, " +
-                "(data->'validTime'->'end')::bigint" +
-                ") )";
+    public String createImmutubleFunctionForValidTime() {
+        return "CREATE OR REPLACE FUNCTION parse_utc_timestamp(txt text) " +
+                "RETURNS timestamp " +
+                "IMMUTABLE " +
+                "LANGUAGE sql " +
+                "AS $$ " +
+                "    SELECT (txt::timestamptz AT TIME ZONE 'UTC')::timestamp " +
+                "$$;";
     }
-
-    public String createValidTimeBeginIndexQuery() {
-        return "CREATE INDEX IF NOT EXISTS "+this.getStoreTableName()+"_date_range_begin_idx ON " + this.getStoreTableName() + " USING GIN((data->'validTime'->'begin'))";
-    }
-
-    public String createValidTimeEndIndexQuery() {
-        return "CREATE INDEX IF NOT EXISTS "+this.getStoreTableName()+"_date_range_end_idx ON " + this.getStoreTableName() + " USING GIN((data->'validTime'->'end'))";
+    public String createValidTimeIndexQuery() {
+        return "CREATE INDEX IF NOT EXISTS "+this.getStoreTableName()+"_date_range_begin_idx ON " + this.getStoreTableName() +" "+
+        "USING GIST (tsrange(parse_utc_timestamp(data->'validTime'->>'begin'),parse_utc_timestamp(data->'validTime'->>'end')))";
     }
 
     public String createTrigramExtensionQuery() {

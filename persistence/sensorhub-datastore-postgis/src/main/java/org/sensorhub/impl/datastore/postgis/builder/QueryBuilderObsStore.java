@@ -64,12 +64,20 @@ public class QueryBuilderObsStore extends QueryBuilder {
         return "CREATE INDEX IF NOT EXISTS "+this.getStoreTableName()+"_datastream_id_phenomenon_time_idx on "+this.getStoreTableName()+" ("+ DATASTREAM_ID + ", " + PHENOMENON_TIME +")";
     }
 
+    public String createPhenomenonTimeSimpleIndexQuery() {
+        return "CREATE INDEX IF NOT EXISTS "+this.getStoreTableName()+"_datastream_id_phenomenon_time_only_idx on "+this.getStoreTableName()+" (" + PHENOMENON_TIME +" ASC)";
+    }
+
     public String createResultTimeIndexQuery() {
         return "CREATE INDEX IF NOT EXISTS "+this.getStoreTableName()+"_datastream_id_result_time_idx on "+this.getStoreTableName()+" ("+ DATASTREAM_ID + ", " + RESULT_TIME +")";
     }
 
     public String createFoiIndexQuery() {
         return "CREATE INDEX IF NOT EXISTS "+this.getStoreTableName()+"_foi_idx on "+this.getStoreTableName()+" ("+ FOI_ID +")";
+    }
+
+    public String createFoiAndDatastreamIndexQuery() {
+        return "CREATE INDEX IF NOT EXISTS "+this.getStoreTableName()+"_foi_datatstream_idx on "+this.getStoreTableName()+" ("+ DATASTREAM_ID + ", " + FOI_ID +")";
     }
 
     public String insertObsQuery() {
@@ -94,16 +102,16 @@ public class QueryBuilderObsStore extends QueryBuilder {
     }
 
     public String getPhenomenonTimeRangeByDataStreamIdQuery(long dataStreamID) {
-        return "SELECT Min("+PHENOMENON_TIME+"),Max("+PHENOMENON_TIME+") FROM "+this.getStoreTableName()+" WHERE "+DATASTREAM_ID+" = "+dataStreamID;
+        return "SELECT Min("+PHENOMENON_TIME+"),Max("+PHENOMENON_TIME+") FROM "+this.getStoreTableName()+" WHERE "+DATASTREAM_ID+" = "+dataStreamID+" ";
     }
 
-    public String getPhenomenonTimeRangeByDataStreamIdsQuery() {
+    public String getPhenomenonTimeRangeByDataStreamIdsQuery(String ids) {
         return "SELECT " + DATASTREAM_ID + ", " +
                 "       MIN(" + PHENOMENON_TIME + ") AS min, " +
                 "       MAX(" + PHENOMENON_TIME + ") AS max " +
                 "FROM " + getStoreTableName() +
-                " WHERE " + DATASTREAM_ID + " = ANY (?) " +
-                "GROUP BY " + DATASTREAM_ID;
+                " WHERE " + DATASTREAM_ID + " IN ("+ ids +") " +
+                "GROUP BY " + DATASTREAM_ID+" ";
     }
 
     public String getBinCountByPhenomenontime(long seconds, List<Long> dsIds, List<Long> foiIds) {
@@ -128,16 +136,16 @@ public class QueryBuilderObsStore extends QueryBuilder {
     }
 
     public String getResultTimeRangeByDataStreamIdQuery(long dataStreamID) {
-        return "SELECT Min("+RESULT_TIME+"),Max("+RESULT_TIME+") FROM "+this.getStoreTableName()+" WHERE "+DATASTREAM_ID+" = "+dataStreamID;
+        return "SELECT Min("+RESULT_TIME+"),Max("+RESULT_TIME+") FROM "+this.getStoreTableName()+" WHERE "+DATASTREAM_ID+" = "+dataStreamID+" LIMIT 1";
     }
 
-    public String getResultTimeRangeByDataStreamIdsQuery() {
+    public String getResultTimeRangeByDataStreamIdsQuery(String ids) {
         return "SELECT " + DATASTREAM_ID + ", " +
                 "       MIN(" + RESULT_TIME + ") AS min, " +
                 "       MAX(" + RESULT_TIME + ") AS max " +
                 "FROM " + getStoreTableName() +
-                " WHERE " + DATASTREAM_ID + " = ANY (?) " +
-                "GROUP BY " + DATASTREAM_ID;
+                " WHERE " + DATASTREAM_ID + " IN ("+ ids +") " +
+                "GROUP BY " + DATASTREAM_ID+"";
     }
 
     public String countByPhenomenonTimeRangeQuery(Instant min, Instant max) {
@@ -165,6 +173,7 @@ public class QueryBuilderObsStore extends QueryBuilder {
                 .withFields(fields)
                 .withObsFilter(filter)
                 .withLimit(filter.getLimit())
+                .withOffset(0)
                 .build();
         return selectEntriesObsQuery.toQuery();
     }

@@ -10,7 +10,7 @@ import org.slf4j.LoggerFactory;
 
 public class PostgisBatchObsStoreImpl extends PostgisObsStoreImpl {
     private static final Logger logger = LoggerFactory.getLogger(PostgisBatchObsStoreImpl.class);
-    public static final int BATCH_SIZE = 10000;
+    public static final int BATCH_SIZE = 1000;
 
     public PostgisBatchObsStoreImpl(String url, String dbName, String login, String password, int idScope, IdProviderType dsIdProviderType) {
         this(url,dbName,login,password,DEFAULT_TABLE_NAME,idScope,dsIdProviderType);

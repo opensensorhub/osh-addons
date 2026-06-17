@@ -43,6 +43,7 @@ public class QueryBuilderFeatureStore extends QueryBuilderBaseFeatureStore<IFeat
                 .withFields(fields)
                 .withFeatureFilter(filter)
                 .withLimit(filter.getLimit())
+                .withOffset(0)
                 .build();
         return selectEntriesFeatureQuery.toQuery();
     }

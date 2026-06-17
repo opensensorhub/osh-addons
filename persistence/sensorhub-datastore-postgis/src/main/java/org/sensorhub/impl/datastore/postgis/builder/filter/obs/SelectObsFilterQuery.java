@@ -41,12 +41,16 @@ public class SelectObsFilterQuery extends BaseObsFilterQuery<SelectFilterQueryGe
 
     public SelectFilterQueryGenerator build(ObsFilter filter) {
         this.filterQueryGenerator = super.build(filter);
-        this.handleSorted();
+        this.handleSorted(filter.getPhenomenonTime());
         return this.filterQueryGenerator;
     }
 
-    protected void handleSorted() {
-        this.filterQueryGenerator.addOrderBy(this.tableName+".phenomenonTime ASC");
+    protected void handleSorted(TemporalFilter temporalFilter) {
+        if(temporalFilter != null) {
+            this.filterQueryGenerator.addOrderBy(this.tableName + ".phenomenonTime " + PostgisUtils.getTimeOrder(temporalFilter));
+        } else {
+            this.filterQueryGenerator.addOrderBy(this.tableName + ".phenomenonTime ASC");
+        }
     }
 
     protected void handleDataStreamFilter(DataStreamFilter dataStreamFilter) {
@@ -80,15 +84,17 @@ public class SelectObsFilterQuery extends BaseObsFilterQuery<SelectFilterQueryGe
             if (temporalFilter.isLatestTime()) {
                 filterQueryGenerator.addDistinct(this.tableName + ".datastreamid");
                 filterQueryGenerator.addOrderBy(this.tableName + ".datastreamid");
-                filterQueryGenerator.addOrderBy(this.tableName + ".phenomenonTime DESC ");
+                filterQueryGenerator.addOrderBy(this.tableName + ".phenomenonTime "+PostgisUtils.getTimeOrder(temporalFilter));
             } else {
+                String min = PostgisUtils.checkAndGetValidInstant(temporalFilter.getMin());
+                String max = PostgisUtils.checkAndGetValidInstant(temporalFilter.getMax());
                 String lowerBoundEquals = temporalFilter.getRange().lowerBoundType().equals(BoundType.OPEN) ? "":"=";
                 String upperBoundEquals = temporalFilter.getRange().upperBoundType().equals(BoundType.OPEN) ? "":"=";
                 addCondition(
-                        this.tableName+".phenomenonTime >"+lowerBoundEquals+" '"+temporalFilter.getMin()+"'"
+                        this.tableName+".phenomenonTime >"+lowerBoundEquals+" '"+min+"'"
                 );
                 addCondition(
-                        this.tableName+".phenomenonTime <"+upperBoundEquals+" '"+temporalFilter.getMax()+"'"
+                        this.tableName+".phenomenonTime <"+upperBoundEquals+" '"+max+"'"
                 );
             }
         }
@@ -99,20 +105,17 @@ public class SelectObsFilterQuery extends BaseObsFilterQuery<SelectFilterQueryGe
             if (temporalFilter.isLatestTime()) {
                 filterQueryGenerator.addDistinct(this.tableName + ".datastreamid");
                 filterQueryGenerator.addOrderBy(this.tableName + ".datastreamid");
-                filterQueryGenerator.addOrderBy(this.tableName + ".phenomenonTime DESC ");
+                filterQueryGenerator.addOrderBy(this.tableName + ".phenomenonTime "+PostgisUtils.getTimeOrder(temporalFilter));
             } else {
-//                String min = PostgisUtils.checkAndGetValidInstant(temporalFilter.getMin());
-//                String max = PostgisUtils.checkAndGetValidInstant(temporalFilter.getMax());
-//                addCondition(
-//                        "tsrange('"+min+"','"+max+"', '[]') @> "+this.tableName+".resultTime");
-//            }
+                String min = PostgisUtils.checkAndGetValidInstant(temporalFilter.getMin());
+                String max = PostgisUtils.checkAndGetValidInstant(temporalFilter.getMax());
                 String lowerBoundEquals = temporalFilter.getRange().lowerBoundType().equals(BoundType.OPEN) ? "":"=";
                 String upperBoundEquals = temporalFilter.getRange().upperBoundType().equals(BoundType.OPEN) ? "":"=";
                 addCondition(
-                        this.tableName + ".resultTime >"+lowerBoundEquals+" '" + temporalFilter.getMin() + "'"
+                        this.tableName + ".resultTime >"+lowerBoundEquals+" '" + min+ "'"
                 );
                 addCondition(
-                        this.tableName + ".resultTime <"+upperBoundEquals+" '" + temporalFilter.getMax() + "'"
+                        this.tableName + ".resultTime <"+upperBoundEquals+" '" + max + "'"
                 );
             }
         }

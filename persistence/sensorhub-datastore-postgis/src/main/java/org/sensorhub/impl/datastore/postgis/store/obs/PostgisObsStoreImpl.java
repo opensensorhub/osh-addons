@@ -16,7 +16,6 @@ package org.sensorhub.impl.datastore.postgis.store.obs;
 import com.google.common.collect.Range;
 import net.opengis.swe.v20.DataBlock;
 import org.apache.commons.text.StringSubstitutor;
-import org.postgresql.util.PGobject;
 import org.sensorhub.api.common.BigId;
 import org.sensorhub.api.data.IDataStreamInfo;
 import org.sensorhub.api.data.IObsData;
@@ -26,7 +25,6 @@ import org.sensorhub.api.datastore.obs.*;
 import org.sensorhub.api.datastore.system.ISystemDescStore;
 import org.sensorhub.impl.datastore.postgis.IdProviderType;
 import org.sensorhub.impl.datastore.postgis.builder.IteratorResultSet;
-import org.sensorhub.impl.datastore.postgis.builder.ObsIteratorResultSet;
 import org.sensorhub.impl.datastore.postgis.builder.QueryBuilderObsStore;
 import org.sensorhub.impl.datastore.postgis.store.PostgisStore;
 import org.sensorhub.impl.datastore.postgis.utils.PostgisUtils;
@@ -44,6 +42,7 @@ import java.time.format.DateTimeFormatterBuilder;
 import java.time.temporal.ChronoField;
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
@@ -51,7 +50,6 @@ import static org.sensorhub.api.datastore.obs.IObsStore.ObsField.*;
 
 public class PostgisObsStoreImpl extends PostgisStore<QueryBuilderObsStore> implements IObsStore {
     private static final Logger logger = LoggerFactory.getLogger(PostgisObsStoreImpl.class);
-    public static final int STREAM_FETCH_SIZE = 20_000;
     public static final String DEFAULT_TABLE_NAME = QueryBuilderObsStore.OBS_STORE_TABLE_NAME;
 
     protected IDataStreamStore dataStreamStore;
@@ -77,9 +75,11 @@ public class PostgisObsStoreImpl extends PostgisStore<QueryBuilderObsStore> impl
 //                        queryBuilder.createDataIndexQuery(),
                         queryBuilder.createDataStreamIndexQuery(),
                         queryBuilder.createPhenomenonTimeIndexQuery(),
+                        queryBuilder.createPhenomenonTimeSimpleIndexQuery(),
                         queryBuilder.createResultTimeIndexQuery(),
                         queryBuilder.createFoiIndexQuery(),
-                        queryBuilder.createUniqueConstraint()
+                        queryBuilder.createUniqueConstraint(),
+                        queryBuilder.createFoiAndDatastreamIndexQuery()
                 }
         );
     }
@@ -108,17 +108,15 @@ public class PostgisObsStoreImpl extends PostgisStore<QueryBuilderObsStore> impl
         }
 
         String queryStr = queryBuilder.createSelectEntriesQuery(filter, hashSet);
-        ObsIteratorResultSet<Entry<BigId, IObsData>> iteratorResultSet =
-                new ObsIteratorResultSet<>(
+        IteratorResultSet<Entry<BigId, IObsData>> iteratorResultSet =
+                new IteratorResultSet<>(
                         queryStr,
-                        queryBuilder.getStoreTableName(),
                         connectionManager,
-                        STREAM_FETCH_SIZE,
                         filter.getLimit(),
-                        (resultSet) -> resultSetToEntry(resultSet, fields),
-                        (entry) -> (filter.getValuePredicate() == null || filter.getValuePredicate().test(entry.getValue())),
-                        filter);
+                        (ResultSet resultSet) -> resultSetToEntry(resultSet, fields),
+                        (entry) -> (filter.getValuePredicate() == null || filter.getValuePredicate().test(entry.getValue())));
         return StreamSupport.stream(Spliterators.spliteratorUnknownSize(iteratorResultSet, Spliterator.ORDERED), false);
+
     }
 
     private Entry<BigId, IObsData> resultSetToEntry(ResultSet resultSet, Set<ObsField> fields) {
@@ -451,14 +449,19 @@ public class PostgisObsStoreImpl extends PostgisStore<QueryBuilderObsStore> impl
         if (dataStreamIds == null || dataStreamIds.isEmpty())
             return result;
 
-        String sql = queryBuilder.getPhenomenonTimeRangeByDataStreamIdsQuery();
+        String strIds = dataStreamIds.stream()
+                .map(id -> "'" + id + "'")
+                .collect(Collectors.joining(","));
+
+        String sql = queryBuilder.getPhenomenonTimeRangeByDataStreamIdsQuery(strIds);
 
         try (Connection conn = connectionManager.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
-            Array sqlArray = conn.createArrayOf("bigint", dataStreamIds.toArray());
-            ps.setArray(1, sqlArray);
+//            Array sqlArray = conn.createArrayOf("bigint", dataStreamIds.toArray());
+//            ps.setArray(1, sqlArray);
 
+            System.out.println(ps.toString());
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     long id = rs.getLong("datastreamID");
@@ -518,13 +521,16 @@ public class PostgisObsStoreImpl extends PostgisStore<QueryBuilderObsStore> impl
         if (dataStreamIds == null || dataStreamIds.isEmpty())
             return result;
 
-        String sql = queryBuilder.getResultTimeRangeByDataStreamIdsQuery();
+        String strIds = dataStreamIds.stream()
+                .map(id -> "'" + id + "'")
+                .collect(Collectors.joining(","));
+        String sql = queryBuilder.getResultTimeRangeByDataStreamIdsQuery(strIds);
 
         try (Connection conn = connectionManager.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
-            Array sqlArray = conn.createArrayOf("bigint", dataStreamIds.toArray());
-            ps.setArray(1, sqlArray);
+//            Array sqlArray = conn.createArrayOf("bigint", dataStreamIds.toArray());
+//            ps.setArray(1, sqlArray);
 
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {

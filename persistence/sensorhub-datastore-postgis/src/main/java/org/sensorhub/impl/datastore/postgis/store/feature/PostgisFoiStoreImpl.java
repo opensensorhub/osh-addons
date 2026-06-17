@@ -16,6 +16,7 @@ package org.sensorhub.impl.datastore.postgis.store.feature;
 
 import org.postgresql.util.PGobject;
 import org.sensorhub.api.common.BigId;
+import org.sensorhub.api.data.IObsData;
 import org.sensorhub.api.datastore.DataStoreException;
 import org.sensorhub.api.datastore.feature.FeatureKey;
 import org.sensorhub.api.datastore.feature.FoiFilter;
@@ -121,16 +122,13 @@ public class PostgisFoiStoreImpl extends
 
     public Stream<Entry<FeatureKey, IFeature>> selectEntries(FoiFilter filter, Set<IFoiStore.FoiField> fields) {
         String queryStr = queryBuilder.createSelectEntriesQuery(filter, fields);
-        FoiIteratorResultSet<Entry<FeatureKey, IFeature>> iteratorResultSet =
-                new FoiIteratorResultSet<>(
+        IteratorResultSet<Entry<FeatureKey, IFeature>> iteratorResultSet =
+                new IteratorResultSet<>(
                         queryStr,
-                        queryBuilder.getStoreTableName(),
                         connectionManager,
-                        STREAM_FETCH_SIZE,
                         filter.getLimit(),
-                        (resultSet) -> resultSetToEntry(resultSet, fields),
-                        (entry) -> (filter.getValuePredicate() == null || filter.getValuePredicate().test(entry.getValue())),
-                        filter);
+                        (ResultSet resultSet) -> resultSetToEntry(resultSet, fields),
+                        (entry) -> (filter.getValuePredicate() == null || filter.getValuePredicate().test(entry.getValue())));
         return StreamSupport.stream(Spliterators.spliteratorUnknownSize(iteratorResultSet, Spliterator.ORDERED), false);
     }
 }

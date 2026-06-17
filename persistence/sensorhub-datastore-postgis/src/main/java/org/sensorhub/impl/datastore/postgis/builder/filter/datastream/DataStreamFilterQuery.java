@@ -14,6 +14,7 @@
 
 package org.sensorhub.impl.datastore.postgis.builder.filter.datastream;
 
+import org.sensorhub.api.common.BigId;
 import org.sensorhub.api.datastore.FullTextFilter;
 import org.sensorhub.api.datastore.TemporalFilter;
 import org.sensorhub.api.datastore.obs.DataStreamFilter;
@@ -55,9 +56,18 @@ public abstract class DataStreamFilterQuery<F extends FilterQueryGenerator> exte
 
     protected void handleOutputNames(SortedSet<String> names) {
         if (names != null && !names.isEmpty()) {
-            addCondition("("+tableName+".data->>'outputName') in (" +
-                    names.stream().map(name -> "'" + name + "'").collect(Collectors.joining(",")) +
-                    ")");
+            StringBuilder query = new StringBuilder();
+            boolean first = true;
+            String op = "";
+            for(String name: names) {
+                if(first) {
+                    first = false;
+                }else {
+                    op = " OR ";
+                }
+                query.append(op).append(tableName).append(".data @> '{\"outputName\": \"").append(name).append("\"}'");
+            }
+            addCondition(query.toString());
         }
     }
 
@@ -113,9 +123,13 @@ public abstract class DataStreamFilterQuery<F extends FilterQueryGenerator> exte
                         if(uid.contains("*")) {
                             operator = "ILIKE";
                             currentId = uid.replaceAll("\\*","%");
-                        }
 
-                        sb.append("(").append(tableName).append(".data->'system@id'->>'uniqueID') "+operator+" '").append(currentId).append("'");
+                            // USE pgtrim index?
+                            sb.append("(").append(tableName).append(".data->'system@id'->>'uniqueID') "+operator+" '").append(currentId).append("'");
+                        } else {
+                            // USE GIN index
+                            sb.append("(").append(tableName).append(".data @> '{\"system@id\": {\"uniqueID\": \"").append(currentId).append("\"").append("}}'").append(")");
+                        }
                         if(++i < uniqueIds.size()) {
                             sb.append(" OR ");
                         }
@@ -126,10 +140,18 @@ public abstract class DataStreamFilterQuery<F extends FilterQueryGenerator> exte
 
                 // handle internal IDS
                 if (systemFilter.getInternalIDs() != null && !systemFilter.getInternalIDs().isEmpty()) {
-                    String sb = "(" + tableName + ".data->'system@id'->'internalID'->'id')::bigint in (" +
-                            systemFilter.getInternalIDs().stream().map(bigId -> String.valueOf(bigId.getIdAsLong())).collect(Collectors.joining(",")) +
-                            ")";
-                    addCondition(sb);
+                    StringBuilder query = new StringBuilder();
+                    boolean first = true;
+                    String op = "";
+                    for(BigId sysId: systemFilter.getInternalIDs()) {
+                        if(first) {
+                            first = false;
+                        }else {
+                            op = " OR ";
+                        }
+                        query.append(op).append(tableName).append(".data @> '{\"system@id\": {\"internalID\": {\"id\": ").append(sysId.getIdAsLong()).append("}}}'");
+                    }
+                    addCondition(query.toString());
                 }
             }
             if (systemFilter.getParentFilter() != null || systemFilter.getProcedureFilter() != null
@@ -150,7 +172,7 @@ public abstract class DataStreamFilterQuery<F extends FilterQueryGenerator> exte
     protected void handleObservedPropertiesFilter(SortedSet<String> properties) {
         if(properties != null) {
             StringBuilder sb = new StringBuilder();
-            sb.append("jsonb_path_exists(").append(tableName).append(".data, '$.** ? (");
+            sb.append(tableName).append(".data @? '$.** ? (");
             boolean first=true;
             for(String property : properties) {
                 if(!first) {
@@ -160,7 +182,7 @@ public abstract class DataStreamFilterQuery<F extends FilterQueryGenerator> exte
                 sb.append("@ == \"").append(property).append("\"");
                 first = false;
             }
-            sb.append(")')");
+            sb.append(")'");
             addCondition(sb.toString());
         }
     }
@@ -177,6 +199,5 @@ public abstract class DataStreamFilterQuery<F extends FilterQueryGenerator> exte
                 dataStreamFilter.getOutputNames() == null &&
                 dataStreamFilter.getObservedProperties() == null &&
                 (dataStreamFilter.getInternalIDs() != null && !dataStreamFilter.getInternalIDs().isEmpty()));
-
     }
 }
