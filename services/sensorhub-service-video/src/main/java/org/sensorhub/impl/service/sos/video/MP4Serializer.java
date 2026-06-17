@@ -14,7 +14,6 @@ Copyright (C) 2012-2016 Sensia Software LLC. All Rights Reserved.
 
 package org.sensorhub.impl.service.sos.video;
 
-import java.io.EOFException;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
@@ -33,8 +32,6 @@ import org.sensorhub.impl.service.sos.AbstractAsyncSerializer;
 import org.sensorhub.impl.service.sos.ISOSAsyncResultSerializer;
 import org.sensorhub.impl.service.sos.SOSServlet;
 import org.sensorhub.impl.service.swe.RecordTemplate;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.vast.data.DataBlockMixed;
 import org.vast.ows.sos.GetResultRequest;
 import org.vast.ows.sos.SOSException;
@@ -43,7 +40,6 @@ import com.google.common.collect.Sets;
 
 public class MP4Serializer extends AbstractAsyncSerializer<GetResultRequest, ObsEvent> implements ISOSAsyncResultSerializer
 {
-    private static final Logger logger = LoggerFactory.getLogger(MP4Serializer.class);
     public static String MP4_MIME_TYPE = "video/mp4";
     private static final Set<String> IMG_ARRAY_COMPONENT_NAMES = Sets.newHashSet("img", "videoFrame");
     
