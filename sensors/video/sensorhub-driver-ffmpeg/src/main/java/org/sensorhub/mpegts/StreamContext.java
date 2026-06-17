@@ -186,7 +186,7 @@ public class StreamContext {
      */
     public void openCodecContext(AVFormatContext avFormatContext) throws IllegalStateException {
         synchronized (lock) {
-            if (!isOpen) return;
+            if (isOpen) return;
             if (!hasStream()) return;
 
             AVCodecParameters params = avFormatContext.streams(getStreamId()).codecpar();
