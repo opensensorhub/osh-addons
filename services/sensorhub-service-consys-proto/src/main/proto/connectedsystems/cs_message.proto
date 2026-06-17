@@ -1,0 +1,156 @@
+// OGC Connected Systems API — Protocol Buffers message envelope
+//
+// Stable wrapper carrying any Connected Systems API resource over the wire.
+//
+// ── Field-number stability policy ────────────────────────────────────────
+//
+//   1 – 9       Envelope metadata (message_id, emitted_at, source_node,
+//               action, …). 5–9 explicitly reserved for future metadata.
+//   10 – 99     Reserved for future envelope additions — auth, routing,
+//               correlation, and a potential proto-level Batch slot if
+//               observation/command bursts justify it (v1 batches at the
+//               transport layer).
+//   100 – 115   Resource oneof — one slot per canonical CS API resource
+//               from Parts 1 & 2. Assigned in spec order at file
+//               authoring time. Subsystem rides in `system`;
+//               Subdeployment rides in `deployment` (per spec, those
+//               are relationships, not shapes).
+//   116 – 999   Reserved for future canonical CS API resources (Part-N
+//               additions). Removed types use the `reserved` keyword.
+//   1000        Extension escape hatch — google.protobuf.Any. Carries
+//               Part-N additions, profile-specific resources, downstream
+//               extensions, and otherwise-unknown resource types.
+//
+// Field numbers are wire format: never renumber, never reuse. Deprecated
+// types use the `reserved` keyword.
+
+syntax = "proto3";
+
+package georobotix.csapi;
+
+option java_package = "com.georobotix.csapi";
+option java_outer_classname = "CsMessageProto";
+option go_package = "github.com/georobotix/csapi";
+
+import "google/protobuf/any.proto";
+import "google/protobuf/timestamp.proto";
+
+import "connectedsystems/system.proto";
+import "connectedsystems/procedure.proto";
+import "connectedsystems/deployment.proto";
+import "connectedsystems/sampling_feature.proto";
+import "connectedsystems/property.proto";
+import "connectedsystems/datastream.proto";
+import "connectedsystems/controlstream.proto";
+import "connectedsystems/observation.proto";
+import "connectedsystems/command.proto";
+import "connectedsystems/command_status.proto";
+import "connectedsystems/command_result.proto";
+import "connectedsystems/system_event.proto";
+
+// Stable envelope for any Connected Systems API resource.
+//
+// The `payload` oneof carries the actual resource. Until the per-resource
+// messages land in their own follow-up commits (system.proto, datastream.proto,
+// …) the only concrete slot is the `extension` escape hatch at field 100;
+// callers wrap their resource in google.protobuf.Any in the meantime. As each
+// resource message is introduced, its slot is uncommented in the oneof block
+// below at the field number reserved for it.
+message ConnectedSystemsMessage {
+
+  // ─── Envelope metadata (1–9) ────────────────────────────────────────
+  string                    message_id = 1;  // UUID for dedup / correlation
+  google.protobuf.Timestamp emitted_at = 2;  // sender emission time
+  string                    source_node = 3; // logical node identifier
+  ResourceAction            action = 4;      // optional; UNSPECIFIED if the
+                                             // transport conveys intent
+
+  reserved 5 to 99;  // 5–9: future envelope metadata; 10–99: future
+                     // envelope/oneof additions (auth, routing,
+                     // correlation, Batch slot, …).
+
+  // ─── Resource payload (100–115 canonical, 116–999 reserved) ─────────
+  //
+  // Slot assignments (commented entries land in dedicated follow-up commits):
+  //
+  //   Part 1 — Feature Resources
+  //     100  System            system              (also carries Subsystem)
+  //     101  Procedure         procedure
+  //     102  Deployment        deployment          (also carries Subdeployment)
+  //     103  SamplingFeature   sampling_feature
+  //     104  Property          property
+  //
+  //   Part 2 — Dynamic Data Resources
+  //     105  DataStream        data_stream
+  //     106  ControlStream     control_stream
+  //     107  Observation       observation
+  //     108  Command           command
+  //     109  CommandStatus     command_status
+  //     110  CommandResult     command_result
+  //     111  Feasibility       feasibility
+  //     112  FeasibilityStatus feasibility_status
+  //     113  FeasibilityResult feasibility_result
+  //     114  SystemEvent       system_event
+  //     115  SystemHistory     system_history
+  //
+  // 116–999 are reserved at the message level (below the oneof) for
+  // future canonical CS API resources.
+  oneof payload {
+
+    // ─── Part 1 — Feature Resources ──────────────────────────────
+    // Subsystem rides in `system` (per spec, a Subsystem IS a System;
+    // the parent-child relationship rides through System.links).
+    // Subdeployment rides in `deployment` the same way.
+    System          system           = 100;
+    Procedure       procedure        = 101;
+    Deployment      deployment       = 102;
+    SamplingFeature sampling_feature = 103;
+    Property        property         = 104;
+
+    // ─── Part 2 — Dynamic Data Resources ─────────────────────────
+    DataStream    data_stream    = 105;
+    ControlStream control_stream = 106;
+    Observation   observation    = 107;
+    Command       command        = 108;
+    CommandStatus command_status = 109;
+    CommandResult command_result = 110;
+
+    // Feasibility / FeasibilityStatus / FeasibilityResult reuse the
+    // Command / CommandStatus / CommandResult shapes per spec
+    // ("a Feasibility resource is a Command resource…"). The slot
+    // discriminates intent; receivers know feasibility-vs-command
+    // from which oneof case is set.
+    Command       feasibility        = 111;
+    CommandStatus feasibility_status = 112;
+    CommandResult feasibility_result = 113;
+
+    SystemEvent system_event = 114;
+
+    // SystemHistory reuses System per spec — a historical revision is
+    // a System with a distinguishing validTime. The slot discriminates
+    // "snapshot" from "current".
+    System system_history = 115;
+
+    // ─── Extension escape hatch ──────────────────────────────────
+    // Wraps any resource type not (yet) modeled by a dedicated slot
+    // above. type_url identifies the inner message; consumers that do
+    // not recognize it may skip or forward opaquely.
+    google.protobuf.Any extension = 1000;
+  }
+
+  reserved 116 to 999;
+}
+
+// CRUD-style verb for the resource carried in a ConnectedSystemsMessage.
+//
+// UNSPECIFIED is the wire default and means "the action is conveyed by the
+// transport layer" (HTTP method, MQTT topic suffix, gRPC method name, …).
+// Encoders SHOULD set a concrete value when the transport cannot carry the
+// verb (file replay, pub/sub bridges that strip headers, archival storage).
+enum ResourceAction {
+  RESOURCE_ACTION_UNSPECIFIED = 0;
+  RESOURCE_ACTION_CREATE      = 1;
+  RESOURCE_ACTION_REPLACE     = 2;
+  RESOURCE_ACTION_UPDATE      = 3;
+  RESOURCE_ACTION_DELETE      = 4;
+}
