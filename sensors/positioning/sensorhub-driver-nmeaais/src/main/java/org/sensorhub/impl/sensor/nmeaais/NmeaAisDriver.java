@@ -17,14 +17,15 @@ import dk.dma.ais.reader.AisReader;
 import dk.dma.ais.reader.AisReaders;
 import org.sensorhub.api.comm.ICommProvider;
 import org.sensorhub.api.common.SensorHubException;
+import org.vast.ogc.gml.IFeature;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
+import org.sensorhub.impl.sensor.nmeaais.helpers.AisCodeHelper;
 import org.sensorhub.impl.sensor.nmeaais.outputs.NmeaAisOutputAidNavigation;
 import org.sensorhub.impl.sensor.nmeaais.outputs.NmeaAisOutputBaseStation;
 import org.sensorhub.impl.sensor.nmeaais.outputs.NmeaAisOutputRawMessages;
-import org.sensorhub.impl.sensor.nmeaais.outputs.NmeaAisOutputPositionClassA;
-import org.sensorhub.impl.sensor.nmeaais.outputs.NmeaAisOutputPositionClassB;
-import org.sensorhub.impl.sensor.nmeaais.outputs.NmeaAisOutputStaticDataClassB;
-import org.sensorhub.impl.sensor.nmeaais.outputs.NmeaAisOutputStaticVoyage;
+import org.sensorhub.impl.sensor.nmeaais.outputs.NmeaAisOutputVesselLocation;
+import org.sensorhub.impl.sensor.nmeaais.outputs.NmeaAisOutputVoyageInfo;
+import org.vast.ogc.gml.GenericFeatureImpl;
 import org.vast.ogc.om.MovingFeature;
 
 import java.io.IOException;
@@ -33,68 +34,60 @@ import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
 
 /**
- * Driver implementation for the sensor.
+ * Driver implementation for the NMEA AIS sensor.
  * <p>
- * This class is responsible for providing sensor information, managing output registration,
- * and performing initialization and shutdown for the driver and its outputs.
+ * Outputs are organized by semantic concern:
+ * - Vessel Location (types 1/2/3/18/19) — dynamic position
+ * - Voyage Info (type 5) — voyage-specific data
+ * - Aid to Navigation (type 21) — navigation aids
+ * - Base Station (types 4/11) — shore infrastructure
+ * - Raw Messages (all) — raw NMEA sentences
+ * <p>
+ * Static vessel identity (name, callsign, ship type, dimensions, IMO, etc.) is stored
+ * as properties on the vessel FOI. Navigational status is streamed in the vesselLocation output.
  */
 public class NmeaAisDriver extends AbstractSensorModule<NmeaAisConfig> {
     static final String UID_PREFIX = "urn:osh:sensor:nmea:ais:";
     static final String XML_PREFIX = "nmea:ais:";
 
-    // GLOBAL VARIABLES FOR SENSOR OPERATION
     NmeaAisHandler nmeaAisHandler;
-    NmeaAisOutputRawMessages nmeaAisOutputRawMessages;
-    NmeaAisOutputPositionClassA nmeaAisOutputPositionClassA;
-    NmeaAisOutputPositionClassB nmeaAisOutputPositionClassB;
-    NmeaAisOutputBaseStation nmeaAisOutputBaseStation;
-    NmeaAisOutputStaticVoyage nmeaAisOutputStaticVoyage;
-    NmeaAisOutputStaticDataClassB nmeaAisOutputStaticDataClassB;
-    NmeaAisOutputAidNavigation nmeaAisOutputAidNavigation;
+    NmeaAisOutputRawMessages    nmeaAisOutputRawMessages;
+    NmeaAisOutputVesselLocation nmeaAisOutputVesselLocation;
+    NmeaAisOutputVoyageInfo     nmeaAisOutputVoyageInfo;
+    NmeaAisOutputBaseStation    nmeaAisOutputBaseStation;
+    NmeaAisOutputAidNavigation  nmeaAisOutputAidNavigation;
 
     ICommProvider<?> commProvider;
     AisReader aisReader;
     volatile boolean started;
 
-    //  INITIALIZE
     @Override
     public void doInit() throws SensorHubException {
         super.doInit();
 
-        // Create SensorHub Identifiers using designated prefix and serial number from Admin Panel
         generateUniqueID(UID_PREFIX, config.serialNumber);
         generateXmlID(XML_PREFIX, config.serialNumber);
 
-        // INITIALIZE OUTPUT
         nmeaAisOutputRawMessages = new NmeaAisOutputRawMessages(this);
         addOutput(nmeaAisOutputRawMessages, false);
         nmeaAisOutputRawMessages.doInit();
 
-        nmeaAisOutputPositionClassA = new NmeaAisOutputPositionClassA(this);
-        addOutput(nmeaAisOutputPositionClassA, false);
-        nmeaAisOutputPositionClassA.doInit();
+        nmeaAisOutputVesselLocation = new NmeaAisOutputVesselLocation(this);
+        addOutput(nmeaAisOutputVesselLocation, false);
+        nmeaAisOutputVesselLocation.doInit();
 
-        nmeaAisOutputPositionClassB = new NmeaAisOutputPositionClassB(this);
-        addOutput(nmeaAisOutputPositionClassB, false);
-        nmeaAisOutputPositionClassB.doInit();
+        nmeaAisOutputVoyageInfo = new NmeaAisOutputVoyageInfo(this);
+        addOutput(nmeaAisOutputVoyageInfo, false);
+        nmeaAisOutputVoyageInfo.doInit();
 
         nmeaAisOutputBaseStation = new NmeaAisOutputBaseStation(this);
         addOutput(nmeaAisOutputBaseStation, false);
         nmeaAisOutputBaseStation.doInit();
 
-        nmeaAisOutputStaticVoyage = new NmeaAisOutputStaticVoyage(this);
-        addOutput(nmeaAisOutputStaticVoyage, false);
-        nmeaAisOutputStaticVoyage.doInit();
-
-        nmeaAisOutputStaticDataClassB = new NmeaAisOutputStaticDataClassB(this);
-        addOutput(nmeaAisOutputStaticDataClassB, false);
-        nmeaAisOutputStaticDataClassB.doInit();
-
         nmeaAisOutputAidNavigation = new NmeaAisOutputAidNavigation(this);
         addOutput(nmeaAisOutputAidNavigation, false);
         nmeaAisOutputAidNavigation.doInit();
 
-        // Initialize Handler
         nmeaAisHandler = new NmeaAisHandler(this);
     }
 
@@ -102,7 +95,6 @@ public class NmeaAisDriver extends AbstractSensorModule<NmeaAisConfig> {
     public void doStart() throws SensorHubException {
         super.doStart();
 
-        // Init comm provider — recreated here so it picks up any config changes made via the UI
         if (commProvider == null) {
             if (config.commSettings == null)
                 throw new SensorHubException("No communication settings specified");
@@ -124,10 +116,6 @@ public class NmeaAisDriver extends AbstractSensorModule<NmeaAisConfig> {
             throw new SensorHubException("Error opening AIS input stream", e);
         }
 
-        // DatagramInputStream only overrides the single-byte read(), so BufferedReader
-        // (used internally by AisReader) would buffer ~8192 bytes before returning any
-        // lines (~100 UDP packets). Work around this by reading byte-by-byte and piping
-        // complete lines to AisReader so it still handles fragment reassembly.
         PipedInputStream pipedIn;
         final PipedOutputStream pipedOut;
         try {
@@ -198,21 +186,112 @@ public class NmeaAisDriver extends AbstractSensorModule<NmeaAisConfig> {
         return commProvider != null;
     }
 
-    /**
-     * Registers an AIS vessel as a Feature of Interest (FOI) keyed by its MMSI.
-     * Subsequent calls with the same MMSI are no-ops; the existing FOI UID is returned.
-     */
-    public String addFoi(String mmsi) {
-        String foiUID = UID_PREFIX + "foi:" + mmsi;
+    // -------------------------------------------------------------------------
+    // FOI management
+    // -------------------------------------------------------------------------
 
+    /**
+     * Registers a moving vessel FOI keyed by MMSI. Subsequent calls with the
+     * same MMSI are no-ops; the existing FOI UID is returned.
+     */
+    public String addVesselFoi(String mmsi) {
+        String foiUID = UID_PREFIX + "foi:vessel:" + mmsi;
         if (!foiMap.containsKey(foiUID)) {
             MovingFeature foi = new MovingFeature();
             foi.setId(mmsi);
             foi.setUniqueIdentifier(foiUID);
-            foi.setName("Vessel " + mmsi);
             foi.setDescription("AIS vessel with MMSI " + mmsi);
             addFoi(foi);
             getLogger().debug("New AIS vessel added as FOI: {}", foiUID);
+        }
+        return foiUID;
+    }
+
+    /**
+     * Registers a fixed Aid-to-Navigation FOI keyed by MMSI.
+     * Subsequent calls with the same MMSI are no-ops.
+     */
+    public String addAtonFoi(String mmsi) {
+        String foiUID = UID_PREFIX + "foi:aton:" + mmsi;
+        if (!foiMap.containsKey(foiUID)) {
+            GenericFeatureImpl foi = new GenericFeatureImpl("http://www.opengis.net/ont/ais/AidToNavigation");
+            foi.setId("aton_" + mmsi);
+            foi.setUniqueIdentifier(foiUID);
+            foi.setName("AtoN " + mmsi);
+            foi.setDescription("AIS Aid-to-Navigation with MMSI " + mmsi);
+            addFoi(foi);
+            getLogger().debug("New AtoN added as FOI: {}", foiUID);
+        }
+        return foiUID;
+    }
+
+    /**
+     * Registers a fixed Base Station FOI keyed by MMSI.
+     * Subsequent calls with the same MMSI are no-ops.
+     */
+    public String addStationFoi(String mmsi) {
+        String foiUID = UID_PREFIX + "foi:station:" + mmsi;
+        if (!foiMap.containsKey(foiUID)) {
+            GenericFeatureImpl foi = new GenericFeatureImpl("http://www.opengis.net/ont/ais/BaseStation");
+            foi.setId("station_" + mmsi);
+            foi.setUniqueIdentifier(foiUID);
+            foi.setName("Base Station " + mmsi);
+            foi.setDescription("AIS Base Station with MMSI " + mmsi);
+            addFoi(foi);
+            getLogger().debug("New AIS base station added as FOI: {}", foiUID);
+        }
+        return foiUID;
+    }
+
+    /**
+     * Creates or updates a vessel FOI with static identity properties received
+     * from AIS message types 5, 19, or 24. Only non-null / non-zero values
+     * overwrite existing properties so properties accumulate across message types.
+     *
+     * @return FOI UID
+     */
+    public String updateFoiStaticData(String mmsi, String name, String callSign,
+            int shipType, long imoNumber, int aisVersion, String vendorId,
+            String epfd, boolean dte,
+            int dimBow, int dimStern, int dimPort, int dimStarboard) {
+
+        // add foiUID if it exists, otherwise, just return uid
+        String foiUID = addVesselFoi(mmsi);
+
+        synchronized (foiMap) {
+            IFeature feature = foiMap.get(foiUID);
+            if (!(feature instanceof MovingFeature foi)) return foiUID;
+
+            if (name != null && !name.isBlank()) {
+                foi.setName(name);
+                foi.setProperty("vesselName", name);
+            }
+            if (callSign != null && !callSign.isBlank())
+                foi.setProperty("callSign", callSign.trim());
+            if (shipType != 0) {
+                foi.setProperty("shipType", AisCodeHelper.ShipType.getDescription(shipType));
+                foi.setProperty("shipTypeCode", String.valueOf(shipType));
+            }
+            if (imoNumber != 0)
+                foi.setProperty("imoNumber", String.valueOf(imoNumber));
+            if (aisVersion != 0)
+                foi.setProperty("aisVersion", String.valueOf(aisVersion));
+            if (vendorId != null && !vendorId.isBlank())
+                foi.setProperty("vendorId", vendorId.trim());
+            if (epfd != null && !epfd.isBlank())
+                foi.setProperty("epfd", epfd);
+            foi.setProperty("dte", String.valueOf(dte));
+            if (dimBow != 0)
+                foi.setProperty("dimBow", String.valueOf(dimBow) + " m");
+            if (dimStern != 0)
+                foi.setProperty("dimStern", String.valueOf(dimStern) + " m");
+            if (dimPort != 0)
+                foi.setProperty("dimPort", String.valueOf(dimPort) + " m");
+            if (dimStarboard != 0)
+                foi.setProperty("dimStarboard", String.valueOf(dimStarboard) + " m");
+
+            // Re-register to propagate property changes to the system registry
+            addFoi(foi);
         }
 
         return foiUID;
@@ -224,7 +303,4 @@ public class NmeaAisDriver extends AbstractSensorModule<NmeaAisConfig> {
     void publishRawMessage(String nmeaAisMsg) {
         nmeaAisOutputRawMessages.setData(nmeaAisMsg);
     }
-
-
-
 }

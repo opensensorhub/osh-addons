@@ -116,7 +116,7 @@ public class NmeaAisOutputBaseStation extends VarRateSensorOutput<NmeaAisDriver>
             dataBlock.setStringValue(9, AisCodeHelper.EpfdType.getDescription(report.getPosType()));
             dataBlock.setBooleanValue(10, report.getRaim()==1);
 
-            String foiUID = parentSensor.addFoi(String.valueOf(report.getUserId()));
+            String foiUID = parentSensor.addStationFoi(String.valueOf(report.getUserId()));
 
             latestRecord = dataBlock;
             latestRecordTime = System.currentTimeMillis();

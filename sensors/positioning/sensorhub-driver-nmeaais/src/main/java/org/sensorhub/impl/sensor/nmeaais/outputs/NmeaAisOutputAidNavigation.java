@@ -27,6 +27,24 @@ import org.vast.swe.SWEBuilders;
 import org.vast.swe.SWEHelper;
 import org.vast.swe.helper.GeoPosHelper;
 
+/**
+ * Output for AIS type 21 — Aid-to-Navigation Report.
+ *
+ * Flat DataBlock index map:
+ *   0  samplingTime          1  messageId             2  reportDescription
+ *   3  repeat                4  mmsi                  5  typeOfAidsToNav
+ *   6  name
+ *   7  positionAccuracy (boolean)
+ *   8  latitude  (lat slot of location vector)
+ *   9  longitude (lon slot of location vector)
+ *   10 dimensions.dimBow     (nested DataRecord sub-slot +0)
+ *   11 dimensions.dimStern   (nested DataRecord sub-slot +1)
+ *   12 dimensions.dimPort    (nested DataRecord sub-slot +2)
+ *   13 dimensions.dimStarboard (nested DataRecord sub-slot +3)
+ *   14 epfd                  15 utcSecond
+ *   16 offPositionIndicator  17 raim (boolean)
+ *   18 virtualAid (boolean)  19 assignedMode
+ */
 public class NmeaAisOutputAidNavigation extends VarRateSensorOutput<NmeaAisDriver> implements NmeaAisReportInterface<AisMessage21> {
     private DataRecord aisReportRecord;
     private DataEncoding dataEncoding;
@@ -42,21 +60,6 @@ public class NmeaAisOutputAidNavigation extends VarRateSensorOutput<NmeaAisDrive
         super(OUTPUT_NAME, nmeaAisDriver, 1.0);
     }
 
-    /**
-     * Initializes the data structure for the output.
-     *
-     * Flat index map:
-     *   0  = samplingTime         1  = messageId             2  = reportDescription
-     *   3  = repeat               4  = mmsi                  5  = typeOfAidsToNav
-     *   6  = name
-     *   7  = positionAccuracy (boolean)
-     *   8  = latitude  (lat component of location vector)
-     *   9  = longitude (lon component of location vector)
-     *   10 = dimBow               11 = dimStern              12 = dimPort
-     *   13 = dimStarboard         14 = epfd                  15 = utcSecond
-     *   16 = offPositionIndicator 17 = raim (boolean)
-     *   18 = virtualAid (boolean) 19 = assignedMode
-     */
     public void doInit() {
         GeoPosHelper geoFac = new GeoPosHelper();
         NmeaAisHelper fac = new NmeaAisHelper();
@@ -66,7 +69,7 @@ public class NmeaAisOutputAidNavigation extends VarRateSensorOutput<NmeaAisDrive
                 .label(OUTPUT_LABEL)
                 .description(OUTPUT_DESCRIPTION)
                 .definition(OUTPUT_DEFINITION)
-                .addField("samplingTime",fac.createTime()
+                .addField("samplingTime", fac.createTime()
                         .asSamplingTimeIsoUTC()
                         .label("Sample Time")
                         .description("Time data was received")
@@ -77,35 +80,16 @@ public class NmeaAisOutputAidNavigation extends VarRateSensorOutput<NmeaAisDrive
                 .addField("mmsi", fac.createMssi())
                 .addField("typeOfAidsToNav", fac.createText()
                         .label("Type of Aid-to-Nav")
-                        .description("Type of Aid to Navigation based on IALA Maritime Buyage System")
+                        .description("Type of Aid to Navigation based on IALA Maritime Buoyage System")
                         .definition(SWEHelper.getPropertyUri("TypeOfAidsToNav")))
                 .addField("name", fac.createText()
                         .label("Name of Aid-to-Nav")
-                        .description("Maximum 20 characters; padded with spaces")
+                        .description("Maximum 20 characters; '@' padding stripped")
                         .definition(SWEHelper.getPropertyUri("AidToNavName")))
                 .addField("positionAccuracy", fac.createPositionAccuracy())
                 .addField("location", geoFac.createLocationVectorLatLon()
                         .label("Location"))
-                .addField("dimBow", fac.createQuantity()
-                        .label("Dimension to Bow from AtoN Position")
-                        .description("Size of the aid-to-navigation, bow to GPS antenna in metres; 0 = not available = default")
-                        .uom("m")
-                        .definition(SWEHelper.getPropertyUri("AtoNDimBow")))
-                .addField("dimStern", fac.createQuantity()
-                        .label("Dimension to Ster from AtoN Positionn")
-                        .description("Size of the aid-to-navigation, GPS antenna to stern in metres; 0 = not available = default")
-                        .uom("m")
-                        .definition(SWEHelper.getPropertyUri("AtoNDimStern")))
-                .addField("dimPort", fac.createQuantity()
-                        .label("Dimension to Port from AtoN Position")
-                        .description("Size of the aid-to-navigation, GPS antenna to port side in metres; 0 = not available = default")
-                        .uom("m")
-                        .definition(SWEHelper.getPropertyUri("AtoNDimPort")))
-                .addField("dimStarboard", fac.createQuantity()
-                        .label("Dimension to Starboard from AtoN Position")
-                        .description("Size of the aid-to-navigation, GPS antenna to starboard side in metres; 0 = not available = default")
-                        .uom("m")
-                        .definition(SWEHelper.getPropertyUri("AtoNDimStarboard")))
+                .addField("dimensions", fac.createDimensions())
                 .addField("epfd", fac.createEpfd())
                 .addField("utcSecond", fac.createUtcSecond())
                 .addField("offPositionIndicator", fac.createOffPositionIndicator())
@@ -122,30 +106,31 @@ public class NmeaAisOutputAidNavigation extends VarRateSensorOutput<NmeaAisDrive
         synchronized (processingLock) {
             DataBlock dataBlock = latestRecord == null ? aisReportRecord.createDataBlock() : latestRecord.renew();
 
-            dataBlock.setDoubleValue(0, System.currentTimeMillis() / 1000d);
-            dataBlock.setIntValue(1,  report.getMsgId());
-            dataBlock.setStringValue(2, AisCodeHelper.MessageType.getDescription(report.getMsgId()));
-            dataBlock.setIntValue(3,  report.getRepeat());
+            dataBlock.setDoubleValue(0,  System.currentTimeMillis() / 1000d);
+            dataBlock.setIntValue(1,     report.getMsgId());
+            dataBlock.setStringValue(2,  AisCodeHelper.MessageType.getDescription(report.getMsgId()));
+            dataBlock.setIntValue(3,     report.getRepeat());
             dataBlock.setStringValue(4,  String.valueOf(report.getUserId()));
-            dataBlock.setStringValue(5, AisCodeHelper.AtoNType.getDescription(report.getAtonType()));
-            dataBlock.setStringValue(6, AisCodeHelper.cleanVesselName(report.getName()));
+            dataBlock.setStringValue(5,  AisCodeHelper.AtoNType.getDescription(report.getAtonType()));
+            dataBlock.setStringValue(6,  AisCodeHelper.cleanVesselName(report.getName()));
             dataBlock.setBooleanValue(7, report.getPosAcc() == 1);
             dataBlock.setDoubleValue(8,  report.getPos().getLatitudeDouble());
             dataBlock.setDoubleValue(9,  report.getPos().getLongitudeDouble());
-            dataBlock.setIntValue(10,  report.getDimBow());
-            dataBlock.setIntValue(11, report.getDimStern());
-            dataBlock.setIntValue(12, report.getDimPort());
-            dataBlock.setIntValue(13, report.getDimStarboard());
+            // Nested dimensions record — sub-slots at indices 10–13
+            dataBlock.setIntValue(10,    report.getDimBow());
+            dataBlock.setIntValue(11,    report.getDimStern());
+            dataBlock.setIntValue(12,    report.getDimPort());
+            dataBlock.setIntValue(13,    report.getDimStarboard());
             dataBlock.setStringValue(14, AisCodeHelper.EpfdType.getDescription(report.getPosType()));
-            dataBlock.setIntValue(15, report.getUtcSec());
+            dataBlock.setIntValue(15,    report.getUtcSec());
             dataBlock.setStringValue(16, report.getUtcSec() >= 60
                     ? "N/A"
                     : AisCodeHelper.OffPositionIndicator.getDescription(report.getOffPosition()));
-            dataBlock.setBooleanValue(17, report.getRaim()==1);
+            dataBlock.setBooleanValue(17, report.getRaim() == 1);
             dataBlock.setBooleanValue(18, report.getVirtual() == 1);
             dataBlock.setStringValue(19, AisCodeHelper.AssignedMode.getDescription(report.getAssigned()));
 
-            String foiUID = parentSensor.addFoi(String.valueOf(report.getUserId()));
+            String foiUID = parentSensor.addAtonFoi(String.valueOf(report.getUserId()));
 
             latestRecord = dataBlock;
             latestRecordTime = System.currentTimeMillis();

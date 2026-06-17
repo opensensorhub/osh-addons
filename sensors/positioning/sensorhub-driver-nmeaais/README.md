@@ -78,85 +78,76 @@ Click **Start**. The driver connects to the UDP socket, reads incoming sentences
 
 ## Outputs
 
-The driver registers **7 outputs**. Each output creates a Feature of Interest (FOI) keyed by MMSI the first time a vessel is seen.
+The driver registers **5 outputs**. Each output creates or updates a Feature of Interest (FOI) keyed by MMSI the first time a vessel or station is seen.
 
-### 1. NMEA AIS Messages (`nmeaAisOutputRawMessages`)
+Static vessel identity data (name, callsign, ship type, dimensions, IMO number, etc.) received from message types 5, 19, and 24 is written as properties on the vessel FOI rather than streamed. Dynamic data — including navigational status — is always streamed through the appropriate output.
 
-Publishes every raw sentence as received — before decoding. Useful for logging, replay, and debugging.
+---
+
+### 1. Raw NMEA AIS Messages (`nmeaAisOutputRawMessages`)
+
+Publishes every received sentence as-is, before decoding. Useful for logging, replay, and debugging.
 
 | Field | Type | Description |
 |-------|------|-------------|
 | sampleTime | Time | System time sentence was received |
-| sentenceType | Text | e.g. `!AIVDM` |
-| fragmentCount | Integer | Total fragments in message |
+| sentenceType | Text | e.g. `!AIVDM` or `!AIVDO` |
+| fragmentCount | Integer | Total fragments in this message |
 | fragmentNumber | Integer | This fragment's index |
 | sequentialId | Text | Multi-part link ID |
 | channel | Text | `A` or `B` |
 | frequency | Double (MHz) | 161.975 (A) or 162.025 (B) |
-| rawPayload | Text | Encoded AIS payload |
+| rawPayload | Text | 6-bit ASCII-armored AIS payload |
 | fillBits | Integer | Padding bit count |
-| checkSum | Text | NMEA checksum |
+| checkSum | Text | NMEA XOR checksum |
 
 ---
 
-### 2. Position Report Class A (`nmeaAisOutputPositionClassA`)
+### 2. Vessel Location (`vesselLocation`)
 
-Decoded Class A shipborne position reports. Published for message types **1**, **2**, and **3** — all three carry an identical field layout.
+Unified position output for **all vessel position reports**: types **1**, **2**, **3** (Class A) and **18**, **19** (Class B). The `rot`, `roti`, `smi`, and `navStatus` fields are Class A only; Class B records carry `0` or `""` for those fields.
+
+Type 19 additionally triggers a FOI update with the vessel's static identity data.
 
 | Field | Type | Description |
 |-------|------|-------------|
-| messageId | Integer | 1 = Scheduled, 2 = Assigned, 3 = Interrogation response |
-| reportDescription | Text | Human-readable type description |
+| samplingTime | Time | System time data was received |
+| messageId | Integer | 1/2/3 = Class A; 18 = Class B Standard; 19 = Class B Extended |
+| reportDescription | Text | Human-readable message type description |
 | repeat | Integer | Repeat indicator (0–3) |
-| mmsi | Integer | Maritime Mobile Service Identity |
-| navStatus | Integer | Navigational status (0 = underway, 1 = at anchor, etc.) |
-| rot | Integer | Rate of turn (–128 to +127; –128 = not available) |
-| sog | Double (kn) | Speed over ground |
-| positionAccuracy | Integer | 1 = high (≤10 m), 0 = low |
+| mmsi | Text | Maritime Mobile Service Identity |
+| sog | Double (kn) | Speed over ground (0–102.2 kn; 102.3 = not available) |
+| positionAccuracy | Boolean | `true` = high (≤10 m); `false` = low (>10 m) |
 | location | Lat/Lon | Position in decimal degrees |
-| cog | Double (°) | Course over ground |
-| heading | Integer (°) | True heading (511 = not available) |
-| timeStamp | Time | UTC second of fix |
-| smi | Integer | Special manoeuvre indicator |
-| raim | Integer | RAIM flag |
-| commState | Integer | Communication state |
+| cog | Double (°) | Course over ground (0–359.9; 360 = not available) |
+| heading | Integer (°) | True heading (0–359; 511 = not available) |
+| utcSecond | Integer | UTC second of fix (0–59; 60 = not available; 61/62/63 = status codes) |
+| raim | Boolean | `true` = RAIM in use |
+| rot | Double (°/min) | Rate of turn *(Class A only; 0.0 for Class B)* |
+| roti | Text | Rate-of-turn indicator *(Class A only; "" for Class B)* |
+| smi | Text | Special Maneuver Indicator *(Class A only; "" for Class B)* |
+| navStatus | Text | Navigational status e.g. "Under way using engine" *(Class A only; "" for Class B)* |
 
 ---
 
-### 3. Position Report Class B (`nmeaAisOutputPositionClassB`)
+### 3. Voyage Info (`voyageInfo`)
 
-Decoded Class B position reports. Handles both **type 18** (Standard CS) and **type 19** (Extended CS). Type 19 additionally carries vessel name, ship type, and dimensions; those fields are empty/zero for type 18 records.
+Voyage-specific data from Class A vessels. Published for message **type 5** (two-part). The AIS library assembles both fragments before this output is updated. Static vessel identity fields from the same message (name, callsign, ship type, dimensions, IMO, AIS version, EPFD) are written to the FOI instead of being streamed here.
 
 | Field | Type | Description |
 |-------|------|-------------|
-| messageId | Integer | 18 = Standard, 19 = Extended |
-| reportDescription | Text | Human-readable type description |
-| repeat | Integer | Repeat indicator |
-| mmsi | Integer | MMSI |
-| sog | Double (kn) | Speed over ground |
-| positionAccuracy | Integer | 1 = high, 0 = low |
-| location | Lat/Lon | Position in decimal degrees |
-| cog | Double (°) | Course over ground |
-| heading | Integer (°) | True heading (511 = not available) |
-| timeStamp | Time | UTC second of fix |
-| unitFlag | Integer | 0 = SOTDMA unit, 1 = CS unit *(type 18 only)* |
-| displayFlag | Integer | Display capability *(type 18 only)* |
-| dscFlag | Integer | DSC capability *(type 18 only)* |
-| bandFlag | Integer | Band capability *(type 18 only)* |
-| message22Flag | Integer | Frequency management flag *(type 18 only)* |
-| modeFlag | Integer | 0 = autonomous, 1 = assigned |
-| raim | Integer | RAIM flag |
-| commStateFlag | Integer | SOTDMA/ITDMA selector *(type 18 only)* |
-| commState | Integer | Communication state *(type 18 only)* |
-| name | Text | Vessel name *(type 19 only; empty for type 18)* |
-| shipType | Integer | Ship type code *(type 19 only)* |
-| dimBow | Integer (m) | GPS antenna to bow *(type 19 only)* |
-| dimStern | Integer (m) | GPS antenna to stern *(type 19 only)* |
-| dimPort | Integer (m) | GPS antenna to port *(type 19 only)* |
-| dimStarboard | Integer (m) | GPS antenna to starboard *(type 19 only)* |
-| epfd | Integer | EPFD type *(type 19 only)* |
-| dte | Integer | Data terminal equipment *(type 19 only)* |
-| assignedMode | Integer | Assigned mode flag *(type 19 only)* |
+| samplingTime | Time | System time data was received |
+| messageId | Integer | Always 5 |
+| reportDescription | Text | Human-readable message type description |
+| repeat | Integer | Repeat indicator (0–3) |
+| mmsi | Text | MMSI |
+| destination | Text | Destination port (max 20 chars; "@" padding stripped) |
+| etaMonth | Integer | ETA month (1–12; 0 = not available) |
+| etaDay | Integer | ETA day (1–31; 0 = not available) |
+| etaHour | Integer | ETA hour (0–23; 24 = not available) |
+| etaMinute | Integer | ETA minute (0–59; 60 = not available) |
+| draught | Double (m) | Maximum present static draught (0 = not available) |
+| dte | Boolean | `true` = data terminal equipment available |
 
 ---
 
@@ -166,100 +157,41 @@ UTC/date and position broadcasts from fixed AIS base stations. Published for mes
 
 | Field | Type | Description |
 |-------|------|-------------|
-| messageId | Integer | 4 = UTC/Date Report, 11 = UTC/Date Response |
-| reportDescription | Text | Human-readable type description |
+| samplingTime | Time | System time data was received |
+| messageId | Integer | 4 = UTC/Date Report; 11 = UTC/Date Response |
+| reportDescription | Text | Human-readable message type description |
 | repeat | Integer | Repeat indicator |
-| mmsi | Integer | Base station MMSI |
-| utcYear | Integer | UTC year |
-| utcMonth | Integer | UTC month (1–12) |
-| utcDay | Integer | UTC day (1–31) |
-| utcHour | Integer | UTC hour (0–23; 24 = not available) |
-| utcMinute | Integer | UTC minute (0–59) |
-| utcSecond | Integer | UTC second (0–59) |
-| positionAccuracy | Integer | 1 = high, 0 = low |
+| mmsi | Text | Base station MMSI |
+| utcDateTime | Time | Full UTC date-time from the message |
+| positionAccuracy | Boolean | `true` = high (≤10 m) |
 | location | Lat/Lon | Base station position |
-| epfd | Integer | EPFD type |
-| raim | Integer | RAIM flag |
+| epfd | Text | Electronic position fixing device type |
+| raim | Boolean | `true` = RAIM in use |
 
 ---
 
-### 5. Static and Voyage Data (`nmeaAisOutputStaticVoyage`)
-
-Vessel identity and voyage information from Class A vessels. Published for message **type 5**. This is a multi-sentence (two-part) message; AISLib reassembles both parts before this output is updated.
-
-| Field | Type | Description |
-|-------|------|-------------|
-| messageId | Integer | Always 5 |
-| reportDescription | Text | Human-readable type description |
-| repeat | Integer | Repeat indicator |
-| mmsi | Integer | MMSI |
-| aisVersion | Integer | AIS version (0 = ITU1371) |
-| imoNumber | Integer | IMO number (0 = not available) |
-| callSign | Text | Call sign |
-| name | Text | Vessel name |
-| shipType | Integer | Ship type code |
-| dimBow | Integer (m) | GPS antenna to bow |
-| dimStern | Integer (m) | GPS antenna to stern |
-| dimPort | Integer (m) | GPS antenna to port |
-| dimStarboard | Integer (m) | GPS antenna to starboard |
-| epfd | Integer | EPFD type |
-| etaMonth | Integer | ETA month |
-| etaDay | Integer | ETA day |
-| etaHour | Integer | ETA hour |
-| etaMinute | Integer | ETA minute |
-| draught | Double (m) | Maximum static draught |
-| destination | Text | Destination port |
-| dte | Integer | Data terminal equipment |
-
----
-
-### 6. Class B Static Data (`nmeaAisOutputStaticDataClassB`)
-
-Vessel name, callsign, and dimensions from Class B vessels. Published for message **type 24**.
-
-Type 24 is transmitted in two separate sentences: Part A (name only) and Part B (callsign, ship type, dimensions). The driver caches Part A names by MMSI and publishes a combined record when Part B arrives. If Part B is received before Part A, the name field will be empty until the next transmission cycle.
-
-| Field | Type | Description |
-|-------|------|-------------|
-| messageId | Integer | Always 24 |
-| reportDescription | Text | Human-readable type description |
-| repeat | Integer | Repeat indicator |
-| mmsi | Integer | MMSI |
-| name | Text | Vessel name (from Part A; empty if not yet received) |
-| callSign | Text | Call sign (from Part B) |
-| shipType | Integer | Ship type code |
-| dimBow | Integer (m) | GPS antenna to bow |
-| dimStern | Integer (m) | GPS antenna to stern |
-| dimPort | Integer (m) | GPS antenna to port |
-| dimStarboard | Integer (m) | GPS antenna to starboard |
-| vendorId | Text | Manufacturer vendor ID |
-
----
-
-### 7. Aid-to-Navigation Report (`nmeaAisOutputAidNavigation`)
+### 5. Aid-to-Navigation Report (`nmeaAisOutputAidNavigation`)
 
 Position and status of fixed and floating aids to navigation (buoys, lighthouses, beacons). Published for message **type 21**.
 
 | Field | Type | Description |
 |-------|------|-------------|
+| samplingTime | Time | System time data was received |
 | messageId | Integer | Always 21 |
-| reportDescription | Text | Human-readable type description |
+| reportDescription | Text | Human-readable message type description |
 | repeat | Integer | Repeat indicator |
-| mmsi | Integer | Aid MMSI |
-| typeOfAidsToNav | Integer | Aid type (1 = unspecified; 2 = reference; 3 = RACON; 4 = fixed; 21–29 = floating; etc.) |
-| name | Text | Aid name |
-| positionAccuracy | Integer | 1 = high, 0 = low |
+| mmsi | Text | Aid MMSI |
+| typeOfAidsToNav | Text | Aid type per IALA Maritime Buoyage System |
+| name | Text | Aid name (max 20 chars; "@" padding stripped) |
+| positionAccuracy | Boolean | `true` = high (≤10 m) |
 | location | Lat/Lon | Aid position |
-| dimBow | Integer (m) | Bow dimension |
-| dimStern | Integer (m) | Stern dimension |
-| dimPort | Integer (m) | Port dimension |
-| dimStarboard | Integer (m) | Starboard dimension |
-| epfd | Integer | EPFD type |
+| dimensions | Record | GPS-antenna reference distances: dimBow, dimStern, dimPort, dimStarboard (m) |
+| epfd | Text | Electronic position fixing device type |
 | utcSecond | Integer | UTC second of report |
-| offPositionIndicator | Integer | 0 = on position, 1 = off position |
-| raim | Integer | RAIM flag |
-| virtualAid | Integer | 0 = physical, 1 = virtual (simulated) |
-| assignedMode | Integer | 0 = autonomous, 1 = assigned |
+| offPositionIndicator | Text | "On position" / "Off position" (floating AtoN only; "N/A" when UTC second ≥ 60) |
+| raim | Boolean | `true` = RAIM in use |
+| virtualAid | Boolean | `true` = virtual aid (simulated by nearby AIS station) |
+| assignedMode | Text | "autonomous and continuous mode" or "assigned mode" |
 
 ---
 

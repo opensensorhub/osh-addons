@@ -167,4 +167,93 @@ public class NmeaAisHelper extends SWEHelper{
                 .description("Maximum 20 characters per ITU-R M.1371-5; '@' padding stripped")
                 .definition(SWEHelper.getPropertyUri("VesselName"));
     }
+
+    public QuantityBuilder createSog() {
+        return createQuantity()
+                .label("Speed Over Ground")
+                .description("Speed over ground in knots (0–102.2 knots; 102.3 = not available)")
+                .uom("[kn_i]")
+                .definition(SWEHelper.getPropertyUri("SpeedOverGround"));
+    }
+
+    public QuantityBuilder createCog() {
+        return createQuantity()
+                .label("Course Over Ground")
+                .uom("deg")
+                .description("Course over ground in tenths of a degree (0–359.9); 360 = not available = default")
+                .definition(SWEHelper.getPropertyUri("CourseOverGround"));
+    }
+
+    public QuantityBuilder createHeading() {
+        return createQuantity()
+                .label("True Heading")
+                .uom("deg")
+                .description("Degrees (0–359); 511 = not available = default")
+                .definition(SWEHelper.getPropertyUri("TrueHeading"));
+    }
+
+    public QuantityBuilder createRot() {
+        return createQuantity()
+                .label("Rate of Turn")
+                .uom("deg/min")
+                .description("Rate of turn: (-) = turning left, (+) = turning right; " +
+                             "null = not available; ±10 = >±10 deg/min (no TI)")
+                .definition(SWEHelper.getPropertyUri("RateOfTurn"));
+    }
+
+    public TextBuilder createRoti() {
+        return createText()
+                .label("Rate of Turn Indicator")
+                .description("Indicates whether an external Rate of Turn Indicator is available")
+                .definition(SWEHelper.getPropertyUri("RateOfTurnIndicator"));
+    }
+
+    public TextBuilder createSmi() {
+        return createText()
+                .label("Special Maneuver Indicator")
+                .description("Special Maneuver Indicator per ITU-R M.1371-5")
+                .definition(SWEHelper.getPropertyUri("SpecialManeuverIndicator"));
+    }
+
+    public TextBuilder createNavStatus() {
+        return createText()
+                .label("Navigational Status")
+                .description("Navigational status per ITU-R M.1371-5 Table 3")
+                .definition(SWEHelper.getPropertyUri("NavigationalStatus"));
+    }
+
+    /**
+     * Creates a nested DataRecord representing the four GPS-antenna reference
+     * distances that encode hull size. Used by Vessel Info and Aid-to-Navigation.
+     *
+     * Flat DataBlock sub-slots (relative to the record's start index):
+     *   +0 dimBow   +1 dimStern   +2 dimPort   +3 dimStarboard
+     */
+    public DataRecordBuilder createDimensions() {
+        return createRecord()
+                .label("Dimensions")
+                .description("Distance from GPS antenna to each side of the hull (or AtoN structure) in metres. " +
+                             "0 = not available = default")
+                .definition(SWEHelper.getPropertyUri("Dimensions"))
+                .addField("dimBow", createQuantity()
+                        .label("Dimension to Bow")
+                        .description("Distance from GPS antenna to bow in metres; 511 = 511 m or greater")
+                        .uom("m")
+                        .definition(SWEHelper.getPropertyUri("DimBow")))
+                .addField("dimStern", createQuantity()
+                        .label("Dimension to Stern")
+                        .description("Distance from GPS antenna to stern in metres; 511 = 511 m or greater")
+                        .uom("m")
+                        .definition(SWEHelper.getPropertyUri("DimStern")))
+                .addField("dimPort", createQuantity()
+                        .label("Dimension to Port")
+                        .description("Distance from GPS antenna to port side in metres; 63 = 63 m or greater")
+                        .uom("m")
+                        .definition(SWEHelper.getPropertyUri("DimPort")))
+                .addField("dimStarboard", createQuantity()
+                        .label("Dimension to Starboard")
+                        .description("Distance from GPS antenna to starboard side in metres; 63 = 63 m or greater")
+                        .uom("m")
+                        .definition(SWEHelper.getPropertyUri("DimStarboard")));
+    }
 }

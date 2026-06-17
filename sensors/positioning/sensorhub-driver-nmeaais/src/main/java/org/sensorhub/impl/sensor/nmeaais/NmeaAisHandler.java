@@ -21,6 +21,8 @@ import dk.dma.ais.message.AisMessage24;
 import dk.dma.ais.message.AisMessage4;
 import dk.dma.ais.message.AisMessage5;
 import dk.dma.ais.message.AisPositionMessage;
+import org.sensorhub.impl.sensor.nmeaais.helpers.AisCodeHelper;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -29,7 +31,7 @@ public class NmeaAisHandler {
 
     // Cache of type 24 Part A vessel names keyed by MMSI.
     // Part A only carries the name; Part B carries everything else.
-    // When Part B arrives we combine them into a single published record.
+    // When Part B arrives we combine them and update the FOI — no datastream output.
     private final Map<Integer, String> type24PartANames = new HashMap<>();
 
     public NmeaAisHandler(NmeaAisDriver driver) {
@@ -40,28 +42,32 @@ public class NmeaAisHandler {
         int messageId = aisMessage.getMsgId();
         switch (messageId) {
             case 1, 2, 3: // Class A Position Reports
-                nmeaAisDriver.nmeaAisOutputPositionClassA.setData((AisPositionMessage) aisMessage);
+                // Vessel location + navStatus → FOI (inside setData)
+                nmeaAisDriver.nmeaAisOutputVesselLocation.setData((AisPositionMessage) aisMessage);
                 break;
             case 4, 11: // Base Station / UTC-Date Response
                 nmeaAisDriver.nmeaAisOutputBaseStation.setData((AisMessage4) aisMessage);
                 break;
-            case 5: // Static and Voyage Related Data
-                nmeaAisDriver.nmeaAisOutputStaticVoyage.setData((AisMessage5) aisMessage);
+            case 5: // Static and Voyage Related Data (Class A)
+                // Identity → FOI; voyage fields → voyageInfo stream (both inside setData)
+                nmeaAisDriver.nmeaAisOutputVoyageInfo.setData((AisMessage5) aisMessage);
                 break;
             case 18: // Class B Standard Position Report
-                nmeaAisDriver.nmeaAisOutputPositionClassB.setData((AisMessage18) aisMessage);
+                nmeaAisDriver.nmeaAisOutputVesselLocation.setData((AisMessage18) aisMessage);
                 break;
             case 19: // Class B Extended Position Report
-                nmeaAisDriver.nmeaAisOutputPositionClassB.setData((AisMessage19) aisMessage);
+                // Location + identity → FOI (inside setData)
+                nmeaAisDriver.nmeaAisOutputVesselLocation.setData((AisMessage19) aisMessage);
                 break;
             case 21: // Aid-to-Navigation Report
                 nmeaAisDriver.nmeaAisOutputAidNavigation.setData((AisMessage21) aisMessage);
                 break;
-            case 24: // Class B CS Static Data (two-part)
+            case 24: // Class B CS Static Data (two-part) — FOI only, no datastream
                 handleType24((AisMessage24) aisMessage);
                 break;
             default:
-                nmeaAisDriver.getLogger().debug("No Output has been created to capture AIS reports with a Message ID of {}",messageId);
+                nmeaAisDriver.getLogger().debug(
+                        "No output has been created to capture AIS reports with Message ID {}", messageId);
         }
     }
 
@@ -70,21 +76,23 @@ public class NmeaAisHandler {
             // Part A — store the vessel name and wait for Part B
             type24PartANames.put(msg.getUserId(), msg.getName());
         } else {
-            // Part B — combine with cached Part A name (if available) and publish
+            // Part B — combine with cached Part A name and update the FOI only
             String name = type24PartANames.getOrDefault(msg.getUserId(), "");
-            nmeaAisDriver.nmeaAisOutputStaticDataClassB.setData(
-                    msg.getUserId(),
-                    msg.getRepeat(),
-                    name,
+            nmeaAisDriver.updateFoiStaticData(
+                    String.valueOf(msg.getUserId()),
+                    AisCodeHelper.cleanVesselName(name),
                     msg.getCallsign(),
                     msg.getShipType(),
+                    0L,   // no IMO in type 24
+                    0,    // no AIS version in type 24
+                    msg.getVendorId(),
+                    null, // no EPFD in type 24
+                    false,
                     msg.getDimBow(),
                     msg.getDimStern(),
                     msg.getDimPort(),
-                    msg.getDimStarboard(),
-                    msg.getVendorId()
+                    msg.getDimStarboard()
             );
         }
     }
-
 }
