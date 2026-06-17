@@ -47,6 +47,7 @@ public class DataFileWatcher implements FileFilter, FileListener
     final Pattern dirNamePattern;
     final Pattern fileNamePattern;
     final String latestPointerFileName;
+    final boolean findDirOnly;
     final FileListener listener;
     final Logger logger;
     DirectoryWatcher watcher;
@@ -69,7 +70,13 @@ public class DataFileWatcher implements FileFilter, FileListener
     {
         this.dataSrcName = Asserts.checkNotNullOrBlank(dataSrcName, "dataSrcName");
         this.baseDir = Asserts.checkNotNullOrBlank(baseDir, "baseDir");
-        this.fileNamePattern = Pattern.compile(Asserts.checkNotNullOrBlank(fileNamePattern, "fileNamePattern"));
+        if (fileNamePattern == null) {
+            this.fileNamePattern = null;
+            this.findDirOnly = true;
+        } else {
+            this.fileNamePattern = Pattern.compile(Asserts.checkNotNullOrBlank(fileNamePattern, "fileNamePattern"));
+            this.findDirOnly = false;
+        }
         this.dirNamePattern = dirNamePattern != null ? Pattern.compile(dirNamePattern) : null;
         this.latestPointerFileName = latestPointerFileName;
         this.listener = listener;
@@ -150,7 +157,7 @@ public class DataFileWatcher implements FileFilter, FileListener
                 return null;
             
             var latestDataFile = new File(latestDataFilePath);
-            if (latestDataFile.isDirectory()) {
+            if (latestDataFile.isDirectory() && !findDirOnly) {
                 logger.info("Latest data directory is {}", latestDataFilePath);
                 return findLatestDataFile(latestDataFile);
             }
@@ -187,7 +194,7 @@ public class DataFileWatcher implements FileFilter, FileListener
         }
         
         // if it's a directory, look inside
-        if (latestFile.isDirectory())
+        if (latestFile.isDirectory() && !findDirOnly)
             return findLatestDataFile(latestFile);
         else
             return latestFile; 
@@ -197,7 +204,7 @@ public class DataFileWatcher implements FileFilter, FileListener
     @Override
     public boolean accept(File f)
     {
-        if (f.isFile() && fileNamePattern.matcher(f.getName()).matches())
+        if (f.isFile() && !findDirOnly && fileNamePattern.matcher(f.getName()).matches())
             return true;
         
         if (f.isDirectory() && dirNamePattern != null && dirNamePattern.matcher(f.getName()).matches())

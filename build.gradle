@@ -9,7 +9,7 @@ allprojects {
   group = 'org.sensorhub'
 }
 
-ext.oshCoreVersion = '2.0-beta2'
+ext.oshCoreVersion = '2.0.1'
 //apply from: gradle.oshCoreDir + '/common.gradle'
 version = oshCoreVersion
 description = 'OSH Add-ons'
