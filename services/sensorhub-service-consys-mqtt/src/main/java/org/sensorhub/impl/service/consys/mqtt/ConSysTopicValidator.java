@@ -15,7 +15,10 @@ Copyright (C) 2026 Sensia Software LLC. All Rights Reserved.
 package org.sensorhub.impl.service.consys.mqtt;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import org.sensorhub.api.comm.mqtt.InvalidTopicException;
+import org.sensorhub.impl.service.consys.resource.ResourceFormat;
 import static org.sensorhub.impl.service.consys.mqtt.ConSysTopicValidator.ResourceType.*;
 
 
@@ -151,6 +154,99 @@ public final class ConSysTopicValidator
     public static boolean hasWildcard(String topic)
     {
         return topic.contains("+") || topic.contains("#");
+    }
+
+
+    /** Topic suffix marking a Resource Data Topic. */
+    public static final String DATA_SUFFIX = ":data";
+
+
+    /**
+     * Format subtopic tokens recognised on Resource Data Topics. Per OGC CS
+     * API Part 3 §"Resource Data Messages Content Negotiation", a Data Topic
+     * may carry an explicit wire-format token as a trailing subtopic
+     * (e.g. {@code …/observations:data/swe-json}). Hyphens substitute for
+     * the MIME {@code +} separator so tokens stay legal across MQTT, NATS,
+     * and Kafka broker namespaces.
+     */
+    public static final Map<String, ResourceFormat> FORMAT_SUBTOPICS = Map.of(
+        "json",       ResourceFormat.JSON,
+        "swe-json",   ResourceFormat.SWE_JSON,
+        "swe-binary", ResourceFormat.SWE_BINARY,
+        "swe-csv",    ResourceFormat.SWE_TEXT,
+        // application/swe+proto — registered as a CustomObsFormat by the
+        // sensorhub-service-consys-proto module. Constructed via fromMimeType
+        // rather than a ResourceFormat static constant since that module is
+        // optional and osh-core does not (yet) carry a SWE_PROTO constant.
+        "swe-proto",  ResourceFormat.fromMimeType("application/swe+proto"),
+        "om-json",    ResourceFormat.OM_JSON,
+        "sml-json",   ResourceFormat.SML_JSON
+    );
+
+
+    /**
+     * Returns {@code true} if {@code topic} ends with the Resource Data Topic
+     * marker — either bare {@code :data} or {@code :data/<token>}.
+     */
+    public static boolean isDataTopic(String topic)
+    {
+        if (topic == null)
+            return false;
+        int idx = topic.lastIndexOf(DATA_SUFFIX);
+        if (idx < 0)
+            return false;
+        int after = idx + DATA_SUFFIX.length();
+        return after == topic.length() || topic.charAt(after) == '/';
+    }
+
+
+    /**
+     * Parse the format subtopic from a Resource Data Topic.
+     *
+     * @return the {@link ResourceFormat} for {@code :data/<token>}, or
+     *         {@link Optional#empty()} for bare {@code :data} (server-default
+     *         negotiation), or for a topic with no {@code :data} suffix at
+     *         all.
+     * @throws InvalidTopicException if a token is present but not in
+     *         {@link #FORMAT_SUBTOPICS}.
+     */
+    public static Optional<ResourceFormat> parseDataTopicFormat(String topic)
+            throws InvalidTopicException
+    {
+        if (topic == null)
+            return Optional.empty();
+        int idx = topic.lastIndexOf(DATA_SUFFIX);
+        if (idx < 0)
+            return Optional.empty();
+        int after = idx + DATA_SUFFIX.length();
+        if (after >= topic.length())
+            return Optional.empty();              // bare ":data"
+        if (topic.charAt(after) != '/')
+            return Optional.empty();              // ":data" embedded mid-path
+        String token = topic.substring(after + 1);
+        if (token.isEmpty())
+            return Optional.empty();
+        ResourceFormat fmt = FORMAT_SUBTOPICS.get(token);
+        if (fmt == null)
+            throw new InvalidTopicException(
+                "Unknown :data format subtopic: '" + token + "'. Known: "
+                + FORMAT_SUBTOPICS.keySet());
+        return Optional.of(fmt);
+    }
+
+
+    /**
+     * Strip the trailing {@code :data} or {@code :data/<token>} suffix from
+     * a Resource Data Topic, leaving the underlying resource path.
+     */
+    public static String stripDataSuffix(String topic)
+    {
+        if (topic == null)
+            return null;
+        int idx = topic.lastIndexOf(DATA_SUFFIX);
+        if (idx < 0)
+            return topic;
+        return topic.substring(0, idx);
     }
 
 

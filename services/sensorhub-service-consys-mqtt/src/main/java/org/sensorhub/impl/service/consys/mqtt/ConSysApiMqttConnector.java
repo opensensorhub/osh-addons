@@ -65,7 +65,7 @@ import org.vast.util.Asserts;
  */
 public class ConSysApiMqttConnector implements IMqttHandler
 {
-    static final String DATA_SUFFIX = ":data";
+    static final String DATA_SUFFIX = ConSysTopicValidator.DATA_SUFFIX;
 
     ConSysApiServlet servlet;
     String endpoint;
@@ -189,6 +189,8 @@ public class ConSysApiMqttConnector implements IMqttHandler
             // always evaluate request because we need to check for permissions
             // even if subscriber was already created
             var ctx = getResourceContext(topic, sub);
+            var fmt = ConSysTopicValidator.parseDataTopicFormat(topic);
+            fmt.ifPresent(ctx::setResponseFormat);
             servlet.getSecurityHandler().setCurrentUser(userID);
             servlet.getRootHandler().doGet(ctx);
             
@@ -256,7 +258,8 @@ public class ConSysApiMqttConnector implements IMqttHandler
         try
         {
             var ctx = getResourceContext(topic, payload);
-            ctx.setRequestContentType(ResourceFormat.AUTO.getMimeType());
+            var fmt = ConSysTopicValidator.parseDataTopicFormat(topic);
+            ctx.setRequestContentType(fmt.orElse(ResourceFormat.AUTO).getMimeType());
             
             if (correlData != null)
             {
@@ -293,11 +296,13 @@ public class ConSysApiMqttConnector implements IMqttHandler
 
 
     /**
-     * @return true if this topic is a Resource Data Topic (ends with {@code :data})
+     * @return true if this topic is a Resource Data Topic (ends with
+     *         {@code :data} or {@code :data/<format-token>}). Delegates to
+     *         {@link ConSysTopicValidator#isDataTopic}.
      */
     private boolean isDataTopic(String topic)
     {
-        return topic.endsWith(DATA_SUFFIX);
+        return ConSysTopicValidator.isDataTopic(topic);
     }
 
 
@@ -418,9 +423,8 @@ public class ConSysApiMqttConnector implements IMqttHandler
                 topic = "/" + topic;
             }
 
-            // Strip :data suffix — only from the end (it is guaranteed present for data topics)
-            if (topic.endsWith(DATA_SUFFIX))
-                topic = topic.substring(0, topic.length() - DATA_SUFFIX.length());
+            // Strip :data or :data/<format-token> suffix — guaranteed present for data topics
+            topic = ConSysTopicValidator.stripDataSuffix(topic);
 
             // parse URI (this also URL decodes the query string)
             return new URI(topic);

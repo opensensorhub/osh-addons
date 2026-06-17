@@ -16,8 +16,11 @@ package org.sensorhub.impl.service.consys.mqtt;
 
 import static org.junit.Assert.*;
 import static org.sensorhub.impl.service.consys.mqtt.ConSysTopicValidator.ResourceType.*;
+import java.util.Optional;
 import org.junit.Test;
+import org.sensorhub.api.comm.mqtt.InvalidTopicException;
 import org.sensorhub.impl.service.consys.mqtt.ConSysTopicValidator.ResourceType;
+import org.sensorhub.impl.service.consys.resource.ResourceFormat;
 
 
 /**
@@ -218,5 +221,86 @@ public class TestConSysTopicValidator
         for (var row : cases)
             assertEquals("hasWildcard(\"" + row[0] + "\")", row[1],
                 ConSysTopicValidator.hasWildcard((String) row[0]));
+    }
+
+
+    // =========================================================================
+    // isDataTopic / parseDataTopicFormat / stripDataSuffix
+    // =========================================================================
+
+    @Test
+    public void testIsDataTopic()
+    {
+        Object[][] cases = {
+            // topic                                                                  isDataTopic
+            { "systems/abc/datastreams/xyz/observations:data",                       true  },
+            { "systems/abc/datastreams/xyz/observations:data/swe-proto",             true  },
+            { "systems/abc/datastreams/xyz/observations:data/swe-json",              true  },
+            { "systems/abc/datastreams/xyz/observations",                            false },
+            { "systems/abc",                                                         false },
+            { "",                                                                    false },
+            { null,                                                                  false },
+        };
+        for (var row : cases)
+            assertEquals("isDataTopic(\"" + row[0] + "\")", row[1],
+                ConSysTopicValidator.isDataTopic((String) row[0]));
+    }
+
+
+    @Test
+    public void testParseDataTopicFormat() throws InvalidTopicException
+    {
+        // Bare :data → empty (server-default negotiation)
+        assertEquals(Optional.empty(),
+            ConSysTopicValidator.parseDataTopicFormat("systems/abc/datastreams/xyz/observations:data"));
+
+        // Known tokens map to their ResourceFormat constant
+        assertEquals(Optional.of(ResourceFormat.fromMimeType("application/swe+proto")),
+            ConSysTopicValidator.parseDataTopicFormat("systems/abc/datastreams/xyz/observations:data/swe-proto"));
+        assertEquals(Optional.of(ResourceFormat.SWE_JSON),
+            ConSysTopicValidator.parseDataTopicFormat("systems/abc/datastreams/xyz/observations:data/swe-json"));
+        assertEquals(Optional.of(ResourceFormat.SWE_BINARY),
+            ConSysTopicValidator.parseDataTopicFormat("systems/abc/datastreams/xyz/observations:data/swe-binary"));
+        assertEquals(Optional.of(ResourceFormat.SWE_TEXT),
+            ConSysTopicValidator.parseDataTopicFormat("systems/abc/datastreams/xyz/observations:data/swe-csv"));
+        assertEquals(Optional.of(ResourceFormat.OM_JSON),
+            ConSysTopicValidator.parseDataTopicFormat("systems/abc/datastreams/xyz/observations:data/om-json"));
+
+        // Topic with no :data suffix → empty (caller decides whether to treat as error)
+        assertEquals(Optional.empty(),
+            ConSysTopicValidator.parseDataTopicFormat("systems/abc/datastreams/xyz/observations"));
+        assertEquals(Optional.empty(), ConSysTopicValidator.parseDataTopicFormat(null));
+    }
+
+
+    @Test
+    public void testParseDataTopicFormatUnknownToken()
+    {
+        try
+        {
+            ConSysTopicValidator.parseDataTopicFormat(
+                "systems/abc/datastreams/xyz/observations:data/yaml");
+            fail("Unknown token should throw InvalidTopicException");
+        }
+        catch (InvalidTopicException expected)
+        {
+            assertTrue(expected.getMessage().contains("yaml"));
+        }
+    }
+
+
+    @Test
+    public void testStripDataSuffix()
+    {
+        assertEquals("systems/abc/datastreams/xyz/observations",
+            ConSysTopicValidator.stripDataSuffix(
+                "systems/abc/datastreams/xyz/observations:data"));
+        assertEquals("systems/abc/datastreams/xyz/observations",
+            ConSysTopicValidator.stripDataSuffix(
+                "systems/abc/datastreams/xyz/observations:data/swe-proto"));
+        assertEquals("systems/abc/datastreams/xyz/observations",
+            ConSysTopicValidator.stripDataSuffix(
+                "systems/abc/datastreams/xyz/observations"));
+        assertNull(ConSysTopicValidator.stripDataSuffix(null));
     }
 }
