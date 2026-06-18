@@ -105,10 +105,10 @@ public class ObsBindingProto extends ResourceBinding<BigId, IObsData>
         this.timeIndexer = SWEHelper.getTimeStampIndexer(dsInfo.getRecordStructure());
         try
         {
-            // memoized per datastream — ctx.getParentID() is the datastream's
+            // rebuilt per request (schema fingerprint memoization is parked —
+            // see GeneratedSchemaCache). ctx.getParentID() is the datastream's
             // internal ID (always set here: custom obs bindings are only used
-            // for single-datastream requests). Fingerprinted on the ORIGINAL
-            // structure so the cache key matches what other bindings see.
+            // for single-datastream requests).
             this.descriptor = schemas.get(ctx.getParentID(), dsInfo.getRecordStructure()).descriptor;
         }
         catch (DescriptorValidationException e)

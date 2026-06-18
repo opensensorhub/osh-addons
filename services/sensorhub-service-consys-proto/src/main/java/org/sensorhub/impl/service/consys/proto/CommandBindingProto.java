@@ -94,9 +94,9 @@ public class CommandBindingProto extends ResourceBinding<BigId, ICommandData>
         this.paramStruct = csInfo.getRecordStructure().copy();
         try
         {
-            // memoized per control stream (ctx.getParentID() = its internal ID);
-            // fingerprinted on the ORIGINAL structure so the cache key content
-            // matches what other bindings see
+            // rebuilt per request (schema fingerprint memoization is parked —
+            // see GeneratedSchemaCache). ctx.getParentID() = the control
+            // stream's internal ID.
             this.descriptor = schemas.get(ctx.getParentID(), csInfo.getRecordStructure()).descriptor;
         }
         catch (DescriptorValidationException e)

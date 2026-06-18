@@ -75,9 +75,9 @@ public final class ProtoFormat implements CustomObsFormat
     public static final String FORMAT_TOKEN = "swe-proto";
 
     // ProtoFormat is instantiated once per ConSysApiService start and kept in
-    // the customFormats map, so per-stream schema artifacts memoized here live
-    // for the service lifetime (entries self-invalidate via a structural
-    // fingerprint when a stream's record structure changes)
+    // the customFormats map. These builders rebuild the proto schema on every
+    // request — the per-stream fingerprint memoization is parked (see
+    // GeneratedSchemaCache).
     final GeneratedSchemaCache obsSchemas = new GeneratedSchemaCache(struct ->
         new ProtoSchemaWriter().write(struct,
             "datastreams/obs.proto", ObsBindingProto.OBS_PACKAGE, ObsBindingProto.OBS_MESSAGE));

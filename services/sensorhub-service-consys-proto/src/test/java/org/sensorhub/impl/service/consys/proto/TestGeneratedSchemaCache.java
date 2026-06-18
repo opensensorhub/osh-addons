@@ -17,6 +17,7 @@ Author: Ian Patterson <ian.patterson@georobotix.us>
 package org.sensorhub.impl.service.consys.proto;
 
 import static org.junit.Assert.*;
+import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.Test;
 import org.sensorhub.api.common.BigId;
@@ -25,9 +26,13 @@ import net.opengis.swe.v20.DataComponent;
 
 
 /**
- * {@link GeneratedSchemaCache} semantics: one build per stream while the
- * structure is unchanged (same Entry instance returned), automatic rebuild
- * when the structure's fingerprint changes, and per-stream isolation.
+ * {@link GeneratedSchemaCache} semantics after the fingerprint cache was parked
+ * (2026-06-17): the artifacts are rebuilt on <b>every</b> call, each build
+ * yields a usable descriptor + non-empty {@code FileDescriptorSet}, and the
+ * output is deterministic for a given structure. The previous caching test
+ * (one build per stream, rebuild on fingerprint change, per-stream isolation)
+ * is preserved at {@code docs/parked/TestGeneratedSchemaCache.java.txt} and on
+ * branch {@code parked/schema-fingerprint-cache}.
  */
 public class TestGeneratedSchemaCache
 {
@@ -45,7 +50,7 @@ public class TestGeneratedSchemaCache
 
 
     @Test
-    public void testBuildsOncePerStreamAndReturnsSameEntry() throws Exception
+    public void testRebuildsOnEveryCall() throws Exception
     {
         var builds = new AtomicInteger();
         var cache = new GeneratedSchemaCache(struct -> {
@@ -56,12 +61,12 @@ public class TestGeneratedSchemaCache
         var struct = record("temp", "Cel");
         var e1 = cache.get(DS_1, struct);
         var e2 = cache.get(DS_1, struct);
-        // structurally equal but distinct instance — fingerprint must hit anyway
-        var e3 = cache.get(DS_1, record("temp", "Cel"));
 
-        assertSame(e1, e2);
-        assertSame(e1, e3);
-        assertEquals(1, builds.get());
+        // no memoization: distinct Entry instances, one build each
+        assertNotSame(e1, e2);
+        assertEquals(2, builds.get());
+
+        // every build still yields usable artifacts
         assertNotNull(e1.descriptor);
         assertNotNull(e1.fileDescriptorSet);
         assertTrue(e1.fileDescriptorSet.length > 0);
@@ -69,43 +74,32 @@ public class TestGeneratedSchemaCache
 
 
     @Test
-    public void testRebuildsWhenStructureChanges() throws Exception
+    public void testOutputIsDeterministicForSameStructure() throws Exception
     {
-        var builds = new AtomicInteger();
-        var cache = new GeneratedSchemaCache(struct -> {
-            builds.incrementAndGet();
-            return new ProtoSchemaWriter().write(struct, "obs.proto", "test.memo", "Obs");
-        });
+        var cache = new GeneratedSchemaCache(
+            struct -> new ProtoSchemaWriter().write(struct, "obs.proto", "test.memo", "Obs"));
 
         var e1 = cache.get(DS_1, record("temp", "Cel"));
-        // same stream id, changed uom → stale entry must be replaced
-        var e2 = cache.get(DS_1, record("temp", "K"));
+        var e2 = cache.get(DS_1, record("temp", "Cel"));
 
-        assertNotSame(e1, e2);
-        assertEquals(2, builds.get());
-
-        // and the new entry is now the cached one
-        assertSame(e2, cache.get(DS_1, record("temp", "K")));
-        assertEquals(2, builds.get());
+        // structurally equal inputs → byte-identical schema each rebuild
+        assertEquals(e1.schema.messageTypeName, e2.schema.messageTypeName);
+        assertTrue(Arrays.equals(e1.fileDescriptorSet, e2.fileDescriptorSet));
     }
 
 
     @Test
-    public void testStreamsAreIsolated() throws Exception
+    public void testDistinctStructuresProduceDistinctSchemas() throws Exception
     {
-        var builds = new AtomicInteger();
-        var cache = new GeneratedSchemaCache(struct -> {
-            builds.incrementAndGet();
-            return new ProtoSchemaWriter().write(struct, "obs.proto", "test.memo", "Obs");
-        });
+        var cache = new GeneratedSchemaCache(
+            struct -> new ProtoSchemaWriter().write(struct, "obs.proto", "test.memo", "Obs"));
 
         var e1 = cache.get(DS_1, record("temp", "Cel"));
         var e2 = cache.get(DS_2, record("pressure", "hPa"));
 
-        assertNotSame(e1, e2);
-        assertEquals(2, builds.get());
-        assertSame(e1, cache.get(DS_1, record("temp", "Cel")));
-        assertSame(e2, cache.get(DS_2, record("pressure", "hPa")));
-        assertEquals(2, builds.get());
+        // different record structures → different generated descriptor bytes
+        assertFalse(Arrays.equals(e1.fileDescriptorSet, e2.fileDescriptorSet));
+        assertNotNull(e1.descriptor);
+        assertNotNull(e2.descriptor);
     }
 }
