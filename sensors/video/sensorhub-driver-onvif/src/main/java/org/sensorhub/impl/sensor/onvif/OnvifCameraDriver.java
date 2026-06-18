@@ -228,7 +228,10 @@ public class OnvifCameraDriver extends AbstractSensorModule<OnvifCameraConfig>
         }
 
         TreeSet<URL> temp = (TreeSet<URL>) OnvifDiscovery.discoverOnvifURLs();
-        config.networkConfig.autoRemoteHost.clear();
+        if (config.networkConfig.autoRemoteHost == null)
+            config.networkConfig.autoRemoteHost = new TreeSet<>();
+        else
+            config.networkConfig.autoRemoteHost.clear();
         for (URL url : temp)
             config.networkConfig.autoRemoteHost.add(url.toString());
     }
@@ -570,8 +573,8 @@ public class OnvifCameraDriver extends AbstractSensorModule<OnvifCameraConfig>
     protected void openStreamVisual() throws SensorHubException{
         if (mpegTsProcessor == null) {
             mpegTsProcessor = new MpegTsProcessor(visualConnectionString);
-            // Remove the following line if causing an error. Part of a separate ffmpeg mod.
-            //mpegTsProcessor.setAvOption("transport", streamTransport);
+            // Inject SPS/PPS before keyframes so late-joining decoders (e.g. WebCodecs) can initialize
+            mpegTsProcessor.setInjectVideoExtradata(true);
 
             // Initialize the MPEG transport stream processor from the source named in the configuration.
             if (mpegTsProcessor.openStream()) {
