@@ -28,11 +28,10 @@ import java.util.Collection;
  */
 public interface IFlightPlan extends IFlightIdentification, IAircraftIdentification
 {
-    
-    public enum FlightPlanSource
-    {
-        FMS, ATC, OCC, WWX
-    }
+    public static final String FLIGHT_PLAN_SOURCE_FMS = "FMS";
+    public static final String FLIGHT_PLAN_SOURCE_ATC = "ATC";
+    public static final String FLIGHT_PLAN_SOURCE_OCC = "OCC";
+    public static final String FLIGHT_PLAN_SOURCE_EFB = "EFB";
     
     
     /**
