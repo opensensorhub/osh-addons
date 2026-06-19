@@ -224,7 +224,10 @@ public class DataFileWatcher implements FileFilter, FileListener
         
         if (f.isDirectory())
         {
-            f = findLatestDataFile(f);
+            if (!findDirOnly) {
+                f = findLatestDataFile(f);
+            } 
+            
             if (f != null)
                 listener.newFile(f.toPath());
         }
