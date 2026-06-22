@@ -1,24 +1,23 @@
 /***************************** BEGIN LICENSE BLOCK ***************************
 
-The contents of this file are subject to the Mozilla Public License, v. 2.0.
-If a copy of the MPL was not distributed with this file, You can obtain one
-at http://mozilla.org/MPL/2.0/.
+ The contents of this file are subject to the Mozilla Public License, v. 2.0.
+ If a copy of the MPL was not distributed with this file, You can obtain one
+ at http://mozilla.org/MPL/2.0/.
 
-Software distributed under the License is distributed on an "AS IS" basis,
-WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
-for the specific language governing rights and limitations under the License.
+ Software distributed under the License is distributed on an "AS IS" basis,
+ WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+ for the specific language governing rights and limitations under the License.
 
-Copyright (C) 2024 Botts Innovative Research, Inc. All Rights Reserved.
+ Copyright (C) 2026 GeoRobotix Innovative Research, LLC. All Rights Reserved.
 
-******************************* END LICENSE BLOCK ***************************/
+ ******************************* END LICENSE BLOCK ***************************/
 
 package com.georobotix.impl.service.mcp.resources;
 
+import com.georobotix.impl.service.mcp.ConSysJsonHelper;
 import io.modelcontextprotocol.server.McpAsyncServerExchange;
 import io.modelcontextprotocol.spec.McpSchema;
-import net.opengis.swe.v20.DataComponent;
 import org.sensorhub.api.database.IFederatedDatabase;
-import org.sensorhub.api.data.IDataStreamInfo;
 import org.sensorhub.api.datastore.obs.DataStreamFilter;
 import reactor.core.publisher.Mono;
 
@@ -31,17 +30,20 @@ import java.util.stream.Collectors;
  *
  * URI Template: datastore://systems/{systemUID}/datastreams
  */
-public class   DataStreamListResource extends AbstractMcpResource {
+public class DataStreamListResource extends AbstractMcpResource {
 
+    // TODO Add list URI
     public static final String URI_TEMPLATE = "datastore://systems/{systemUID}/datastreams";
     public static final String NAME = "System DataStreams";
     public static final String DESCRIPTION = "List of data streams produced by a specific system, including their record structures, time ranges, and output names.";
 
     private final IFederatedDatabase fedDb;
+    private final ConSysJsonHelper consysJsonHelper;
 
     public DataStreamListResource(IFederatedDatabase fedDb) {
         super();
         this.fedDb = fedDb;
+        this.consysJsonHelper = new ConSysJsonHelper(fedDb);
     }
 
     @Override
@@ -81,10 +83,10 @@ public class   DataStreamListResource extends AbstractMcpResource {
                     .withLimit(1000)
                     .build();
 
-            List<Map<String, Object>> datastreams;
+            List<Object> datastreams;
             try (var stream = fedDb.getDataStreamStore().select(filter)) {
                 datastreams = stream
-                        .map(this::toSummary)
+                        .map(ds -> consysJsonHelper.parseJsonOrRaw(consysJsonHelper.writeDataStream(ds, null, false)))
                         .collect(Collectors.toList());
             }
 
@@ -99,43 +101,5 @@ public class   DataStreamListResource extends AbstractMcpResource {
                     List.of(new McpSchema.TextResourceContents(resolvedUri, getMimeType(), json))
             );
         });
-    }
-
-    private Map<String, Object> toSummary(IDataStreamInfo ds) {
-        Map<String, Object> map = new LinkedHashMap<>();
-        map.put("outputName", ds.getOutputName());
-        if (ds.getSystemID() != null)
-            map.put("systemUID", ds.getSystemID().getUniqueID());
-        if (ds.getValidTime() != null) {
-            map.put("validTimeBegin", ds.getValidTime().begin().toString());
-            map.put("validTimeEnd", ds.getValidTime().endsNow() ? "now" : ds.getValidTime().end().toString());
-        }
-        if (ds.getPhenomenonTimeRange() != null) {
-            map.put("phenomenonTimeBegin", ds.getPhenomenonTimeRange().begin().toString());
-            map.put("phenomenonTimeEnd", ds.getPhenomenonTimeRange().endsNow() ? "now" : ds.getPhenomenonTimeRange().end().toString());
-        }
-
-        DataComponent recordStruct = ds.getRecordStructure();
-        if (recordStruct != null) {
-            map.put("recordStructure", serializeDataComponent(recordStruct));
-        }
-        return map;
-    }
-
-    private Map<String, Object> serializeDataComponent(DataComponent comp) {
-        Map<String, Object> map = new LinkedHashMap<>();
-        map.put("name", comp.getName());
-        if (comp.getLabel() != null) map.put("label", comp.getLabel());
-        if (comp.getDescription() != null) map.put("description", comp.getDescription());
-        map.put("type", comp.getClass().getSimpleName());
-
-        if (comp.getComponentCount() > 0) {
-            List<Map<String, Object>> fields = new ArrayList<>();
-            for (int i = 0; i < comp.getComponentCount(); i++) {
-                fields.add(serializeDataComponent(comp.getComponent(i)));
-            }
-            map.put("fields", fields);
-        }
-        return map;
     }
 }

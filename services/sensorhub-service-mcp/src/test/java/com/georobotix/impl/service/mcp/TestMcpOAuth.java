@@ -7,12 +7,14 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+
+import com.georobotix.impl.service.mcp.oauth.McpOAuthConfig;
+import com.georobotix.impl.service.mcp.oauth.McpOAuthHelper;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.impl.SensorHub;
-import org.sensorhub.impl.service.HttpServer;
 import org.sensorhub.impl.service.HttpServerConfig;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
@@ -32,7 +34,10 @@ public class TestMcpOAuth
     static final String TEST_SCOPES = "openid,profile,mcp";
 
     SensorHub hub;
+    McpService mcpService;
     String metadataUrl;
+    String protectedResourceMetadataUrl;
+    String mcpEndpointUrl;
 
 
     @Before
@@ -45,7 +50,7 @@ public class TestMcpOAuth
         // Start HTTP server
         HttpServerConfig httpConfig = new HttpServerConfig();
         httpConfig.httpPort = SERVER_PORT;
-        var httpServer = (HttpServer) moduleRegistry.loadModule(httpConfig, TIMEOUT);
+        moduleRegistry.loadModule(httpConfig, TIMEOUT);
 
         // Start MCP service with OAuth enabled
         McpServiceConfig mcpCfg = new McpServiceConfig();
@@ -58,10 +63,14 @@ public class TestMcpOAuth
         mcpCfg.oauth.registrationEndpoint = TEST_REGISTRATION_ENDPOINT;
         mcpCfg.oauth.scopesSupported = TEST_SCOPES;
         // Leave revocationEndpoint and serviceDocumentation null to test omission
-        moduleRegistry.loadModule(mcpCfg, TIMEOUT);
+        mcpService = (McpService) moduleRegistry.loadModule(mcpCfg, TIMEOUT);
 
-        metadataUrl = httpServer.getPublicEndpointUrl(
-                "/.well-known/oauth-authorization-server" + mcpCfg.endPoint);
+        metadataUrl = "http://localhost:" + SERVER_PORT
+                + "/.well-known/oauth-authorization-server" + httpConfig.servletsRootUrl + mcpCfg.endPoint;
+        protectedResourceMetadataUrl = "http://localhost:" + SERVER_PORT
+                + "/.well-known/oauth-protected-resource" + httpConfig.servletsRootUrl + mcpCfg.endPoint;
+        mcpEndpointUrl = "http://localhost:" + SERVER_PORT
+                + httpConfig.servletsRootUrl + mcpCfg.endPoint;
     }
 
 
@@ -106,6 +115,50 @@ public class TestMcpOAuth
                     .uri(URI.create(url))
                     .build();
             return client.send(request, HttpResponse.BodyHandlers.ofString());
+        }
+        catch (InterruptedException e)
+        {
+            throw new IOException(e);
+        }
+    }
+
+
+    private HttpResponse<String> sendPost(String url, String body) throws IOException
+    {
+        try
+        {
+            HttpClient client = HttpClient.newHttpClient();
+            HttpRequest request = HttpRequest.newBuilder()
+                    .POST(HttpRequest.BodyPublishers.ofString(body))
+                    .uri(URI.create(url))
+                    .header("Content-Type", "application/json")
+                    .header("Accept", "application/json, text/event-stream")
+                    .build();
+            return client.send(request, HttpResponse.BodyHandlers.ofString());
+        }
+        catch (InterruptedException e)
+        {
+            throw new IOException(e);
+        }
+    }
+
+
+    private HttpResponse<String> sendPost(String url, String body, String authorization, String protocolVersion)
+            throws IOException
+    {
+        try
+        {
+            HttpClient client = HttpClient.newHttpClient();
+            HttpRequest.Builder request = HttpRequest.newBuilder()
+                    .POST(HttpRequest.BodyPublishers.ofString(body))
+                    .uri(URI.create(url))
+                    .header("Content-Type", "application/json")
+                    .header("Accept", "application/json, text/event-stream");
+            if (authorization != null)
+                request.header("Authorization", authorization);
+            if (protocolVersion != null)
+                request.header("MCP-Protocol-Version", protocolVersion);
+            return client.send(request.build(), HttpResponse.BodyHandlers.ofString());
         }
         catch (InterruptedException e)
         {
@@ -160,8 +213,8 @@ public class TestMcpOAuth
 
         JsonArray authMethods = json.getAsJsonArray("token_endpoint_auth_methods_supported");
         assertEquals(2, authMethods.size());
-        assertEquals("client_secret_post", authMethods.get(0).getAsString());
-        assertEquals("none", authMethods.get(1).getAsString());
+        assertEquals("none", authMethods.get(0).getAsString());
+        assertEquals("client_secret_post", authMethods.get(1).getAsString());
 
         // PKCE (required by MCP spec)
         JsonArray codeChallenges = json.getAsJsonArray("code_challenge_methods_supported");
@@ -257,6 +310,121 @@ public class TestMcpOAuth
 
 
     @Test
+    public void testProtectedResourceMetadataEndpointReturnsJson() throws Exception
+    {
+        var resp = sendGet(protectedResourceMetadataUrl);
+        assertEquals(200, resp.statusCode());
+
+        var contentType = resp.headers().firstValue("Content-Type").orElse("");
+        assertTrue("Content-Type should be application/json, was: " + contentType,
+                contentType.contains("application/json"));
+
+        JsonParser.parseString(resp.body()).getAsJsonObject();
+    }
+
+
+    @Test
+    public void testProtectedResourceMetadataRequiredFields() throws Exception
+    {
+        var resp = sendGet(protectedResourceMetadataUrl);
+        assertEquals(200, resp.statusCode());
+
+        var json = JsonParser.parseString(resp.body()).getAsJsonObject();
+        assertEquals(mcpEndpointUrl, json.get("resource").getAsString());
+
+        JsonArray authServers = json.getAsJsonArray("authorization_servers");
+        assertNotNull("authorization_servers should be present", authServers);
+        assertEquals(1, authServers.size());
+        assertEquals(TEST_ISSUER, authServers.get(0).getAsString());
+
+        JsonArray bearerMethods = json.getAsJsonArray("bearer_methods_supported");
+        assertNotNull("bearer_methods_supported should be present", bearerMethods);
+        assertEquals("header", bearerMethods.get(0).getAsString());
+
+        JsonArray scopes = json.getAsJsonArray("scopes_supported");
+        assertNotNull("scopes_supported should be present", scopes);
+        assertEquals("mcp", scopes.get(2).getAsString());
+    }
+
+
+    @Test
+    public void testProtectedResourceMetadataCanonicalizesResourceUri()
+    {
+        var json = McpOAuthHelper.buildProtectedResourceMetadataJson(
+                new McpOAuthConfig(),
+                "HTTP://LOCALHOST:8080/sensorhub/mcp/"
+        );
+
+        var metadata = JsonParser.parseString(json).getAsJsonObject();
+        assertEquals("http://localhost:8080/sensorhub/mcp/",
+                metadata.get("resource").getAsString());
+
+        json = McpOAuthHelper.buildProtectedResourceMetadataJson(
+                new McpOAuthConfig(),
+                "HTTP://LOCALHOST:8080/"
+        );
+
+        metadata = JsonParser.parseString(json).getAsJsonObject();
+        assertEquals("http://localhost:8080",
+                metadata.get("resource").getAsString());
+    }
+
+
+    @Test
+    public void testMcpEndpointUnauthorizedChallengeIncludesResourceMetadata() throws Exception
+    {
+        var initRequest = """
+                {"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"test","version":"1.0.0"}}}
+                """;
+
+        var resp = sendPost(mcpEndpointUrl, initRequest);
+        assertEquals(401, resp.statusCode());
+
+        var challenge = resp.headers().firstValue("WWW-Authenticate").orElse("");
+        assertTrue("WWW-Authenticate should use Bearer challenge: " + challenge,
+                challenge.startsWith("Bearer "));
+        assertTrue("WWW-Authenticate should include resource metadata URL: " + challenge,
+                challenge.contains("resource_metadata=\"" + protectedResourceMetadataUrl + "\""));
+        assertTrue("WWW-Authenticate should include required scope: " + challenge,
+                challenge.contains("scope=\"mcp\""));
+    }
+
+
+    @Test
+    public void testInvalidBearerTokenChallengeIncludesOauthError() throws Exception
+    {
+        var initRequest = """
+                {"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"test","version":"1.0.0"}}}
+                """;
+
+        var resp = sendPost(mcpEndpointUrl, initRequest, "Bearer not-a-jwt", null);
+        assertEquals(401, resp.statusCode());
+
+        var challenge = resp.headers().firstValue("WWW-Authenticate").orElse("");
+        assertTrue("WWW-Authenticate should include invalid_token: " + challenge,
+                challenge.contains("error=\"invalid_token\""));
+        assertTrue("WWW-Authenticate should include resource metadata URL: " + challenge,
+                challenge.contains("resource_metadata=\"" + protectedResourceMetadataUrl + "\""));
+    }
+
+    @Test
+    public void testRepeatedStartDoesNotDuplicateMcpServletMapping() throws Exception
+    {
+        mcpService.doStart();
+
+        var resp = sendGet(metadataUrl);
+        assertEquals(200, resp.statusCode());
+
+        var initRequest = """
+                {"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"test","version":"1.0.0"}}}
+                """;
+
+        var mcpResp = sendPost(mcpEndpointUrl, initRequest);
+        assertEquals(401, mcpResp.statusCode());
+    }
+
+
+    @Test
     public void testOAuthDisabledNoEndpoint() throws Exception
     {
         // Stop current hub
@@ -269,18 +437,24 @@ public class TestMcpOAuth
 
         HttpServerConfig httpConfig = new HttpServerConfig();
         httpConfig.httpPort = SERVER_PORT;
-        var httpServer = (HttpServer) moduleRegistry.loadModule(httpConfig, TIMEOUT);
+        moduleRegistry.loadModule(httpConfig, TIMEOUT);
 
         McpServiceConfig mcpCfg = new McpServiceConfig();
         mcpCfg.autoStart = true;
         mcpCfg.oauth.enabled = false;
         moduleRegistry.loadModule(mcpCfg, TIMEOUT);
 
-        var disabledUrl = httpServer.getPublicEndpointUrl(
-                "/.well-known/oauth-authorization-server" + mcpCfg.endPoint);
+        var disabledUrl = "http://localhost:" + SERVER_PORT
+                + "/.well-known/oauth-authorization-server" + httpConfig.servletsRootUrl + mcpCfg.endPoint;
+        var disabledProtectedResourceUrl = "http://localhost:" + SERVER_PORT
+                + "/.well-known/oauth-protected-resource" + httpConfig.servletsRootUrl + mcpCfg.endPoint;
 
         var resp = sendGet(disabledUrl);
         assertEquals("OAuth metadata endpoint should not exist when disabled",
                 404, resp.statusCode());
+
+        var protectedResp = sendGet(disabledProtectedResourceUrl);
+        assertEquals("OAuth protected resource metadata endpoint should not exist when disabled",
+                404, protectedResp.statusCode());
     }
 }

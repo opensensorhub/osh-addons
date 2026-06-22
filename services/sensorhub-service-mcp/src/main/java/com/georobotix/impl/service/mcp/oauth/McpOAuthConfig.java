@@ -1,18 +1,18 @@
 /***************************** BEGIN LICENSE BLOCK ***************************
 
-The contents of this file are subject to the Mozilla Public License, v. 2.0.
-If a copy of the MPL was not distributed with this file, You can obtain one
-at http://mozilla.org/MPL/2.0/.
+ The contents of this file are subject to the Mozilla Public License, v. 2.0.
+ If a copy of the MPL was not distributed with this file, You can obtain one
+ at http://mozilla.org/MPL/2.0/.
 
-Software distributed under the License is distributed on an "AS IS" basis,
-WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
-for the specific language governing rights and limitations under the License.
+ Software distributed under the License is distributed on an "AS IS" basis,
+ WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+ for the specific language governing rights and limitations under the License.
 
-Copyright (C) 2024 Botts Innovative Research, Inc. All Rights Reserved.
+ Copyright (C) 2026 GeoRobotix Innovative Research, LLC. All Rights Reserved.
 
-******************************* END LICENSE BLOCK ***************************/
+ ******************************* END LICENSE BLOCK ***************************/
 
-package com.georobotix.impl.service.mcp;
+package com.georobotix.impl.service.mcp.oauth;
 
 import org.sensorhub.api.config.DisplayInfo;
 
@@ -26,6 +26,7 @@ import org.sensorhub.api.config.DisplayInfo;
  * to the external provider's authorization and token endpoints.
  * </p>
  */
+// TODO Use OSH OAuth config
 public class McpOAuthConfig
 {
     @DisplayInfo(label="Enable OAuth", desc="Enable OAuth 2.0 authentication for MCP clients")
@@ -50,7 +51,13 @@ public class McpOAuthConfig
     public String revocationEndpoint;
 
     @DisplayInfo(label="Scopes Supported", desc="Comma-separated list of supported OAuth scopes (e.g. openid,profile,email)")
-    public String scopesSupported = "openid,profile";
+    public String scopesSupported = "openid,profile,email,mcp,offline_access";
+
+    @DisplayInfo(label="Required Scopes", desc="Space-separated OAuth scopes required to access the MCP endpoint")
+    public String requiredScopes = "mcp";
+
+    @DisplayInfo(label="Allowed Origins", desc="Comma-separated HTTP Origin values allowed to access the MCP endpoint. Use * only for non-browser or trusted deployments.")
+    public String allowedOrigins = "";
 
     @DisplayInfo(label="Service Documentation URL", desc="URL of the service documentation page (optional)")
     public String serviceDocumentation;

@@ -1,5 +1,21 @@
+/***************************** BEGIN LICENSE BLOCK ***************************
+
+ The contents of this file are subject to the Mozilla Public License, v. 2.0.
+ If a copy of the MPL was not distributed with this file, You can obtain one
+ at http://mozilla.org/MPL/2.0/.
+
+ Software distributed under the License is distributed on an "AS IS" basis,
+ WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+ for the specific language governing rights and limitations under the License.
+
+ Copyright (C) 2026 GeoRobotix Innovative Research, LLC. All Rights Reserved.
+
+ ******************************* END LICENSE BLOCK ***************************/
+
 package com.georobotix.impl.service.mcp;
 
+import com.georobotix.impl.service.mcp.oauth.McpBearerTokenValidator;
+import com.georobotix.impl.service.mcp.oauth.McpOAuthHelper;
 import io.modelcontextprotocol.json.McpJsonDefaults;
 import io.modelcontextprotocol.json.McpJsonMapper;
 import io.modelcontextprotocol.json.TypeRef;
@@ -17,22 +33,17 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
+
 
 /**
  * Javax-compatible Streamable HTTP transport provider for MCP.
  *
  * Implements the MCP Streamable HTTP protocol using javax.servlet, since
  * OSH's embedded Jetty server uses javax.servlet (not jakarta.servlet).
- *
- * Protocol:
- * - POST /  — Client sends JSON-RPC messages. Initialize requests create sessions;
- *             other requests/notifications are routed to existing sessions.
- *             Responses are streamed back as SSE on the POST response body.
- * - GET  /  — Opens an SSE listening stream for server-initiated messages
- *             (notifications, requests). Requires Mcp-Session-Id header.
- * - DELETE / — Terminates a session. Requires Mcp-Session-Id header.
  */
 public class JavaxMcpStreamableTransport extends HttpServlet implements McpStreamableServerTransportProvider {
 
@@ -40,9 +51,18 @@ public class JavaxMcpStreamableTransport extends HttpServlet implements McpStrea
 
     private static final String MCP_SESSION_ID_HEADER = "Mcp-Session-Id";
     private static final String ACCEPT_HEADER = "Accept";
+    private static final String AUTHORIZATION_HEADER = "Authorization";
+    private static final String ORIGIN_HEADER = "Origin";
+    private static final String MCP_PROTOCOL_VERSION_HEADER = "MCP-Protocol-Version";
+    private static final String AUTHENTICATED_USER_ATTRIBUTE = JavaxMcpStreamableTransport.class.getName() + ".authenticatedUser";
     private static final String TEXT_EVENT_STREAM = "text/event-stream";
     private static final String APPLICATION_JSON = "application/json";
     private static final String MESSAGE_EVENT_TYPE = "message";
+    private static final Set<String> SUPPORTED_PROTOCOL_VERSIONS = Set.of(
+            "2025-03-26",
+            "2025-06-18",
+            "2025-11-25"
+    );
 
     private static final ThreadLocal<String> currentUser = new ThreadLocal<>();
 
@@ -50,7 +70,12 @@ public class JavaxMcpStreamableTransport extends HttpServlet implements McpStrea
     private final ConcurrentHashMap<String, McpStreamableServerSession> sessions = new ConcurrentHashMap<>();
     private McpStreamableServerSession.Factory sessionFactory;
     private volatile boolean isClosing = false;
-    private volatile String oauthMetadataJson;
+    private volatile boolean oauthEnabled = false;
+    private volatile String resourceMetadataUrl;
+    private volatile String requiredScopes;
+    private volatile Set<String> allowedOrigins = Set.of();
+    private volatile boolean allowAnyOrigin = false;
+    private volatile McpBearerTokenValidator bearerTokenValidator;
 
     /**
      * Returns the authenticated user for the current HTTP request, or "anonymous" if not authenticated.
@@ -61,10 +86,28 @@ public class JavaxMcpStreamableTransport extends HttpServlet implements McpStrea
     }
 
     /**
-     * Sets the OAuth metadata JSON to serve at the well-known sub-path within this transport.
+     * Configures MCP OAuth discovery and browser-origin validation for this transport.
      */
-    public void setOAuthMetadata(String metadataJson) {
-        this.oauthMetadataJson = metadataJson;
+    public void configureOAuth(String resourceMetadataUrl, String requiredScopes, String allowedOrigins,
+                               McpBearerTokenValidator bearerTokenValidator) {
+        this.oauthEnabled = resourceMetadataUrl != null && !resourceMetadataUrl.isBlank();
+        this.resourceMetadataUrl = resourceMetadataUrl;
+        this.requiredScopes = requiredScopes;
+        this.bearerTokenValidator = bearerTokenValidator;
+
+        var origins = new HashSet<String>();
+        this.allowAnyOrigin = false;
+        if (allowedOrigins != null) {
+            for (var origin: allowedOrigins.split(",")) {
+                var trimmed = origin.trim();
+                if ("*".equals(trimmed)) {
+                    this.allowAnyOrigin = true;
+                } else if (!trimmed.isEmpty()) {
+                    origins.add(trimmed);
+                }
+            }
+        }
+        this.allowedOrigins = Set.copyOf(origins);
     }
 
     public JavaxMcpStreamableTransport() {
@@ -115,18 +158,27 @@ public class JavaxMcpStreamableTransport extends HttpServlet implements McpStrea
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         if (isClosing) {
-            resp.sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE, "Server is shutting down");
+            sendPlainError(resp, HttpServletResponse.SC_SERVICE_UNAVAILABLE, "Server is shutting down");
             return;
         }
 
         if (sessionFactory == null) {
-            resp.sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE, "MCP server not initialized");
+            sendPlainError(resp, HttpServletResponse.SC_SERVICE_UNAVAILABLE, "MCP server not initialized");
+            return;
+        }
+
+        if (!validateOrigin(req, resp) ||
+                !validateAuthorization(req, resp) ||
+                !validatePostAccept(req, resp)) {
             return;
         }
 
         // Store authenticated user for the duration of this request
         var principal = req.getUserPrincipal();
-        currentUser.set(principal != null ? principal.getName() : req.getRemoteUser());
+        var authenticatedUser = req.getAttribute(AUTHENTICATED_USER_ATTRIBUTE);
+        currentUser.set(authenticatedUser instanceof String user && !user.isBlank()
+                ? user
+                : principal != null ? principal.getName() : req.getRemoteUser());
         try {
             doPostInternal(req, resp);
         } finally {
@@ -164,27 +216,33 @@ public class JavaxMcpStreamableTransport extends HttpServlet implements McpStrea
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         if (isClosing) {
-            resp.sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE, "Server is shutting down");
+            sendPlainError(resp, HttpServletResponse.SC_SERVICE_UNAVAILABLE, "Server is shutting down");
+            return;
+        }
+
+        if (!validateOrigin(req, resp) ||
+                !validateAuthorization(req, resp) ||
+                !validateProtocolVersion(req, resp)) {
             return;
         }
 
         // Check Accept header
         String accept = req.getHeader(ACCEPT_HEADER);
         if (accept == null || !accept.contains(TEXT_EVENT_STREAM)) {
-            resp.sendError(HttpServletResponse.SC_NOT_ACCEPTABLE, "Accept header must include text/event-stream");
+            sendPlainError(resp, HttpServletResponse.SC_NOT_ACCEPTABLE, "Accept header must include text/event-stream");
             return;
         }
 
         // Require session ID
         String sessionId = req.getHeader(MCP_SESSION_ID_HEADER);
         if (sessionId == null || sessionId.isBlank()) {
-            resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "Missing Mcp-Session-Id header");
+            sendPlainError(resp, HttpServletResponse.SC_BAD_REQUEST, "Missing Mcp-Session-Id header");
             return;
         }
 
         McpStreamableServerSession session = sessions.get(sessionId);
         if (session == null) {
-            resp.sendError(HttpServletResponse.SC_NOT_FOUND, "Session not found: " + sessionId);
+            sendPlainError(resp, HttpServletResponse.SC_NOT_FOUND, "Session not found: " + sessionId);
             return;
         }
 
@@ -199,7 +257,7 @@ public class JavaxMcpStreamableTransport extends HttpServlet implements McpStrea
         asyncContext.setTimeout(0);
 
         PrintWriter writer = resp.getWriter();
-        StreamableSessionTransport transport = new StreamableSessionTransport(sessionId, asyncContext, writer, jsonMapper, sessions);
+        StreamableSessionTransport transport = new StreamableSessionTransport(sessionId, asyncContext, writer, jsonMapper);
 
         // Open a listening stream for server-initiated messages
         McpStreamableServerSession.McpStreamableServerSessionStream stream = session.listeningStream(transport);
@@ -231,15 +289,21 @@ public class JavaxMcpStreamableTransport extends HttpServlet implements McpStrea
 
     @Override
     protected void doDelete(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+        if (!validateOrigin(req, resp) ||
+                !validateAuthorization(req, resp) ||
+                !validateProtocolVersion(req, resp)) {
+            return;
+        }
+
         String sessionId = req.getHeader(MCP_SESSION_ID_HEADER);
         if (sessionId == null || sessionId.isBlank()) {
-            resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "Missing Mcp-Session-Id header");
+            sendPlainError(resp, HttpServletResponse.SC_BAD_REQUEST, "Missing Mcp-Session-Id header");
             return;
         }
 
         McpStreamableServerSession session = sessions.remove(sessionId);
         if (session == null) {
-            resp.sendError(HttpServletResponse.SC_NOT_FOUND, "Session not found: " + sessionId);
+            sendPlainError(resp, HttpServletResponse.SC_NOT_FOUND, "Session not found: " + sessionId);
             return;
         }
 
@@ -301,6 +365,10 @@ public class JavaxMcpStreamableTransport extends HttpServlet implements McpStrea
 
     private void handleRequest(HttpServletRequest req, HttpServletResponse resp,
                                McpSchema.JSONRPCRequest request) throws IOException {
+        if (!validateProtocolVersion(req, resp)) {
+            return;
+        }
+
         String sessionId = req.getHeader(MCP_SESSION_ID_HEADER);
         if (sessionId == null || sessionId.isBlank()) {
             sendJsonRpcError(resp, HttpServletResponse.SC_BAD_REQUEST,
@@ -310,7 +378,8 @@ public class JavaxMcpStreamableTransport extends HttpServlet implements McpStrea
 
         McpStreamableServerSession session = sessions.get(sessionId);
         if (session == null) {
-            resp.sendError(HttpServletResponse.SC_NOT_FOUND, "Session not found: " + sessionId);
+            sendJsonRpcError(resp, HttpServletResponse.SC_NOT_FOUND,
+                    -32001, "Session not found: " + sessionId);
             return;
         }
 
@@ -326,7 +395,7 @@ public class JavaxMcpStreamableTransport extends HttpServlet implements McpStrea
 
         PrintWriter writer = resp.getWriter();
         StreamableSessionTransport transport = new StreamableSessionTransport(
-                sessionId, asyncContext, writer, jsonMapper, sessions);
+                sessionId, asyncContext, writer, jsonMapper);
 
         // Process the request through the session - responses stream back via SSE
         session.responseStream(request, transport)
@@ -342,6 +411,10 @@ public class JavaxMcpStreamableTransport extends HttpServlet implements McpStrea
 
     private void handleNotification(HttpServletRequest req, HttpServletResponse resp,
                                     McpSchema.JSONRPCNotification notification) throws IOException {
+        if (!validateProtocolVersion(req, resp)) {
+            return;
+        }
+
         String sessionId = req.getHeader(MCP_SESSION_ID_HEADER);
 
         // "initialized" notification may come without session ID on some clients
@@ -358,7 +431,8 @@ public class JavaxMcpStreamableTransport extends HttpServlet implements McpStrea
 
         McpStreamableServerSession session = sessions.get(sessionId);
         if (session == null) {
-            resp.sendError(HttpServletResponse.SC_NOT_FOUND, "Session not found: " + sessionId);
+            sendJsonRpcError(resp, HttpServletResponse.SC_NOT_FOUND,
+                    -32001, "Session not found: " + sessionId);
             return;
         }
 
@@ -374,6 +448,10 @@ public class JavaxMcpStreamableTransport extends HttpServlet implements McpStrea
 
     private void handleResponse(HttpServletRequest req, HttpServletResponse resp,
                                 McpSchema.JSONRPCResponse response) throws IOException {
+        if (!validateProtocolVersion(req, resp)) {
+            return;
+        }
+
         String sessionId = req.getHeader(MCP_SESSION_ID_HEADER);
         if (sessionId == null || sessionId.isBlank()) {
             sendJsonRpcError(resp, HttpServletResponse.SC_BAD_REQUEST,
@@ -383,7 +461,8 @@ public class JavaxMcpStreamableTransport extends HttpServlet implements McpStrea
 
         McpStreamableServerSession session = sessions.get(sessionId);
         if (session == null) {
-            resp.sendError(HttpServletResponse.SC_NOT_FOUND, "Session not found: " + sessionId);
+            sendJsonRpcError(resp, HttpServletResponse.SC_NOT_FOUND,
+                    -32001, "Session not found: " + sessionId);
             return;
         }
 
@@ -408,6 +487,90 @@ public class JavaxMcpStreamableTransport extends HttpServlet implements McpStrea
             }
         }
         return body.toString();
+    }
+
+    private boolean validatePostAccept(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+        String accept = req.getHeader(ACCEPT_HEADER);
+        if (accept == null || !accept.contains(APPLICATION_JSON) || !accept.contains(TEXT_EVENT_STREAM)) {
+            sendPlainError(resp, HttpServletResponse.SC_NOT_ACCEPTABLE,
+                    "Accept header must include application/json and text/event-stream");
+            return false;
+        }
+        return true;
+    }
+
+    private boolean validateProtocolVersion(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+        String protocolVersion = req.getHeader(MCP_PROTOCOL_VERSION_HEADER);
+        if (protocolVersion == null || protocolVersion.isBlank()) {
+            return true;
+        }
+
+        if (!SUPPORTED_PROTOCOL_VERSIONS.contains(protocolVersion.trim())) {
+            sendPlainError(resp, HttpServletResponse.SC_BAD_REQUEST,
+                    "Unsupported MCP protocol version: " + protocolVersion);
+            return false;
+        }
+
+        return true;
+    }
+
+    private boolean validateAuthorization(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+        if (!oauthEnabled) {
+            return true;
+        }
+
+        String authHeader = req.getHeader(AUTHORIZATION_HEADER);
+        if (authHeader == null || !authHeader.regionMatches(true, 0, "Bearer ", 0, "Bearer ".length())) {
+            McpOAuthHelper.addBearerChallenge(resp, resourceMetadataUrl, requiredScopes);
+            resp.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            resp.setContentType(APPLICATION_JSON);
+            resp.setCharacterEncoding("UTF-8");
+            resp.getWriter().write("{\"error\":\"Bearer token required\"}");
+            return false;
+        }
+
+        String token = authHeader.substring("Bearer ".length()).trim();
+        if (bearerTokenValidator != null) {
+            var validation = bearerTokenValidator.validate(token);
+            if (!validation.isValid()) {
+                McpOAuthHelper.addBearerChallenge(resp, resourceMetadataUrl, requiredScopes,
+                        "invalid_token", validation.errorDescription());
+                resp.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                resp.setContentType(APPLICATION_JSON);
+                resp.setCharacterEncoding("UTF-8");
+                resp.getWriter().write("{\"error\":\"Invalid bearer token\"}");
+                return false;
+            }
+
+            if (validation.subject() != null && !validation.subject().isBlank())
+                req.setAttribute(AUTHENTICATED_USER_ATTRIBUTE, validation.subject());
+        }
+
+        return true;
+    }
+
+    private boolean validateOrigin(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+        String origin = req.getHeader(ORIGIN_HEADER);
+        if (origin == null || origin.isBlank()) {
+            return true;
+        }
+
+        if (allowAnyOrigin || allowedOrigins.contains(origin) || origin.equals(getRequestOrigin(req))) {
+            return true;
+        }
+
+        sendPlainError(resp, HttpServletResponse.SC_FORBIDDEN, "Origin not allowed");
+        return false;
+    }
+
+    private String getRequestOrigin(HttpServletRequest req) {
+        String scheme = req.getScheme();
+        String host = req.getServerName();
+        int port = req.getServerPort();
+        boolean defaultPort = ("http".equalsIgnoreCase(scheme) && port == 80) ||
+                ("https".equalsIgnoreCase(scheme) && port == 443);
+
+        return scheme + "://" + host + (defaultPort ? "" : ":" + port);
     }
 
     private McpSchema.JSONRPCMessage parseJsonRpcMessage(String json) throws IOException {
@@ -435,6 +598,13 @@ public class JavaxMcpStreamableTransport extends HttpServlet implements McpStrea
         ));
     }
 
+    private void sendPlainError(HttpServletResponse resp, int httpStatus, String message) throws IOException {
+        resp.setStatus(httpStatus);
+        resp.setContentType("text/plain");
+        resp.setCharacterEncoding("UTF-8");
+        resp.getWriter().write(message);
+    }
+
     private String escapeJson(String text) {
         if (text == null) return "";
         return text.replace("\\", "\\\\")
@@ -456,18 +626,15 @@ public class JavaxMcpStreamableTransport extends HttpServlet implements McpStrea
         private final AsyncContext asyncContext;
         private final PrintWriter writer;
         private final McpJsonMapper jsonMapper;
-        private final ConcurrentHashMap<String, McpStreamableServerSession> sessions;
         private final ReentrantLock writeLock = new ReentrantLock();
         private volatile boolean closed = false;
 
         StreamableSessionTransport(String sessionId, AsyncContext asyncContext, PrintWriter writer,
-                                   McpJsonMapper jsonMapper,
-                                   ConcurrentHashMap<String, McpStreamableServerSession> sessions) {
+                                   McpJsonMapper jsonMapper) {
             this.sessionId = sessionId;
             this.asyncContext = asyncContext;
             this.writer = writer;
             this.jsonMapper = jsonMapper;
-            this.sessions = sessions;
         }
 
         @Override
@@ -509,12 +676,10 @@ public class JavaxMcpStreamableTransport extends HttpServlet implements McpStrea
                     if (writer.checkError()) {
                         log.warn("Write error for session {}", sessionId);
                         closed = true;
-                        sessions.remove(sessionId);
                     }
                 } catch (IOException e) {
                     log.warn("Failed to send message to session {}: {}", sessionId, e.getMessage());
                     closed = true;
-                    sessions.remove(sessionId);
                 } finally {
                     writeLock.unlock();
                 }

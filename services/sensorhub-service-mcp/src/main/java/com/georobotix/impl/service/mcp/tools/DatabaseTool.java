@@ -1,20 +1,21 @@
 /***************************** BEGIN LICENSE BLOCK ***************************
 
-The contents of this file are subject to the Mozilla Public License, v. 2.0.
-If a copy of the MPL was not distributed with this file, You can obtain one
-at http://mozilla.org/MPL/2.0/.
+ The contents of this file are subject to the Mozilla Public License, v. 2.0.
+ If a copy of the MPL was not distributed with this file, You can obtain one
+ at http://mozilla.org/MPL/2.0/.
 
-Software distributed under the License is distributed on an "AS IS" basis,
-WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
-for the specific language governing rights and limitations under the License.
+ Software distributed under the License is distributed on an "AS IS" basis,
+ WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+ for the specific language governing rights and limitations under the License.
 
-Copyright (C) 2024 Botts Innovative Research, Inc. All Rights Reserved.
+ Copyright (C) 2026 GeoRobotix Innovative Research, LLC. All Rights Reserved.
 
-******************************* END LICENSE BLOCK ***************************/
+ ******************************* END LICENSE BLOCK ***************************/
 
 package com.georobotix.impl.service.mcp.tools;
 
 import com.georobotix.impl.service.mcp.JavaxMcpStreamableTransport;
+import com.georobotix.impl.service.mcp.ConSysJsonHelper;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import io.modelcontextprotocol.server.McpAsyncServerExchange;
@@ -28,7 +29,6 @@ import org.sensorhub.api.common.BigId;
 import org.sensorhub.api.common.IdEncoders;
 import org.sensorhub.api.data.IDataStreamInfo;
 import org.sensorhub.api.data.IObsData;
-import org.sensorhub.api.data.ObsData;
 import org.sensorhub.api.database.IDatabaseRegistry;
 import org.sensorhub.api.database.IObsSystemDatabase;
 import org.sensorhub.api.datastore.command.CommandFilter;
@@ -47,20 +47,18 @@ import org.sensorhub.api.system.ISystemWithDesc;
 import org.sensorhub.impl.common.IdEncodersBase32;
 import org.sensorhub.impl.service.consys.deployment.DeploymentBindingGeoJson;
 import org.sensorhub.impl.service.consys.feature.FoiBindingGeoJson;
-import org.sensorhub.impl.service.consys.obs.DataStreamBindingJson;
-import org.sensorhub.impl.service.consys.obs.ObsBindingOmJson;
 import org.sensorhub.impl.service.consys.resource.RequestContext;
-import org.sensorhub.impl.service.consys.system.SystemBindingGeoJson;
-import org.sensorhub.impl.service.consys.task.CommandBindingJson;
-import org.sensorhub.impl.service.consys.task.CommandStreamBindingJson;
 import org.sensorhub.impl.system.SystemDatabaseTransactionHandler;
 import org.vast.ogc.gml.IFeature;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.vast.swe.fast.JsonDataParserGson;
 import reactor.core.publisher.Mono;
 
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.*;
@@ -114,6 +112,7 @@ public class DatabaseTool extends AbstractMcpTool {
     private final String writeDatabaseId;
     private final IdEncoders idEncoders;
     private final Gson gson;
+    private final ConSysJsonHelper consysJsonHelper;
 
     public DatabaseTool(IDatabaseRegistry databaseRegistry, IEventBus eventBus, String writeDatabaseId) {
         this.databaseRegistry = databaseRegistry;
@@ -125,6 +124,7 @@ public class DatabaseTool extends AbstractMcpTool {
                 .disableHtmlEscaping()
                 .serializeNulls()
                 .create();
+        this.consysJsonHelper = new ConSysJsonHelper(databaseRegistry.getFederatedDatabase(), idEncoders);
     }
 
     public enum Action {
@@ -326,19 +326,18 @@ public class DatabaseTool extends AbstractMcpTool {
     private McpSchema.CallToolResult queryObservations(IObsSystemDatabase db, Map<String, Object> args, int limit, int offset) {
         var builder = new ObsFilter.Builder();
 
-        String systemUID = (String) args.get("systemUID");
-        if (systemUID != null && !systemUID.isBlank())
-            builder.withSystems().withUniqueIDs(systemUID).done();
-
-        String datastreamId = (String) args.get("datastreamId");
-        if (datastreamId != null && !datastreamId.isBlank()) {
-            try {
-                BigId dsId = BigId.fromString32(datastreamId);
-                builder.withDataStreams(dsId);
-            } catch (Exception e) {
-                return errorResult("Invalid datastreamId format: " + datastreamId);
-            }
+        DataStreamFilter dataStreamFilter;
+        try {
+            dataStreamFilter = buildObservationDataStreamFilter(args);
+        } catch (IllegalArgumentException e) {
+            return errorResult(e.getMessage());
         }
+        if (dataStreamFilter != null)
+            builder.withDataStreams(dataStreamFilter);
+
+        String systemUID = (String) args.get("systemUID");
+        if (dataStreamFilter == null && systemUID != null && !systemUID.isBlank())
+            builder.withSystems().withUniqueIDs(systemUID).done();
 
         String foiId = (String) args.get("foiId");
         if (foiId != null && !foiId.isBlank()) {
@@ -352,7 +351,7 @@ public class DatabaseTool extends AbstractMcpTool {
 
         String timeRange = (String) args.get("timeRange");
         if ("latest".equalsIgnoreCase(timeRange)) {
-            builder.withLatestResult();
+            return queryLatestObservations(db, dataStreamFilter, foiId, limit, offset);
         } else if (timeRange != null && !timeRange.isBlank()) {
             Instant[] range = parseTimeRange(timeRange);
             if (range != null)
@@ -374,6 +373,89 @@ public class DatabaseTool extends AbstractMcpTool {
                     .results(results)
                     .build();
         }
+    }
+
+    private DataStreamFilter buildObservationDataStreamFilter(Map<String, Object> args) {
+        var builder = new DataStreamFilter.Builder();
+        boolean hasFilter = false;
+
+        String datastreamId = (String) args.get("datastreamId");
+        if (datastreamId != null && !datastreamId.isBlank()) {
+            try {
+                builder.withInternalIDs(BigId.fromString32(datastreamId));
+                hasFilter = true;
+            } catch (Exception e) {
+                throw new IllegalArgumentException("Invalid datastreamId format: " + datastreamId);
+            }
+        }
+
+        String systemUID = (String) args.get("systemUID");
+        if (systemUID != null && !systemUID.isBlank()) {
+            builder.withSystems().withUniqueIDs(systemUID).done();
+            hasFilter = true;
+        }
+
+        String outputName = (String) args.get("outputName");
+        if (outputName != null && !outputName.isBlank()) {
+            builder.withOutputNames(outputName);
+            hasFilter = true;
+        }
+
+        String observedProperty = (String) args.get("observedProperty");
+        if (observedProperty != null && !observedProperty.isBlank()) {
+            builder.withObservedProperties(observedProperty);
+            hasFilter = true;
+        }
+
+        return hasFilter ? builder.build() : null;
+    }
+
+    private McpSchema.CallToolResult queryLatestObservations(IObsSystemDatabase db, DataStreamFilter dataStreamFilter,
+                                                            String foiId, int limit, int offset) {
+        BigId foiInternalId = null;
+        if (foiId != null && !foiId.isBlank()) {
+            try {
+                foiInternalId = BigId.fromString32(foiId);
+            } catch (Exception e) {
+                return errorResult("Invalid foiId format: " + foiId);
+            }
+        }
+
+        DataStreamFilter dsFilter = dataStreamFilter != null
+                ? DataStreamFilter.Builder.from(dataStreamFilter).withLimit(MAX_LIMIT).build()
+                : new DataStreamFilter.Builder().withLimit(MAX_LIMIT).build();
+
+        List<String> results = new ArrayList<>();
+        long skipped = 0;
+
+        try (var dataStreams = db.getDataStreamStore().selectEntries(dsFilter)) {
+            var iterator = dataStreams.iterator();
+            while (iterator.hasNext() && results.size() < limit) {
+                var dsId = iterator.next().getKey().getInternalID();
+                var obsBuilder = new ObsFilter.Builder()
+                        .withDataStreams(dsId)
+                        .withLatestResult()
+                        .withLimit(1);
+
+                if (foiInternalId != null)
+                    obsBuilder.withFois(foiInternalId);
+
+                try (var observations = db.getObservationStore().select(obsBuilder.build())) {
+                    var obs = observations.findFirst();
+                    if (obs.isPresent()) {
+                        if (skipped++ < offset)
+                            continue;
+                        results.add(serializeObservation(obs.get(), db));
+                    }
+                }
+            }
+        }
+
+        return resultBuilder()
+                .success(true)
+                .message(String.format("Found %d latest observation(s)", results.size()))
+                .results(results)
+                .build();
     }
 
     private McpSchema.CallToolResult queryFois(IObsSystemDatabase db, Map<String, Object> args, int limit, int offset) {
@@ -592,17 +674,9 @@ public class DatabaseTool extends AbstractMcpTool {
             if (dsInfo == null)
                 return errorResult("Datastream not found: " + datastreamId);
 
-            DataBlock dataBlock = buildDataBlock(dsInfo.getRecordStructure(), resultData);
-
-            // Build observation
             String foiIdStr = (String) args.get("foiId");
-            var obsBuilder = new ObsData.Builder()
-                    .withDataStream(dsId)
-                    .withPhenomenonTime(phenomenonTime)
-                    .withResult(dataBlock);
-
-            if (foiIdStr != null && !foiIdStr.isBlank())
-                obsBuilder.withFoi(BigId.fromString32(foiIdStr));
+            BigId foiId = foiIdStr != null && !foiIdStr.isBlank() ? BigId.fromString32(foiIdStr) : null;
+            var obs = consysJsonHelper.readObservation(dsInfo, dsId, phenomenonTime, foiId, resultData);
 
             // Submit through transaction handler so ObsEvent is published to subscribers
             var txHandler = new SystemDatabaseTransactionHandler(eventBus,
@@ -611,7 +685,7 @@ public class DatabaseTool extends AbstractMcpTool {
             if (dsHandler == null)
                 return errorResult("Datastream handler not found for: " + datastreamId);
 
-            BigId obsId = dsHandler.addObs(obsBuilder.build());
+            BigId obsId = dsHandler.addObs(obs);
 
             String resultJson = "{\"observationId\":\"" + BigId.toString32(obsId)
                     + "\",\"datastreamId\":\"" + escapeJson(datastreamId)
@@ -649,7 +723,7 @@ public class DatabaseTool extends AbstractMcpTool {
             if (csInfo == null)
                 return errorResult("Command stream not found: " + commandstreamId);
 
-            DataBlock dataBlock = buildDataBlock(csInfo.getRecordStructure(), commandData);
+            DataBlock dataBlock = parseDataBlock(csInfo.getRecordStructure(), commandData);
 
             var cmdBuilder = new CommandData.Builder()
                     .withCommandStream(csId)
@@ -672,15 +746,13 @@ public class DatabaseTool extends AbstractMcpTool {
             var status = csHandler.submitCommand(correlationID, cmdBuilder.build(),
                     5, TimeUnit.SECONDS).get();
 
-            String resultJson = "{\"commandId\":\"" + BigId.toString32(status.getCommandID())
-                    + "\",\"commandstreamId\":\"" + escapeJson(commandstreamId)
-                    + "\",\"statusCode\":\"" + escapeJson(status.getStatusCode().toString())
-                    + "\",\"issueTime\":\"" + escapeJson(Instant.now().toString()) + "\"}";
+            // Replace with status ID
+            String resultStatus = consysJsonHelper.writeCommandStatus(status, status.getCommandID(), false);
 
             return resultBuilder()
                     .success(true)
                     .message("Command submitted successfully (status: " + status.getStatusCode() + ")")
-                    .resource(resultJson)
+                    .resource(resultStatus)
                     .build();
         } catch (Exception e) {
             return errorResult("Failed to write command: " + e.getMessage());
@@ -691,13 +763,8 @@ public class DatabaseTool extends AbstractMcpTool {
 
     private String serializeSystem(ISystemWithDesc system) {
         try {
-            var buffer = new ByteArrayOutputStream();
-            var ctx = new RequestContext(buffer);
-            var db = databaseRegistry.getFederatedDatabase();
-            var binding = new SystemBindingGeoJson(ctx, idEncoders, db, false);
-            binding.serialize((FeatureKey) null, system, false);
-            return buffer.toString(StandardCharsets.UTF_8);
-        } catch (IOException e) {
+            return consysJsonHelper.writeSystem(system, (FeatureKey) null, false);
+        } catch (Exception e) {
             log.warn("Failed to serialize system: {}", e.getMessage());
             return "{\"error\":\"" + escapeJson(e.getMessage()) + "\"}";
         }
@@ -705,13 +772,8 @@ public class DatabaseTool extends AbstractMcpTool {
 
     private String serializeDataStream(IDataStreamInfo ds) {
         try {
-            var buffer = new ByteArrayOutputStream();
-            var ctx = new RequestContext(buffer);
-            var db = databaseRegistry.getFederatedDatabase();
-            var binding = new DataStreamBindingJson(ctx, idEncoders, db, false, Collections.emptyMap());
-            binding.serialize((DataStreamKey) null, ds, false);
-            return buffer.toString(StandardCharsets.UTF_8);
-        } catch (IOException e) {
+            return consysJsonHelper.writeDataStream(ds, (DataStreamKey) null, false);
+        } catch (Exception e) {
             log.warn("Failed to serialize datastream: {}", e.getMessage());
             return "{\"error\":\"" + escapeJson(e.getMessage()) + "\"}";
         }
@@ -719,12 +781,8 @@ public class DatabaseTool extends AbstractMcpTool {
 
     private String serializeObservation(IObsData obs, IObsSystemDatabase db) {
         try {
-            var buffer = new ByteArrayOutputStream();
-            var ctx = new RequestContext(buffer);
-            var binding = new ObsBindingOmJson(ctx, idEncoders, false, db.getObservationStore());
-            binding.serialize((BigId) null, obs, false);
-            return buffer.toString(StandardCharsets.UTF_8);
-        } catch (IOException e) {
+            return consysJsonHelper.writeObservation(obs, (BigId) null, false);
+        } catch (Exception e) {
             log.warn("Failed to serialize observation: {}", e.getMessage());
             return "{\"error\":\"" + escapeJson(e.getMessage()) + "\"}";
         }
@@ -746,12 +804,8 @@ public class DatabaseTool extends AbstractMcpTool {
 
     private String serializeCommand(ICommandData cmd, IObsSystemDatabase db) {
         try {
-            var buffer = new ByteArrayOutputStream();
-            var ctx = new RequestContext(buffer);
-            var binding = new CommandBindingJson(ctx, idEncoders, false, db.getCommandStore());
-            binding.serialize((BigId) null, cmd, false);
-            return buffer.toString(StandardCharsets.UTF_8);
-        } catch (IOException e) {
+            return consysJsonHelper.writeCommand(cmd, (BigId) null, false);
+        } catch (Exception e) {
             log.warn("Failed to serialize command: {}", e.getMessage());
             return "{\"error\":\"" + escapeJson(e.getMessage()) + "\"}";
         }
@@ -759,13 +813,8 @@ public class DatabaseTool extends AbstractMcpTool {
 
     private String serializeCommandStream(BigId id, ICommandStreamInfo cs) {
         try {
-            var buffer = new ByteArrayOutputStream();
-            var ctx = new RequestContext(buffer);
-            var db = databaseRegistry.getFederatedDatabase();
-            var binding = new CommandStreamBindingJson(ctx, idEncoders, db, false);
-            binding.serialize(new CommandStreamKey(id), cs, false);
-            return buffer.toString(StandardCharsets.UTF_8);
-        } catch (IOException e) {
+            return consysJsonHelper.writeCommandStream(cs, new CommandStreamKey(id), false);
+        } catch (Exception e) {
             log.warn("Failed to serialize command stream: {}", e.getMessage());
             return "{\"error\":\"" + escapeJson(e.getMessage()) + "\"}";
         }
@@ -787,48 +836,14 @@ public class DatabaseTool extends AbstractMcpTool {
 
     // ==================== Data Component Helpers ====================
 
-    private DataBlock buildDataBlock(DataComponent structure, Map<String, Object> values) {
-        structure.assignNewDataBlock();
-        DataBlock block = structure.getData();
-        setDataBlockValues(structure, block, values);
-        return block;
-    }
-
-    private void setDataBlockValues(DataComponent comp, DataBlock block, Map<String, Object> values) {
-        if (comp.getComponentCount() == 0) {
-            // Scalar component - set value directly on the component's data
-            Object val = values.get(comp.getName());
-            if (val != null && comp.hasData()) {
-                setScalarOnComponent(comp, val);
-            }
-        } else {
-            // Composite component - recurse
-            for (int i = 0; i < comp.getComponentCount(); i++) {
-                DataComponent child = comp.getComponent(i);
-                Object childVal = values.get(child.getName());
-                if (childVal instanceof Map) {
-                    @SuppressWarnings("unchecked")
-                    Map<String, Object> childMap = (Map<String, Object>) childVal;
-                    setDataBlockValues(child, block, childMap);
-                } else if (childVal != null && child.hasData()) {
-                    setScalarOnComponent(child, childVal);
-                }
-            }
-        }
-    }
-
-    private void setScalarOnComponent(DataComponent comp, Object value) {
+    private DataBlock parseDataBlock(DataComponent structure, Map<String, Object> values) {
         try {
-            DataBlock data = comp.getData();
-            if (value instanceof Number num) {
-                data.setDoubleValue(num.doubleValue());
-            } else if (value instanceof Boolean bool) {
-                data.setBooleanValue(bool);
-            } else {
-                data.setStringValue(value.toString());
-            }
+            var input = new ByteArrayInputStream(gson.toJson(values).getBytes(StandardCharsets.UTF_8));
+            var parser = new JsonDataParserGson(new com.google.gson.stream.JsonReader(new InputStreamReader(input, StandardCharsets.UTF_8)));
+            parser.setDataComponents(structure);
+            return parser.parseNextBlock();
         } catch (Exception e) {
-            log.warn("Failed to set value on component '{}': {}", comp.getName(), e.getMessage());
+            throw new IllegalArgumentException("Failed to parse SWE JSON data block: " + e.getMessage(), e);
         }
     }
 
@@ -884,36 +899,51 @@ public class DatabaseTool extends AbstractMcpTool {
     }
 
     private class ResultBuilder {
-        private boolean success;
-        private String message;
-        private List<String> jsonResults;
-        private String jsonResource;
+        private final Map<String, Object> result = new LinkedHashMap<>();
 
-        ResultBuilder success(boolean success) { this.success = success; return this; }
-        ResultBuilder message(String message) { this.message = message; return this; }
-        ResultBuilder results(List<String> items) { this.jsonResults = items; return this; }
-        ResultBuilder resource(String json) { this.jsonResource = json; return this; }
+        ResultBuilder success(boolean success) {
+            result.put("success", success);
+            return this;
+        }
+
+        ResultBuilder message(String message) {
+            result.put("message", message);
+            return this;
+        }
+
+        ResultBuilder results(List<String> items) {
+            result.put("count", items.size());
+            result.put("results", items.stream()
+                    .map(this::parseJsonValue)
+                    .collect(Collectors.toList()));
+            return this;
+        }
+
+        ResultBuilder resource(String json) {
+            result.put("resource", parseJsonValue(json));
+            return this;
+        }
 
         McpSchema.CallToolResult build() {
-            var sb = new StringBuilder();
-            sb.append("{\"success\":").append(success);
-            sb.append(",\"message\":\"").append(escapeJson(message)).append("\"");
-            if (jsonResults != null) {
-                sb.append(",\"count\":").append(jsonResults.size());
-                sb.append(",\"results\":[");
-                sb.append(String.join(",", jsonResults));
-                sb.append("]");
-            }
-            if (jsonResource != null) {
-                sb.append(",\"resource\":").append(jsonResource);
-            }
-            sb.append("}");
-            String json = sb.toString();
-            boolean isError = !success;
+            String json = gson.toJson(result);
+            boolean isError = !Boolean.TRUE.equals(result.get("success"));
             return McpSchema.CallToolResult.builder()
                     .content(List.of(new McpSchema.TextContent(json)))
+                    .structuredContent(result)
                     .isError(isError)
                     .build();
+        }
+
+        private Object parseJsonValue(String json) {
+            if (json == null || json.isBlank())
+                return Map.of();
+
+            try {
+                return gson.fromJson(json, Object.class);
+            } catch (Exception e) {
+                log.warn("Failed to parse serialized datastore resource as JSON: {}", e.getMessage());
+                return Map.of("raw", json);
+            }
         }
     }
 
