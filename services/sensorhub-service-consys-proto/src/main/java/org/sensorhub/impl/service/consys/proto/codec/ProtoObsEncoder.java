@@ -237,7 +237,10 @@ public final class ProtoObsEncoder
                     "DataArray with a non-flat element (nested DataChoice or variable-size array) "
                     + "is not supported in swe+proto encoding (field '" + comp.getName() + "')");
             var f = field(desc, fieldNum);
-            boolean nested = elt instanceof DataRecord || elt instanceof Vector;
+            // record/vector element → repeated nested message; a nested DataArray
+            // element (a Matrix row) → repeated wrapper message (encodeMessage
+            // wraps the non-structured inner array as that message's field 1)
+            boolean nested = elt instanceof DataRecord || elt instanceof Vector || elt instanceof DataArray;
             int size = array.getComponentCount();
             for (int e = 0; e < size; e++)
             {

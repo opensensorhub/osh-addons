@@ -221,7 +221,6 @@ public final class ProtoRecordDecoder
                     "DataArray with a non-flat element (nested DataChoice or variable-size array) "
                     + "is not supported in swe+proto decoding (field '" + comp.getName() + "')");
             var f = field(msg.getDescriptorForType(), fieldNum);
-            boolean nested = elt instanceof DataRecord || elt instanceof Vector;
             int size = array.getComponentCount();
             int wireCount = msg.getRepeatedFieldCount(f);
             if (wireCount != size)
@@ -230,12 +229,19 @@ public final class ProtoRecordDecoder
                     + " != fixed schema size " + size);
             for (int e = 0; e < size; e++)
             {
-                if (nested)
+                if (elt instanceof DataRecord || elt instanceof Vector)
                 {
                     var sub = (Message) msg.getRepeatedField(f, e);
                     int subFieldNum = 1;
                     for (int i = 0; i < elt.getComponentCount(); i++)
                         subFieldNum = decodeComponent(sub, elt.getComponent(i), subFieldNum, block, idx);
+                }
+                else if (elt instanceof DataArray)
+                {
+                    // nested array (Matrix row) → wrapper message holding the
+                    // inner array at field 1; recurse the array logic into it
+                    var sub = (Message) msg.getRepeatedField(f, e);
+                    decodeComponent(sub, elt, 1, block, idx);
                 }
                 else
                 {

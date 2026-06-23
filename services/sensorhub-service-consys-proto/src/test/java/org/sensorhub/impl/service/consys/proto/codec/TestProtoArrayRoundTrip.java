@@ -176,4 +176,35 @@ public class TestProtoArrayRoundTrip
                 .withElement("x", swe.createQuantity().build()))
             .build()));
     }
+
+
+    @Test
+    public void fixedMatrixRoundTrip() throws Exception
+    {
+        var swe = new SWEHelper();
+        // 2x3 matrix: array[2] of (array[3] of double), plus a trailing scalar
+        var rec = swe.createRecord()
+            .addField("m", swe.createArray().withFixedSize(2)
+                .withElement("row", swe.createArray().withFixedSize(3)
+                    .withElement("v", swe.createQuantity().dataType(DataType.DOUBLE).build())
+                    .build()))
+            .addField("tail", swe.createCount().build())
+            .build();
+        var d = desc(rec);
+
+        var blk = rec.createDataBlock();          // flat: [m00..m05, tail] = 7
+        assertEquals(7, blk.getAtomCount());
+        for (int i = 0; i < 6; i++)
+            blk.setDoubleValue(i, (i + 1) * 1.5);
+        blk.setIntValue(6, 99);
+
+        var wire = ProtoObsEncoder.encode(rec, d, blk, null).toByteArray();
+        var msg = DynamicMessage.parseFrom(d, wire);
+        var out = ProtoRecordDecoder.decodeRecord(rec, msg);
+
+        assertEquals(7, out.getAtomCount());
+        for (int i = 0; i < 6; i++)
+            assertEquals((i + 1) * 1.5, out.getDoubleValue(i), 1e-9);
+        assertEquals(99, out.getIntValue(6));     // trailing scalar after the matrix
+    }
 }

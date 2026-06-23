@@ -375,8 +375,12 @@ public class ProtoSchemaWriter
                 .setLabel(Label.LABEL_REPEATED)
                 .setOptions(sweOptions(comp));
 
-            if (elt instanceof DataRecord || elt instanceof Vector)
+            if (elt instanceof DataRecord || elt instanceof Vector || elt instanceof DataArray)
             {
+                // record/vector element → nested message; nested DataArray element
+                // (a Matrix row — proto has no repeated-of-repeated) → wrapper
+                // message holding the inner array as its single repeated field
+                // (buildMessage wraps a non-structured component automatically)
                 var nestedName = uniqueMessageName(state, scopeFqn, deriveTypeName(elt));
                 msg.addNestedType(buildMessage(elt, nestedName, scopeFqn, state));
                 fb.setType(Type.TYPE_MESSAGE).setTypeName(scopeFqn + "." + nestedName);
