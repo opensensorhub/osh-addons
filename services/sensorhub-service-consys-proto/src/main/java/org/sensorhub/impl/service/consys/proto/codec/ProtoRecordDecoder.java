@@ -79,9 +79,9 @@ public final class ProtoRecordDecoder
      */
     public static DataBlock decodeRecord(DataComponent struct, Message msg)
     {
-        // pre-pass: apply choice selections so createDataBlock() allocates
-        // room for the selected items (an unselected choice is 1 atom only)
-        walkTop(struct, (child, fieldNum) -> selectChoices(msg, child, fieldNum));
+        // pre-pass: apply choice selections and size variable-length arrays so
+        // createDataBlock() allocates the right number of atoms
+        walkTop(struct, (child, fieldNum) -> prepass(msg, child, fieldNum));
 
         var block = struct.createDataBlock();
         var idx = new int[]{0};
@@ -112,21 +112,33 @@ public final class ProtoRecordDecoder
 
 
     /**
-     * Selection pre-pass: for every {@link DataChoice}, look up which oneof
-     * field is set in {@code msg} and apply it via
-     * {@link DataChoice#setSelectedItem(int)}. Mirrors the field-number walk
-     * of {@link #decodeComponent} without touching atoms.
+     * Pre-pass run before {@code createDataBlock()} so the block is allocated at
+     * the right size: applies every {@link DataChoice} selection (an unselected
+     * choice is 1 atom) and sizes every variable-size {@link DataArray} from its
+     * {@code repeated} field's wire length. Mirrors the field-number walk of
+     * {@link #decodeComponent} without touching atoms.
      */
-    private static int selectChoices(Message msg, DataComponent comp, int fieldNum)
+    private static int prepass(Message msg, DataComponent comp, int fieldNum)
     {
         if (comp instanceof DataChoice)
         {
             var choice = (DataChoice) comp;
             int selected = selectedIndex(msg, fieldNum, choice);
             choice.setSelectedItem(selected);
-            // the selected item may itself contain nested choices
-            selectChoices(msg, choice.getComponent(selected), fieldNum + selected);
+            // the selected item may itself contain nested choices/arrays
+            prepass(msg, choice.getComponent(selected), fieldNum + selected);
             return fieldNum + choice.getComponentCount();
+        }
+
+        if (comp instanceof DataArray)
+        {
+            // size a variable-size array from the repeated field's wire length so
+            // createDataBlock() allocates the right element-atom count. Fixed-size
+            // arrays keep their schema size (validated against the wire on decode).
+            var array = (DataArray) comp;
+            if (array.isVariableSize())
+                array.updateSize(msg.getRepeatedFieldCount(field(msg.getDescriptorForType(), fieldNum)));
+            return fieldNum + 1;
         }
 
         if (comp instanceof DataRecord || comp instanceof Vector)
@@ -135,7 +147,7 @@ public final class ProtoRecordDecoder
             var sub = (Message) msg.getField(f);
             int subFieldNum = 1;
             for (int i = 0; i < comp.getComponentCount(); i++)
-                subFieldNum = selectChoices(sub, comp.getComponent(i), subFieldNum);
+                subFieldNum = prepass(sub, comp.getComponent(i), subFieldNum);
             return fieldNum + 1;
         }
 
@@ -196,15 +208,13 @@ public final class ProtoRecordDecoder
 
     private static int decodeComponent(Message msg, DataComponent comp, int fieldNum, DataBlock block, int[] idx)
     {
-        // array → repeated field. Fixed-size only (see ProtoObsEncoder): the
-        // block is already sized for K = getComponentCount() contiguous
-        // elements, so the flat atom index walks straight through them.
+        // array → repeated field. The block was already sized for K =
+        // getComponentCount() contiguous elements (variable-size arrays were
+        // updateSize()'d from the wire in prepass()), so the flat atom index
+        // walks straight through them.
         if (comp instanceof DataArray)
         {
             var array = (DataArray) comp;
-            if (array.isVariableSize())
-                throw new UnsupportedOperationException(
-                    "variable-size DataArray not yet supported in swe+proto decoding (field '" + comp.getName() + "')");
             var elt = array.getElementType();
             if (ProtoArrays.hasNonFlatLayout(elt))
                 throw new UnsupportedOperationException(

@@ -51,10 +51,11 @@ import net.opengis.swe.v20.Vector;
  * <p>
  * Supports the same shapes {@link ProtoSchemaWriter} emits: records/vectors →
  * nested messages, ISO {@code Time} → {@code Timestamp}, ranges → two fields,
- * scalars → one field, {@code DataChoice} → {@code oneof}, and
- * <b>fixed-size</b> {@code DataArray} → {@code repeated}. Variable-size arrays
- * and arrays with a non-flat ({@code DataBlockList}) element throw — the flat
- * atom-index walk only holds for fixed, flat layouts.
+ * scalars → one field, {@code DataChoice} → {@code oneof}, and {@code DataArray}
+ * (fixed- or variable-size) → {@code repeated}. Arrays with a non-flat
+ * ({@code DataBlockList}) element — one hiding a {@code DataChoice} or a
+ * variable-size sub-array — throw, since the flat atom-index walk cannot address
+ * a list-backed block.
  * </p>
  *
  * @see ProtoSchemaWriter
@@ -116,6 +117,7 @@ public final class ProtoObsEncoder
      */
     public static DynamicMessage encode(DataComponent struct, Descriptor desc, DataBlock data, Envelope env)
     {
+        struct.setData(data);   // bind so variable-size DataArray.getComponentCount() reflects the data
         var msg = DynamicMessage.newBuilder(desc);
         setEnvelope(msg, desc, env);
         encodeRecord(msg, desc, struct, data);
@@ -130,6 +132,7 @@ public final class ProtoObsEncoder
      */
     public static DynamicMessage encodeCommand(DataComponent struct, Descriptor desc, DataBlock data, CommandEnvelope env)
     {
+        struct.setData(data);   // bind so variable-size DataArray.getComponentCount() reflects the data
         var msg = DynamicMessage.newBuilder(desc);
         setCommandEnvelope(msg, desc, env);
         encodeRecord(msg, desc, struct, data);
@@ -220,18 +223,14 @@ public final class ProtoObsEncoder
     private static int encodeComponent(DynamicMessage.Builder msg, Descriptor desc, DataComponent comp,
                                        int fieldNum, DataBlock data, int[] idx)
     {
-        // array → repeated field. Fixed-size only: the flat DataBlock lays the
-        // K elements out contiguously (K = getComponentCount()), so the running
-        // atom index walks straight through them. Variable-size arrays need the
-        // element count threaded from the wire (not yet supported) and
-        // variable-ELEMENT-size arrays are DataBlockList-backed (not flat) —
-        // both fail loud rather than silently mis-read the flat block.
+        // array → repeated field. The flat DataBlock lays the K elements out
+        // contiguously (K = getComponentCount(), made accurate for variable-size
+        // arrays by the setData() bind in encode()/encodeCommand()), so the
+        // running atom index walks straight through them. A variable-ELEMENT-size
+        // array (DataBlockList-backed, not flat) is rejected by the guard below.
         if (comp instanceof DataArray)
         {
             var array = (DataArray) comp;
-            if (array.isVariableSize())
-                throw new UnsupportedOperationException(
-                    "variable-size DataArray not yet supported in swe+proto encoding (field '" + comp.getName() + "')");
             var elt = array.getElementType();
             if (ProtoArrays.hasNonFlatLayout(elt))
                 throw new UnsupportedOperationException(

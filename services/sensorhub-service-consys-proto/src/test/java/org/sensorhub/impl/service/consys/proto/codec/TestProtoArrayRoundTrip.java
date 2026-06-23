@@ -111,28 +111,69 @@ public class TestProtoArrayRoundTrip
     }
 
 
-    @Test
-    public void variableSizeArrayRejectedLoudly() throws Exception
+    static DataComponent buildVarRec()
     {
         var swe = new SWEHelper();
-        var rec = swe.createRecord()
-            .addField("n", swe.createCount().id("ARRAY_SIZE").build())
-            .addField("samples", swe.createArray().withVariableSize("ARRAY_SIZE")
+        return swe.createRecord()
+            .addField("n", swe.createCount().id("NUM").build())
+            .addField("samples", swe.createArray().withVariableSize("NUM")
                 .withElement("v", swe.createQuantity().dataType(DataType.DOUBLE).build()))
+            .addField("tail", swe.createBoolean().build())
             .build();
-        var arr = (DataArray) rec.getComponent("samples");
-        arr.updateSize(2);
-        var blk = rec.createDataBlock();
-        var d = desc(rec);
+    }
 
-        try
-        {
-            ProtoObsEncoder.encode(rec, d, blk, null);
-            fail("expected variable-size DataArray to be rejected");
-        }
-        catch (UnsupportedOperationException expected)
-        {
-            assertTrue(expected.getMessage().contains("variable-size DataArray"));
-        }
+
+    @Test
+    public void variableSizeArrayRoundTrip() throws Exception
+    {
+        var encStruct = buildVarRec();
+        var d = desc(encStruct);
+
+        ((DataArray) encStruct.getComponent("samples")).updateSize(4);
+        var blk = encStruct.createDataBlock();           // flat: [n, v0..v3, tail] = 6
+        assertEquals(6, blk.getAtomCount());
+        blk.setIntValue(0, 4);
+        blk.setDoubleValue(1, 5); blk.setDoubleValue(2, 6);
+        blk.setDoubleValue(3, 7); blk.setDoubleValue(4, 8);
+        blk.setBooleanValue(5, true);
+
+        var wire = ProtoObsEncoder.encode(encStruct, d, blk, null).toByteArray();
+        var msg = DynamicMessage.parseFrom(d, wire);
+
+        // decode against a FRESH structure with no array size (mirrors the binding,
+        // whose schema struct carries no per-observation size) — prepass() sizes it
+        var out = ProtoRecordDecoder.decodeRecord(buildVarRec(), msg);
+
+        assertEquals(6, out.getAtomCount());
+        assertEquals(4, out.getIntValue(0));
+        assertEquals(5.0, out.getDoubleValue(1), 1e-9);
+        assertEquals(8.0, out.getDoubleValue(4), 1e-9);
+        assertTrue(out.getBooleanValue(5));              // trailing scalar after a variable array
+    }
+
+
+    @Test
+    public void nonFlatElementGuard()
+    {
+        var swe = new SWEHelper();
+        // flat: scalar, fixed array of scalars
+        assertFalse(ProtoArrays.hasNonFlatLayout(swe.createQuantity().build()));
+        assertFalse(ProtoArrays.hasNonFlatLayout(swe.createArray().withFixedSize(2)
+            .withElement("v", swe.createQuantity().build()).build()));
+
+        // non-flat: a DataChoice (variable element size), detected when nested too
+        var choice = swe.createChoice()
+            .addItem("a", swe.createCount().build())
+            .addItem("b", swe.createQuantity().build()).build();
+        assertTrue(ProtoArrays.hasNonFlatLayout(choice));
+        assertTrue(ProtoArrays.hasNonFlatLayout(
+            swe.createRecord().addField("c", choice).build()));
+
+        // non-flat: a variable-size sub-array inside the element
+        assertTrue(ProtoArrays.hasNonFlatLayout(swe.createRecord()
+            .addField("k", swe.createCount().id("K2").build())
+            .addField("inner", swe.createArray().withVariableSize("K2")
+                .withElement("x", swe.createQuantity().build()))
+            .build()));
     }
 }
