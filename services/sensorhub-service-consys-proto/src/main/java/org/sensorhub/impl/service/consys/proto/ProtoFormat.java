@@ -16,6 +16,12 @@ Author: Ian Patterson <ian.patterson@georobotix.us>
 
 package org.sensorhub.impl.service.consys.proto;
 
+import org.sensorhub.impl.service.consys.proto.commands.CommandBindingProto;
+import org.sensorhub.impl.service.consys.proto.controlstreams.CommandStreamSchemaBindingProto;
+import org.sensorhub.impl.service.consys.proto.datastreams.DataStreamSchemaBindingProto;
+import org.sensorhub.impl.service.consys.proto.observations.ObsBindingProto;
+import org.sensorhub.impl.service.consys.proto.schema.GeneratedSchemaCache;
+import org.sensorhub.impl.service.consys.proto.schema.ProtoSchemaWriter;
 import java.io.IOException;
 import org.sensorhub.api.command.ICommandData;
 import org.sensorhub.api.command.ICommandStreamInfo;

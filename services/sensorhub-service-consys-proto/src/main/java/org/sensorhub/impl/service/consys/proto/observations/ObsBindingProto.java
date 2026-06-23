@@ -14,8 +14,13 @@ Author: Ian Patterson <ian.patterson@georobotix.us>
 
 ******************************* END LICENSE BLOCK ***************************/
 
-package org.sensorhub.impl.service.consys.proto;
+package org.sensorhub.impl.service.consys.proto.observations;
 
+import org.sensorhub.impl.service.consys.proto.ProtoFormat;
+import org.sensorhub.impl.service.consys.proto.codec.ProtoObsEncoder;
+import org.sensorhub.impl.service.consys.proto.codec.ProtoRecordDecoder;
+import org.sensorhub.impl.service.consys.proto.schema.GeneratedSchemaCache;
+import org.sensorhub.impl.service.consys.proto.schema.ProtoSchemaWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -84,8 +89,8 @@ import net.opengis.swe.v20.DataComponent;
  */
 public class ObsBindingProto extends ResourceBinding<BigId, IObsData>
 {
-    static final String OBS_PACKAGE = "org.sensorhub.consys.proto.obs";
-    static final String OBS_MESSAGE = "Observation";
+    public static final String OBS_PACKAGE = "org.sensorhub.consys.proto.obs";
+    public static final String OBS_MESSAGE = "Observation";
 
     final ObsHandlerContextData contextData;
     final DataComponent recordStruct;

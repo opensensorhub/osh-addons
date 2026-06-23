@@ -16,6 +16,8 @@ Author: Ian Patterson <ian.patterson@georobotix.us>
 
 package org.sensorhub.impl.service.consys.proto;
 
+import org.sensorhub.impl.service.consys.proto.schema.DataStreamSchemaCache;
+import org.sensorhub.impl.service.consys.proto.schema.ProtoSchemaWriter;
 import com.georobotix.swecommon.SweOptions;
 import com.google.protobuf.ExtensionRegistry;
 import com.google.protobuf.Timestamp;

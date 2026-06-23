@@ -14,8 +14,9 @@ Author: Ian Patterson <ian.patterson@georobotix.us>
 
 ******************************* END LICENSE BLOCK ***************************/
 
-package org.sensorhub.impl.service.consys.proto;
+package org.sensorhub.impl.service.consys.proto.codec;
 
+import org.sensorhub.impl.service.consys.proto.schema.ProtoSchemaWriter;
 import static org.junit.Assert.*;
 import java.time.Instant;
 import org.junit.Before;

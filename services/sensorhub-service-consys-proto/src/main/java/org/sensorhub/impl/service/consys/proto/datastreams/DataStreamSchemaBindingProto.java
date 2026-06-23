@@ -14,8 +14,13 @@ Author: Ian Patterson <ian.patterson@georobotix.us>
 
 ******************************* END LICENSE BLOCK ***************************/
 
-package org.sensorhub.impl.service.consys.proto;
+package org.sensorhub.impl.service.consys.proto.datastreams;
 
+import org.sensorhub.impl.service.consys.proto.ProtoFormat;
+import org.sensorhub.impl.service.consys.proto.schema.DataStreamSchemaCache;
+import org.sensorhub.impl.service.consys.proto.schema.GeneratedSchemaCache;
+import org.sensorhub.impl.service.consys.proto.schema.ProtoSchemaReader;
+import org.sensorhub.impl.service.consys.proto.schema.ProtoSchemaWriter;
 import java.io.IOException;
 import java.util.Base64;
 import java.util.Collection;
