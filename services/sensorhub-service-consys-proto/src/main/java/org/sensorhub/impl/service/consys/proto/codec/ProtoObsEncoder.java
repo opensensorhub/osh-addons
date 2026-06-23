@@ -225,17 +225,17 @@ public final class ProtoObsEncoder
     {
         // array → repeated field. The flat DataBlock lays the K elements out
         // contiguously (K = getComponentCount(), made accurate for variable-size
-        // arrays by the setData() bind in encode()/encodeCommand()), so the
-        // running atom index walks straight through them. A variable-ELEMENT-size
-        // array (DataBlockList-backed, not flat) is rejected by the guard below.
+        // arrays — including nested rectangular matrices — by the setData() bind
+        // in encode()/encodeCommand()), so the running atom index walks straight
+        // through them. Only a DataChoice element is rejected by the guard below.
         if (comp instanceof DataArray)
         {
             var array = (DataArray) comp;
             var elt = array.getElementType();
-            if (ProtoArrays.hasNonFlatLayout(elt))
+            if (ProtoArrays.elementHasChoice(elt))
                 throw new UnsupportedOperationException(
-                    "DataArray with a non-flat element (nested DataChoice or variable-size array) "
-                    + "is not supported in swe+proto encoding (field '" + comp.getName() + "')");
+                    "DataArray whose element contains a DataChoice is not yet supported "
+                    + "in swe+proto encoding (field '" + comp.getName() + "')");
             var f = field(desc, fieldNum);
             // record/vector element → repeated nested message; a nested DataArray
             // element (a Matrix row) → repeated wrapper message (encodeMessage

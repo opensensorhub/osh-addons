@@ -28,26 +28,22 @@ public final class ProtoArrays
 
 
     /**
-     * True if {@code c}'s subtree would back a {@code DataArray} with a
-     * <b>non-flat</b> ({@code DataBlockList}) layout — i.e. it contains a
-     * {@link DataChoice} or a variable-size {@link DataArray}. The swe+proto
-     * codec walks one flat atom index across the whole record, which only holds
-     * when every array is fixed-size and every element is itself fixed-size; a
-     * list-backed array is not flat-addressable, so the codec rejects it rather
-     * than silently mis-reading atoms. (A nested <i>fixed</i>-size array is
-     * fine — it stays flat — so it is not flagged.)
+     * True if {@code c}'s subtree contains a {@link DataChoice}. Rectangular
+     * arrays — fixed- or variable-size, including nested (Matrix) — stay flat
+     * ({@code DataBlockMixed}), so the flat-index codec handles them and they
+     * are <b>not</b> flagged. A {@code DataChoice} as (or inside) an array
+     * element is the case the codec does not yet support there: the per-element
+     * selector would need the pre-pass to apply selections inside the array,
+     * which it doesn't, so such an element is rejected rather than mis-decoded.
      */
-    public static boolean hasNonFlatLayout(DataComponent c)
+    public static boolean elementHasChoice(DataComponent c)
     {
         if (c instanceof DataChoice)
             return true;
         if (c instanceof DataArray)
-        {
-            var a = (DataArray) c;
-            return a.isVariableSize() || hasNonFlatLayout(a.getElementType());
-        }
+            return elementHasChoice(((DataArray) c).getElementType());
         for (int i = 0; i < c.getComponentCount(); i++)
-            if (hasNonFlatLayout(c.getComponent(i)))
+            if (elementHasChoice(c.getComponent(i)))
                 return true;
         return false;
     }

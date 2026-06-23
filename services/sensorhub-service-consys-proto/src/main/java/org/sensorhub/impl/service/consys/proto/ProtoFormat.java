@@ -108,8 +108,8 @@ public final class ProtoFormat implements CustomObsFormat
 
     static boolean canEncode(DataComponent struct)
     {
-        if (hasNonFlatArray(struct))
-            return false;   // writer emits these but the flat-index codec can't
+        if (hasArrayWithChoiceElement(struct))
+            return false;   // writer emits these but the codec can't decode them yet
         try
         {
             ProtoSchemaWriter.resolve(
@@ -123,18 +123,19 @@ public final class ProtoFormat implements CustomObsFormat
     }
 
 
-    /** True if any DataArray in the tree has a non-flat element (a nested
-     *  DataChoice or variable-size sub-array) the flat-index codec can't walk. */
-    static boolean hasNonFlatArray(DataComponent c)
+    /** True if any DataArray in the tree has a DataChoice in its element — the
+     *  one array shape the codec doesn't yet handle (rectangular fixed/variable
+     *  arrays and matrices are fine). */
+    static boolean hasArrayWithChoiceElement(DataComponent c)
     {
         if (c instanceof DataArray)
         {
-            if (ProtoArrays.hasNonFlatLayout(((DataArray) c).getElementType()))
+            if (ProtoArrays.elementHasChoice(((DataArray) c).getElementType()))
                 return true;
-            return hasNonFlatArray(((DataArray) c).getElementType());
+            return hasArrayWithChoiceElement(((DataArray) c).getElementType());
         }
         for (int i = 0; i < c.getComponentCount(); i++)
-            if (hasNonFlatArray(c.getComponent(i)))
+            if (hasArrayWithChoiceElement(c.getComponent(i)))
                 return true;
         return false;
     }

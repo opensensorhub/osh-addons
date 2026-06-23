@@ -153,28 +153,78 @@ public class TestProtoArrayRoundTrip
 
 
     @Test
-    public void nonFlatElementGuard()
+    public void elementChoiceGuard()
     {
         var swe = new SWEHelper();
-        // flat: scalar, fixed array of scalars
-        assertFalse(ProtoArrays.hasNonFlatLayout(swe.createQuantity().build()));
-        assertFalse(ProtoArrays.hasNonFlatLayout(swe.createArray().withFixedSize(2)
+        // no choice → not flagged: scalar, fixed array, AND a variable sub-array
+        // (rectangular arrays stay flat, so a variable array is no longer flagged)
+        assertFalse(ProtoArrays.elementHasChoice(swe.createQuantity().build()));
+        assertFalse(ProtoArrays.elementHasChoice(swe.createArray().withFixedSize(2)
             .withElement("v", swe.createQuantity().build()).build()));
-
-        // non-flat: a DataChoice (variable element size), detected when nested too
-        var choice = swe.createChoice()
-            .addItem("a", swe.createCount().build())
-            .addItem("b", swe.createQuantity().build()).build();
-        assertTrue(ProtoArrays.hasNonFlatLayout(choice));
-        assertTrue(ProtoArrays.hasNonFlatLayout(
-            swe.createRecord().addField("c", choice).build()));
-
-        // non-flat: a variable-size sub-array inside the element
-        assertTrue(ProtoArrays.hasNonFlatLayout(swe.createRecord()
+        assertFalse(ProtoArrays.elementHasChoice(swe.createRecord()
             .addField("k", swe.createCount().id("K2").build())
             .addField("inner", swe.createArray().withVariableSize("K2")
                 .withElement("x", swe.createQuantity().build()))
             .build()));
+
+        // a DataChoice IS flagged, including when nested in a record
+        var choice = swe.createChoice()
+            .addItem("a", swe.createCount().build())
+            .addItem("b", swe.createQuantity().build()).build();
+        assertTrue(ProtoArrays.elementHasChoice(choice));
+        assertTrue(ProtoArrays.elementHasChoice(
+            swe.createRecord().addField("c", choice).build()));
+    }
+
+
+    static DataComponent buildVarGrid()
+    {
+        var swe = new SWEHelper();
+        return swe.createRecord()
+            .addField("M", swe.createCount().id("M").build())
+            .addField("N", swe.createCount().id("N").build())
+            .addField("grid", swe.createArray().withVariableSize("M")
+                .withElement("row", swe.createArray().withVariableSize("N")
+                    .withElement("v", swe.createQuantity().dataType(DataType.DOUBLE).build())
+                    .build()))
+            .build();
+    }
+
+
+    static void assertGridRoundTrips(com.google.protobuf.Descriptors.Descriptor d, int m, int n) throws Exception
+    {
+        var enc = buildVarGrid();
+        var outer = (DataArray) enc.getComponent("grid");
+        outer.updateSize(m);
+        for (int r = 0; r < m; r++)
+            ((DataArray) outer.getComponent(r)).updateSize(n);
+        var blk = enc.createDataBlock();                 // [M, N, m*n doubles]
+        assertEquals(2 + m * n, blk.getAtomCount());
+        blk.setIntValue(0, m);
+        blk.setIntValue(1, n);
+        for (int i = 0; i < m * n; i++)
+            blk.setDoubleValue(2 + i, (i + 1) * 0.5);
+
+        var wire = ProtoObsEncoder.encode(enc, d, blk, null).toByteArray();
+        var msg = DynamicMessage.parseFrom(d, wire);
+        var out = ProtoRecordDecoder.decodeRecord(buildVarGrid(), msg);
+
+        assertEquals("atoms for " + m + "x" + n, 2 + m * n, out.getAtomCount());
+        assertEquals(m, out.getIntValue(0));
+        assertEquals(n, out.getIntValue(1));
+        for (int i = 0; i < m * n; i++)
+            assertEquals((i + 1) * 0.5, out.getDoubleValue(2 + i), 1e-9);
+    }
+
+
+    @Test
+    public void rectangularVariableMatrixRoundTrip() throws Exception
+    {
+        // one schema; M and N vary PER MESSAGE (each message square)
+        var d = desc(buildVarGrid());
+        assertGridRoundTrips(d, 2, 3);
+        assertGridRoundTrips(d, 3, 2);
+        assertGridRoundTrips(d, 1, 5);
     }
 
 

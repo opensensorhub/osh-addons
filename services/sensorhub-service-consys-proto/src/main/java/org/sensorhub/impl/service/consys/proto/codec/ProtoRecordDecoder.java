@@ -136,8 +136,16 @@ public final class ProtoRecordDecoder
             // createDataBlock() allocates the right element-atom count. Fixed-size
             // arrays keep their schema size (validated against the wire on decode).
             var array = (DataArray) comp;
+            var f = field(msg.getDescriptorForType(), fieldNum);
+            int m = msg.getRepeatedFieldCount(f);
             if (array.isVariableSize())
-                array.updateSize(msg.getRepeatedFieldCount(field(msg.getDescriptorForType(), fieldNum)));
+                array.updateSize(m);
+            // nested array (Matrix): size the (shared) inner dimension from row 0's
+            // wrapper message. Rectangular per message, so every row shares it; a
+            // ragged row then mismatches the per-row wireCount check on decode and
+            // throws rather than mis-reading.
+            if (m > 0 && array.getElementType() instanceof DataArray)
+                prepass((Message) msg.getRepeatedField(f, 0), array.getElementType(), 1);
             return fieldNum + 1;
         }
 
@@ -216,10 +224,10 @@ public final class ProtoRecordDecoder
         {
             var array = (DataArray) comp;
             var elt = array.getElementType();
-            if (ProtoArrays.hasNonFlatLayout(elt))
+            if (ProtoArrays.elementHasChoice(elt))
                 throw new UnsupportedOperationException(
-                    "DataArray with a non-flat element (nested DataChoice or variable-size array) "
-                    + "is not supported in swe+proto decoding (field '" + comp.getName() + "')");
+                    "DataArray whose element contains a DataChoice is not yet supported "
+                    + "in swe+proto decoding (field '" + comp.getName() + "')");
             var f = field(msg.getDescriptorForType(), fieldNum);
             int size = array.getComponentCount();
             int wireCount = msg.getRepeatedFieldCount(f);
