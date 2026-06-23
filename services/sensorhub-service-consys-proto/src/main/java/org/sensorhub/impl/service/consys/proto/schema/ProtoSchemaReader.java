@@ -73,8 +73,11 @@ import net.opengis.swe.v20.Time;
  * </ul>
  *
  * <p>
- * {@code repeated} fields ({@code DataArray}) are rejected, mirroring
- * {@link ProtoRecordDecoder} which does not yet decode arrays.
+ * A {@code repeated} field becomes a <b>variable-size</b> {@code DataArray}
+ * (its element the field's scalar/record type, or — for a Matrix-row wrapper
+ * message — a nested {@code DataArray}); {@link ProtoRecordDecoder} sizes it
+ * from the repeated field's wire length on decode. (A foreign-ingested array is
+ * always variable-size, since the descriptor carries no count.)
  * </p>
  *
  * <p>
@@ -168,12 +171,12 @@ public class ProtoSchemaReader
     /** Build a single SWE component for one proto field (not a oneof member). */
     private DataComponent buildComponent(FieldDescriptor f)
     {
-        if (f.isRepeated())
-            throw new UnsupportedOperationException(
-                "repeated field '" + f.getName() + "' (DataArray) is not supported by swe+proto ingestion");
-
         DataComponent comp;
-        if (f.getType() == FieldDescriptor.Type.MESSAGE)
+        if (f.isRepeated())
+        {
+            comp = buildArray(f);
+        }
+        else if (f.getType() == FieldDescriptor.Type.MESSAGE)
         {
             if (isTimestamp(f.getMessageType()))
                 comp = newIsoTime();
@@ -188,6 +191,50 @@ public class ProtoSchemaReader
         applyOptions(comp, f.getOptions());
         comp.setName(f.getName());
         return comp;
+    }
+
+
+    /**
+     * Reconstruct a {@link net.opengis.swe.v20.DataArray} from a {@code repeated}
+     * field. The array is <b>variable-size</b> (implicit): the descriptor carries
+     * no element count, so {@link ProtoRecordDecoder} sizes it from the repeated
+     * field's wire length at decode time. The element is the field's scalar type,
+     * a nested record, or — for a Matrix-row wrapper message (a single repeated
+     * field) — another {@code DataArray}.
+     */
+    private DataComponent buildArray(FieldDescriptor f)
+    {
+        DataComponent elt;
+        if (f.getType() == FieldDescriptor.Type.MESSAGE)
+        {
+            var mt = f.getMessageType();
+            if (isTimestamp(mt))
+                elt = newIsoTime();
+            else if (isArrayWrapper(mt))
+                elt = buildComponent(mt.getFields().get(0));   // Matrix row → nested array
+            else
+                elt = buildRecord(mt, 1, sanitizeName(f.getName()) + "Elt");
+        }
+        else
+        {
+            elt = buildScalar(f);
+        }
+        elt.setName(sanitizeName(f.getName()) + "Elt");
+
+        var array = swe.newDataArray();
+        array.setElementType(elt.getName(), elt);
+        // implicit variable size: an elementCount that HAS a Count value whose
+        // value is unset → isImplicitSize() → isVariableSize(); the decoder then
+        // updateSize()s it from the repeated field's wire length.
+        array.setElementCount(swe.createCount().build());
+        return array;
+    }
+
+
+    /** A Matrix-row wrapper message: exactly one field, itself repeated. */
+    private static boolean isArrayWrapper(Descriptor mt)
+    {
+        return mt.getFields().size() == 1 && mt.getFields().get(0).isRepeated();
     }
 
 

@@ -23,9 +23,11 @@ import org.junit.Test;
 import org.vast.swe.SWEHelper;
 import com.google.protobuf.DynamicMessage;
 import com.google.protobuf.Descriptors.Descriptor;
+import net.opengis.swe.v20.DataArray;
 import net.opengis.swe.v20.DataChoice;
 import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.DataRecord;
+import net.opengis.swe.v20.DataType;
 import net.opengis.swe.v20.HasUom;
 
 
@@ -53,6 +55,44 @@ public class TestProtoSchemaReader
         try { desc = ProtoSchemaWriter.resolve(schema); }
         catch (Exception e) { throw new RuntimeException(e); }
         return new ProtoSchemaReader().readRecord(desc);
+    }
+
+
+    @Test
+    public void testArrayIngestRoundTrip() throws Exception
+    {
+        var swe = new SWEHelper();
+        var orig = swe.createRecord()
+            .addField("n", swe.createCount().id("NUM").build())
+            .addField("samples", swe.createArray().withVariableSize("NUM")
+                .withElement("v", swe.createQuantity().dataType(DataType.DOUBLE).build()))
+            .addField("tail", swe.createBoolean().build())
+            .build();
+
+        var schema = new ProtoSchemaWriter().write(orig, "obs.proto", PKG, "Observation");
+        var desc = ProtoSchemaWriter.resolve(schema);
+
+        // foreign receiver rebuilds the structure from the descriptor alone
+        var rebuilt = new ProtoSchemaReader().readRecord(desc);
+        var arr = (DataArray) rebuilt.getComponent("samples");
+        assertTrue("ingested array must be variable-size", arr.isVariableSize());
+
+        // encode with the ORIGINAL struct, decode with the REBUILT one
+        ((DataArray) orig.getComponent("samples")).updateSize(3);
+        var blk = orig.createDataBlock();             // [n, v0, v1, v2, tail]
+        blk.setIntValue(0, 3);
+        blk.setDoubleValue(1, 7); blk.setDoubleValue(2, 8); blk.setDoubleValue(3, 9);
+        blk.setBooleanValue(4, true);
+
+        var wire = ProtoObsEncoder.encode(orig, desc, blk, null).toByteArray();
+        var msg = DynamicMessage.parseFrom(desc, wire);
+        var out = ProtoRecordDecoder.decodeRecord(rebuilt, msg);
+
+        assertEquals(5, out.getAtomCount());
+        assertEquals(3, out.getIntValue(0));
+        assertEquals(7.0, out.getDoubleValue(1), 1e-9);
+        assertEquals(9.0, out.getDoubleValue(3), 1e-9);
+        assertTrue(out.getBooleanValue(4));
     }
 
 
