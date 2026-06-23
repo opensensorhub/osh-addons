@@ -22,7 +22,7 @@ import net.opengis.swe.v20.DataComponent;
 
 
 /** Shared structural predicates for the swe+proto array codec paths. */
-final class ProtoArrays
+public final class ProtoArrays
 {
     private ProtoArrays() {}
 
@@ -37,7 +37,7 @@ final class ProtoArrays
      * than silently mis-reading atoms. (A nested <i>fixed</i>-size array is
      * fine — it stays flat — so it is not flagged.)
      */
-    static boolean hasNonFlatLayout(DataComponent c)
+    public static boolean hasNonFlatLayout(DataComponent c)
     {
         if (c instanceof DataChoice)
             return true;

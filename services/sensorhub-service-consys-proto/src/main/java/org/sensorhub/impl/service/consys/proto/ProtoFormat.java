@@ -20,9 +20,12 @@ import org.sensorhub.impl.service.consys.proto.commands.CommandBindingProto;
 import org.sensorhub.impl.service.consys.proto.controlstreams.CommandStreamSchemaBindingProto;
 import org.sensorhub.impl.service.consys.proto.datastreams.DataStreamSchemaBindingProto;
 import org.sensorhub.impl.service.consys.proto.observations.ObsBindingProto;
+import org.sensorhub.impl.service.consys.proto.codec.ProtoArrays;
 import org.sensorhub.impl.service.consys.proto.schema.GeneratedSchemaCache;
 import org.sensorhub.impl.service.consys.proto.schema.ProtoSchemaWriter;
 import java.io.IOException;
+import net.opengis.swe.v20.DataArray;
+import net.opengis.swe.v20.DataComponent;
 import org.sensorhub.api.command.ICommandData;
 import org.sensorhub.api.command.ICommandStreamInfo;
 import org.sensorhub.api.common.BigId;
@@ -95,12 +98,45 @@ public final class ProtoFormat implements CustomObsFormat
     @Override
     public boolean isCompatible(IDataStreamInfo dsInfo)
     {
-        // Every record structure ProtoSchemaWriter can translate is encodable.
-        // This drives the "formats" list advertised on the datastream resource,
-        // so clients negotiating by that list can discover swe+proto.
-        // TODO return false for structures the schema writer rejects (DataChoice)
-        // so unsupported datastreams don't advertise a format that 500s.
-        return true;
+        // Only advertise swe+proto for structures the writer + codec can actually
+        // handle, so an unsupported datastream doesn't list a format that then
+        // 500s on encode. Unsupported: Geometry / unmapped scalars (the schema
+        // build below throws) and arrays with a non-flat (DataBlockList) element.
+        return canEncode(dsInfo.getRecordStructure());
+    }
+
+
+    static boolean canEncode(DataComponent struct)
+    {
+        if (hasNonFlatArray(struct))
+            return false;   // writer emits these but the flat-index codec can't
+        try
+        {
+            ProtoSchemaWriter.resolve(
+                new ProtoSchemaWriter().write(struct, "compat.proto", "compat", "Compat"));
+            return true;
+        }
+        catch (Exception e)
+        {
+            return false;   // Geometry, unmapped scalar type, invalid descriptor, …
+        }
+    }
+
+
+    /** True if any DataArray in the tree has a non-flat element (a nested
+     *  DataChoice or variable-size sub-array) the flat-index codec can't walk. */
+    static boolean hasNonFlatArray(DataComponent c)
+    {
+        if (c instanceof DataArray)
+        {
+            if (ProtoArrays.hasNonFlatLayout(((DataArray) c).getElementType()))
+                return true;
+            return hasNonFlatArray(((DataArray) c).getElementType());
+        }
+        for (int i = 0; i < c.getComponentCount(); i++)
+            if (hasNonFlatArray(c.getComponent(i)))
+                return true;
+        return false;
     }
 
 
