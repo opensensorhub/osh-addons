@@ -51,8 +51,10 @@ import net.opengis.swe.v20.Vector;
  * <p>
  * Supports the same shapes {@link ProtoSchemaWriter} emits: records/vectors →
  * nested messages, ISO {@code Time} → {@code Timestamp}, ranges → two fields,
- * scalars → one field. {@code DataArray}/{@code DataChoice} are not yet
- * supported and throw (matching the schema writer, which rejects them up front).
+ * scalars → one field, {@code DataChoice} → {@code oneof}, and
+ * <b>fixed-size</b> {@code DataArray} → {@code repeated}. Variable-size arrays
+ * and arrays with a non-flat ({@code DataBlockList}) element throw — the flat
+ * atom-index walk only holds for fixed, flat layouts.
  * </p>
  *
  * @see ProtoSchemaWriter
@@ -218,9 +220,40 @@ public final class ProtoObsEncoder
     private static int encodeComponent(DynamicMessage.Builder msg, Descriptor desc, DataComponent comp,
                                        int fieldNum, DataBlock data, int[] idx)
     {
+        // array → repeated field. Fixed-size only: the flat DataBlock lays the
+        // K elements out contiguously (K = getComponentCount()), so the running
+        // atom index walks straight through them. Variable-size arrays need the
+        // element count threaded from the wire (not yet supported) and
+        // variable-ELEMENT-size arrays are DataBlockList-backed (not flat) —
+        // both fail loud rather than silently mis-read the flat block.
         if (comp instanceof DataArray)
-            throw new UnsupportedOperationException(
-                "DataArray is not yet supported in swe+proto encoding (field '" + comp.getName() + "')");
+        {
+            var array = (DataArray) comp;
+            if (array.isVariableSize())
+                throw new UnsupportedOperationException(
+                    "variable-size DataArray not yet supported in swe+proto encoding (field '" + comp.getName() + "')");
+            var elt = array.getElementType();
+            if (ProtoArrays.hasNonFlatLayout(elt))
+                throw new UnsupportedOperationException(
+                    "DataArray with a non-flat element (nested DataChoice or variable-size array) "
+                    + "is not supported in swe+proto encoding (field '" + comp.getName() + "')");
+            var f = field(desc, fieldNum);
+            boolean nested = elt instanceof DataRecord || elt instanceof Vector;
+            int size = array.getComponentCount();
+            for (int e = 0; e < size; e++)
+            {
+                if (nested)
+                {
+                    msg.addRepeatedField(f, encodeMessage(elt, f.getMessageType(), data, idx));
+                }
+                else
+                {
+                    var v = scalarValue(f.getType(), data, idx[0]++);
+                    msg.addRepeatedField(f, v != null ? v : "");   // null only for STRING
+                }
+            }
+            return fieldNum + 1;
+        }
 
         // choice → oneof: atom 0 is the selected-item index; only the selected
         // item's field (fieldNum + index) is set, fed by the following atoms
@@ -267,36 +300,28 @@ public final class ProtoObsEncoder
 
     private static void setScalar(DynamicMessage.Builder msg, FieldDescriptor f, DataBlock data, int[] idx)
     {
-        int i = idx[0]++;
-        switch (f.getType())
+        var v = scalarValue(f.getType(), data, idx[0]++);
+        if (v != null)                 // STRING may be null; setField(f, null) would NPE
+            msg.setField(f, v);
+    }
+
+
+    /** Box one flat {@link DataBlock} atom as the value for a proto field of
+     *  {@code type}. Shared by the scalar and repeated-array encode paths. */
+    private static Object scalarValue(FieldDescriptor.Type type, DataBlock data, int i)
+    {
+        switch (type)
         {
-            case FLOAT:
-                msg.setField(f, data.getFloatValue(i));
-                break;
-            case DOUBLE:
-                msg.setField(f, data.getDoubleValue(i));
-                break;
+            case FLOAT:  return data.getFloatValue(i);
+            case DOUBLE: return data.getDoubleValue(i);
             case INT32: case SINT32: case SFIXED32:
-                msg.setField(f, data.getIntValue(i));
-                break;
-            case UINT32: case FIXED32:
-                msg.setField(f, data.getIntValue(i));
-                break;
+            case UINT32: case FIXED32: return data.getIntValue(i);
             case INT64: case SINT64: case SFIXED64:
-            case UINT64: case FIXED64:
-                msg.setField(f, data.getLongValue(i));
-                break;
-            case BOOL:
-                msg.setField(f, data.getBooleanValue(i));
-                break;
-            case STRING:
-                var s = data.getStringValue(i);
-                if (s != null)             // setField(f, null) would NPE
-                    msg.setField(f, s);
-                break;
+            case UINT64: case FIXED64: return data.getLongValue(i);
+            case BOOL:   return data.getBooleanValue(i);
+            case STRING: return data.getStringValue(i);
             default:
-                throw new IllegalStateException(
-                    "Unsupported proto field type " + f.getType() + " for field '" + f.getName() + "'");
+                throw new IllegalStateException("Unsupported proto field type " + type);
         }
     }
 

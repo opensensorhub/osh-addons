@@ -196,9 +196,44 @@ public final class ProtoRecordDecoder
 
     private static int decodeComponent(Message msg, DataComponent comp, int fieldNum, DataBlock block, int[] idx)
     {
+        // array → repeated field. Fixed-size only (see ProtoObsEncoder): the
+        // block is already sized for K = getComponentCount() contiguous
+        // elements, so the flat atom index walks straight through them.
         if (comp instanceof DataArray)
-            throw new UnsupportedOperationException(
-                "DataArray is not yet supported in swe+proto decoding (field '" + comp.getName() + "')");
+        {
+            var array = (DataArray) comp;
+            if (array.isVariableSize())
+                throw new UnsupportedOperationException(
+                    "variable-size DataArray not yet supported in swe+proto decoding (field '" + comp.getName() + "')");
+            var elt = array.getElementType();
+            if (ProtoArrays.hasNonFlatLayout(elt))
+                throw new UnsupportedOperationException(
+                    "DataArray with a non-flat element (nested DataChoice or variable-size array) "
+                    + "is not supported in swe+proto decoding (field '" + comp.getName() + "')");
+            var f = field(msg.getDescriptorForType(), fieldNum);
+            boolean nested = elt instanceof DataRecord || elt instanceof Vector;
+            int size = array.getComponentCount();
+            int wireCount = msg.getRepeatedFieldCount(f);
+            if (wireCount != size)
+                throw new IllegalStateException(
+                    "array '" + comp.getName() + "': wire length " + wireCount
+                    + " != fixed schema size " + size);
+            for (int e = 0; e < size; e++)
+            {
+                if (nested)
+                {
+                    var sub = (Message) msg.getRepeatedField(f, e);
+                    int subFieldNum = 1;
+                    for (int i = 0; i < elt.getComponentCount(); i++)
+                        subFieldNum = decodeComponent(sub, elt.getComponent(i), subFieldNum, block, idx);
+                }
+                else
+                {
+                    setAtom(block, idx[0]++, f.getType(), msg.getRepeatedField(f, e));
+                }
+            }
+            return fieldNum + 1;
+        }
 
         // choice → oneof: atom 0 of the choice is the selected-item index,
         // followed by the selected item's atoms (selection was already applied
@@ -251,9 +286,15 @@ public final class ProtoRecordDecoder
 
     private static void getScalar(Message msg, FieldDescriptor f, DataBlock block, int[] idx)
     {
-        int i = idx[0]++;
-        var v = msg.getField(f);
-        switch (f.getType())
+        setAtom(block, idx[0]++, f.getType(), msg.getField(f));
+    }
+
+
+    /** Write one decoded proto value {@code v} into flat {@link DataBlock} atom
+     *  {@code i}. Shared by the scalar and repeated-array decode paths. */
+    private static void setAtom(DataBlock block, int i, FieldDescriptor.Type type, Object v)
+    {
+        switch (type)
         {
             case FLOAT:
                 block.setFloatValue(i, (Float) v);
@@ -276,8 +317,7 @@ public final class ProtoRecordDecoder
                 block.setStringValue(i, (String) v);
                 break;
             default:
-                throw new IllegalStateException(
-                    "Unsupported proto field type " + f.getType() + " for field '" + f.getName() + "'");
+                throw new IllegalStateException("Unsupported proto field type " + type);
         }
     }
 
