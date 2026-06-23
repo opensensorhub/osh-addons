@@ -207,4 +207,51 @@ public class TestProtoArrayRoundTrip
             assertEquals((i + 1) * 1.5, out.getDoubleValue(i), 1e-9);
         assertEquals(99, out.getIntValue(6));     // trailing scalar after the matrix
     }
+
+
+    @Test
+    public void variableCountMatrixRoundTrip() throws Exception
+    {
+        var swe = new SWEHelper();
+        // a VARIABLE number of FIXED-width rows: array[var n] of (array[3] double).
+        // Supported — only the outer dimension is variable; the fixed inner row
+        // keeps every element a fixed atom count, so the block stays flat.
+        var enc = swe.createRecord()
+            .addField("n", swe.createCount().id("NUM").build())
+            .addField("rows", swe.createArray().withVariableSize("NUM")
+                .withElement("row", swe.createArray().withFixedSize(3)
+                    .withElement("v", swe.createQuantity().dataType(DataType.DOUBLE).build())
+                    .build()))
+            .addField("tail", swe.createBoolean().build())
+            .build();
+        var d = desc(enc);
+
+        ((DataArray) enc.getComponent("rows")).updateSize(2);   // 2 rows of 3
+        var blk = enc.createDataBlock();                        // [n, r0(3), r1(3), tail] = 8
+        assertEquals(8, blk.getAtomCount());
+        blk.setIntValue(0, 2);
+        for (int i = 0; i < 6; i++)
+            blk.setDoubleValue(1 + i, i + 1);
+        blk.setBooleanValue(7, true);
+
+        var wire = ProtoObsEncoder.encode(enc, d, blk, null).toByteArray();
+        var msg = DynamicMessage.parseFrom(d, wire);
+
+        // decode against a fresh structure (no row count) — prepass sizes the outer
+        var dec = swe.createRecord()
+            .addField("n", swe.createCount().id("NUM").build())
+            .addField("rows", swe.createArray().withVariableSize("NUM")
+                .withElement("row", swe.createArray().withFixedSize(3)
+                    .withElement("v", swe.createQuantity().dataType(DataType.DOUBLE).build())
+                    .build()))
+            .addField("tail", swe.createBoolean().build())
+            .build();
+        var out = ProtoRecordDecoder.decodeRecord(dec, msg);
+
+        assertEquals(8, out.getAtomCount());
+        assertEquals(2, out.getIntValue(0));
+        for (int i = 0; i < 6; i++)
+            assertEquals(i + 1, out.getDoubleValue(1 + i), 1e-9);
+        assertTrue(out.getBooleanValue(7));
+    }
 }
