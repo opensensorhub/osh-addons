@@ -45,7 +45,7 @@ public class AirNavADSBSensor extends AbstractSensorModule<AirNavADSBConfig>
     ICommProvider<?> commProvider;
     AirNavADSBOutput output;
     InputStream msgIn;
-    private BufferedReader reader;
+    private SbsParser sbsParser;
     private final ConcurrentHashMap<String, AircraftState> aircraftMap = new ConcurrentHashMap<>();
     private final AtomicBoolean started = new AtomicBoolean(false);
     private Thread workerThread;
@@ -63,7 +63,7 @@ public class AirNavADSBSensor extends AbstractSensorModule<AirNavADSBConfig>
             SMLFactory smlFac = new SMLFactory();
 
             if (!sensorDescription.isSetDescription())
-                sensorDescription.setDescription("AirNav ADS-B FlightStick receiver, aircraft surveillance data ingested from dump1090 SBS TCP stream");
+                sensorDescription.setDescription("AirNav ADS-B FlightStick receiver, aircraft surveillance data ingested from dump1090 (SBS or Beast format)");
 
             IdentifierList identifierList = smlFac.newIdentifierList();
             sensorDescription.addIdentification(identifierList);
@@ -90,6 +90,13 @@ public class AirNavADSBSensor extends AbstractSensorModule<AirNavADSBConfig>
         generateUniqueID(SENSOR_UID_PREFIX, config.serialNumber);
         generateXmlID("AIRNAV_ADSB_", config.serialNumber);
 
+        output = new AirNavADSBOutput(this);
+        addOutput(output, false);
+        output.init();
+    }
+
+    @Override
+    protected void doStart() throws SensorHubException {
         client = HttpClient.newBuilder()
                 .connectTimeout(Duration.ofSeconds(10))
                 .build();
@@ -100,13 +107,6 @@ public class AirNavADSBSensor extends AbstractSensorModule<AirNavADSBConfig>
             return t;
         });
 
-        output = new AirNavADSBOutput(this);
-        addOutput(output, false);
-        output.init();
-    }
-
-    @Override
-    protected void doStart() throws SensorHubException {
         if (commProvider == null) {
             if (config.commSettings == null)
                 throw new SensorHubException("No communication settings specified");
@@ -123,112 +123,33 @@ public class AirNavADSBSensor extends AbstractSensorModule<AirNavADSBConfig>
 
         try {
             msgIn = new BufferedInputStream(commProvider.getInputStream());
-            reader = new BufferedReader(new InputStreamReader(msgIn));
-
-            getLogger().info("Connected to ADS-B Sensor");
         } catch (IOException e) {
             throw new SensorHubException("Error while reading input stream", e);
         }
+
+        sbsParser = new SbsParser(msgIn, aircraftMap);
+
 
         started.set(true);
 
         workerThread = new Thread(() -> {
             while (started.get()) {
-                handleMessage();
+                try {
+                    AircraftState state = sbsParser.readNext();
+
+                    if (state != null)
+                        output.publishAircraftState(state);
+                    else if (!started.get())
+                        break;
+                } catch (IOException e) {
+                    if (!started.get() || "Stream closed".equalsIgnoreCase(e.getMessage()))
+                        return;
+                    getLogger().error("Error reading ADS-B stream", e);
+                }
             }
         }, "adsb-reader-" + config.serialNumber);
         workerThread.setDaemon(true);
         workerThread.start();
-    }
-
-
-    public void handleMessage() {
-        try {
-            String line = reader.readLine();
-            if (line != null)
-                parseSbsLine(line);
-        } catch (IOException e) {
-            if (!started.get() || "Stream closed".equalsIgnoreCase(e.getMessage())) {
-                return;
-            }
-
-            getLogger().error("Error reading dump1090 SBS stream", e);
-        }
-    }
-
-    private void parseSbsLine(String line) {
-        try {
-            String[] fields = line.split(",", -1);
-            if (fields.length < 11 || !"MSG".equals(fields[0]))
-                return;
-
-            String msgType = fields[1].trim();
-            String icao = fields[4].trim();
-            if (icao.isEmpty())
-                return;
-
-            AircraftState state = aircraftMap.computeIfAbsent(icao, k -> {
-                AircraftState s = new AircraftState();
-                s.icao = k;
-                return s;
-            });
-
-            switch (msgType) {
-                case "1": // callsign
-                    if (fields.length > 10 && !fields[10].trim().isEmpty())
-                        state.callsign = fields[10].trim();
-                    break;
-
-                case "3": // position — lat, lon, barometric altitude
-                    if (fields.length > 15) {
-                        if (!fields[11].trim().isEmpty())
-                            state.altFt = Double.parseDouble(fields[11].trim());
-                        if (!fields[14].trim().isEmpty())
-                            state.lat = Double.parseDouble(fields[14].trim());
-                        if (!fields[15].trim().isEmpty())
-                            state.lon = Double.parseDouble(fields[15].trim());
-                    }
-                    state.lastUpdateTime = System.currentTimeMillis();
-                    if (state.hasPosition())
-                        output.publishAircraftState(state);
-                    break;
-
-                case "4": // velocity — ground speed, heading, vertical rate
-                    if (fields.length > 16) {
-                        if (!fields[12].trim().isEmpty())
-                            state.groundSpeed = Double.parseDouble(fields[12].trim());
-                        if (!fields[13].trim().isEmpty())
-                            state.track = Double.parseDouble(fields[13].trim());
-                        if (!fields[16].trim().isEmpty())
-                            state.verticalRate = Double.parseDouble(fields[16].trim());
-                    }
-                    state.lastUpdateTime = System.currentTimeMillis();
-                    break;
-
-                case "5": // surveillance Alt
-                    if (fields.length > 11 && !fields[11].trim().isEmpty())
-                        state.altFt = Double.parseDouble(fields[11].trim());
-                    state.lastUpdateTime = System.currentTimeMillis();
-                    break;
-
-                case "6": // surveillance ID — squawk
-                    if (fields.length > 17 && !fields[17].trim().isEmpty())
-                        state.squawk = fields[17].trim();
-                    state.lastUpdateTime = System.currentTimeMillis();
-                    break;
-
-                default:
-                    break;
-            }
-            if (fields.length > 18 && !fields[18].trim().isEmpty())
-                state.alert = "-1".equals(fields[18].trim());
-            if (fields.length > 19 && !fields[19].trim().isEmpty())
-                state.emergency = "-1".equals(fields[19].trim());
-            if (fields.length > 21 && !fields[21].trim().isEmpty())
-                state.isOnGround = "-1".equals(fields[21].trim());
-        } catch (NumberFormatException e) {
-            getLogger().debug("Skipping malformed SBS line: {}", line, e);
-        }
     }
 
     @Override
@@ -245,6 +166,8 @@ public class AirNavADSBSensor extends AbstractSensorModule<AirNavADSBConfig>
         if (lookupExecutor != null)
             lookupExecutor.shutdownNow();
 
+        sbsParser = null;
+
         if (commProvider != null)
         {
             try {
@@ -252,11 +175,6 @@ public class AirNavADSBSensor extends AbstractSensorModule<AirNavADSBConfig>
             } finally {
                 commProvider = null;
             }
-        }
-
-        if (reader != null) {
-            try { reader.close(); } catch (IOException ignore) { }
-            reader = null;
         }
 
         if (msgIn != null)

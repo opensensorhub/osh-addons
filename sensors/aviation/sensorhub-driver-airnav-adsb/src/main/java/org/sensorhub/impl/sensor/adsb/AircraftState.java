@@ -19,7 +19,8 @@ public class AircraftState {
     String callsign;
     double lat = Double.NaN;
     double lon = Double.NaN;
-    double altFt = Double.NaN;
+    double altBaroFt = Double.NaN;
+    double altGeoFt = Double.NaN;
     double groundSpeed = Double.NaN;
     double track = Double.NaN;
     double verticalRate = Double.NaN;
