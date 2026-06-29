@@ -64,10 +64,12 @@ public class UnmannedSystem extends AbstractSensorModule<org.sensorhub.impl.sens
     UnmannedControlShell unmannedControlShell;
     UnmannedControlFlightMode unmannedControlFlightMode;
     UnmannedControlEnableLocation unmannedControlEnableLocation;
+    UnmannedControlArm unmannedControlArm;
     UnmannedControlPauseMission unmannedControlPauseMission;
     UnmannedControlRTL unmannedControlRTL;
     UnmannedControlDriveToLocation unmannedControlDriveToLocation; //ground/surface
     UnmannedControlDriveVelocity unmannedControlDriveVelocity;     //ground/surface
+    UnmannedControlReboot unmannedControlReboot;
 
     MavSdkServerHandler mavsdkServer = new MavSdkServerHandler();
 
@@ -173,6 +175,10 @@ public class UnmannedSystem extends AbstractSensorModule<org.sensorhub.impl.sens
         addControlInput(this.unmannedControlEnableLocation);
         unmannedControlEnableLocation.init(this.unmannedControlLocation);
 
+        this.unmannedControlArm= new UnmannedControlArm(this);
+        addControlInput(this.unmannedControlArm);
+        unmannedControlArm.init();
+
         this.unmannedControlPauseMission = new UnmannedControlPauseMission(this);
         addControlInput(this.unmannedControlPauseMission);
         unmannedControlPauseMission.init();
@@ -186,6 +192,11 @@ public class UnmannedSystem extends AbstractSensorModule<org.sensorhub.impl.sens
         this.unmannedControlDriveVelocity = new UnmannedControlDriveVelocity(this);
         addControlInput(this.unmannedControlDriveVelocity);
         unmannedControlDriveVelocity.init();
+
+        this.unmannedControlReboot = new UnmannedControlReboot(this);
+        addControlInput(this.unmannedControlReboot);
+        unmannedControlReboot.init();
+
         videoOutput = new UnmannedVideoOutput(config.ffmpegConnection);
         if (null != config.ffmpegConnection.connectionString &&
                 config.ffmpegConnection.connectionString.compareTo("") != 0 &&
@@ -277,7 +288,7 @@ public class UnmannedSystem extends AbstractSensorModule<org.sensorhub.impl.sens
                             0,
                             0,
                             0,
-                           ""
+                            ""
                     )).doOnError( t -> {
                         log.debug("Error sending heartbeat: " + t.getMessage());
                     });
@@ -311,6 +322,8 @@ public class UnmannedSystem extends AbstractSensorModule<org.sensorhub.impl.sens
                     unmannedControlPauseMission.setSystem(drone);
                     unmannedControlDriveToLocation.setSystem(drone);
                     unmannedControlDriveVelocity.setSystem(drone);
+                    unmannedControlArm.setSystem(drone);
+                    unmannedControlReboot.setSystem(drone);
                     locationOutput.subscribe(drone);
                     homeOutput.subscribe(drone);
                     attitudeOutput.subscribe(drone);
