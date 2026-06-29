@@ -30,7 +30,19 @@ public class AircraftState {
     boolean isOnGround;
     long lastUpdateTime;
 
+    int cprLatEven, cprLonEven;
+    int cprLatOdd, cprLonOdd;
+    long cprTimeEven, cprTimeOdd;
+
+    double gnssBaroOffsetFt = Double.NaN;
+
     boolean hasPosition() {
         return !Double.isNaN(lat) && !Double.isNaN(lon);
+    }
+
+    void updateGeoAlt() {
+        if (!Double.isNaN(altBaroFt) && !Double.isNaN(gnssBaroOffsetFt)) {
+            altGeoFt = altBaroFt + gnssBaroOffsetFt;
+        }
     }
 }

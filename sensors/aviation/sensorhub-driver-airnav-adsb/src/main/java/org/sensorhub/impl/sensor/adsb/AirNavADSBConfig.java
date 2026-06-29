@@ -21,11 +21,20 @@ import org.sensorhub.impl.comm.TCPCommProviderConfig;
 
 
 public class AirNavADSBConfig extends SensorConfig {
+
+    public enum InputFormat {
+        SBS,   // BaseStation text format (port 30003)
+        BEAST  // Beast binary format (port 30005)
+    }
+
     @DisplayInfo.Required
     @DisplayInfo(desc = "Serial number or unique identifier for this ADS-B receiver")
     public String serialNumber = "adsb001";
 
-    @DisplayInfo(desc = "Communication settings to connect to the dump1090 SBS output (default: localhost:30003)")
+    @DisplayInfo(desc = "Input format: SBS (port 30003) for text, BEAST (port 30005) for binary with GNSS altitude support")
+    public InputFormat inputFormat = InputFormat.SBS;
+
+    @DisplayInfo(desc = "Communication settings to connect to the dump1090 output (SBS: port 30003, Beast: port 30005)")
     public TCPCommProviderConfig commSettings;
 
     @DisplayInfo(desc = "ADS-B Receiver Location")

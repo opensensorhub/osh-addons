@@ -24,7 +24,7 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * parses dump1090 SBS BaseStation format messages (port 30003)
  */
-public class SbsParser {
+public class SbsParser implements MessageParser {
 
     private final BufferedReader reader;
     private final ConcurrentHashMap<String, AircraftState> aircraftMap;

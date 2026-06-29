@@ -53,9 +53,8 @@ public class AirNavADSBOutput extends AbstractSensorOutput<AirNavADSBSensor> {
                         .definition(SWEHelper.getPropertyUri("IcaoAddress"))
                         .description("24-bit ICAO hex transponder address uniquely identifying the aircraft"))
                 .addField("callsign", aeroHelper.createCallSign())
-                .addField("pos", aeroHelper.createLocationVectorLLA())
+                .addField("pos", aeroHelper.createLocationVectorLLA()) // added geo_alt to pos
                 .addField("alt_baro", aeroHelper.createBaroAlt())
-//                .addField("alt_geo", aeroHelper.createGeomAlt())
                 .addField("gs", aeroHelper.createGroundSpeed())
                 .addField("track", aeroHelper.createTrueTrack())
                 .addField("alt_rate", aeroHelper.createVerticalRate())
@@ -95,9 +94,8 @@ public class AirNavADSBOutput extends AbstractSensorOutput<AirNavADSBSensor> {
         dataBlock.setStringValue(idx++, state.callsign != null ? state.callsign : "");
         dataBlock.setDoubleValue(idx++, state.lat);
         dataBlock.setDoubleValue(idx++, state.lon);
-        double altFt = !Double.isNaN(state.altGeoFt) ? state.altGeoFt : 0;
-        dataBlock.setDoubleValue(idx++, altFt);
-        dataBlock.setDoubleValue(idx++, state.altBaroFt);
+        dataBlock.setDoubleValue(idx++, !Double.isNaN(state.altGeoFt) ? state.altGeoFt : 0);
+        dataBlock.setDoubleValue(idx++, !Double.isNaN(state.altBaroFt) ? state.altBaroFt : 0);
         dataBlock.setDoubleValue(idx++, state.groundSpeed);
         dataBlock.setDoubleValue(idx++, state.track);
         dataBlock.setDoubleValue(idx++, state.verticalRate);
