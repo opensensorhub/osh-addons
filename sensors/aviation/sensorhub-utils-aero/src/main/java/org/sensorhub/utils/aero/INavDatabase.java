@@ -71,7 +71,7 @@ public interface INavDatabase
     
     public static INavDatabase getInstance(ISensorHub hub) throws SensorHubException
     {
-        return getInstance(hub, 10000);
+        return getInstance(hub, 60000);
     }
     
     
