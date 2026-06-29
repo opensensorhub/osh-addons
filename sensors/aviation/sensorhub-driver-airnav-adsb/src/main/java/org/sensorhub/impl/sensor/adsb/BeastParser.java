@@ -11,6 +11,10 @@
  Copyright (C) 2026 GeoRobotix Innovative Research. All Rights Reserved.
 
  ******************************* END LICENSE BLOCK ***************************/
+package org.sensorhub.impl.sensor.adsb;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.concurrent.ConcurrentHashMap;
 public class BeastParser implements MessageParser {
     private final InputStream in;
     private final ConcurrentHashMap<String, AircraftState> aircraftMap;
