@@ -45,7 +45,7 @@ public class AirNavADSBSensor extends AbstractSensorModule<AirNavADSBConfig>
     ICommProvider<?> commProvider;
     AirNavADSBOutput output;
     InputStream msgIn;
-    private SbsParser sbsParser;
+    private MessageParser parser;
     private final ConcurrentHashMap<String, AircraftState> aircraftMap = new ConcurrentHashMap<>();
     private final AtomicBoolean started = new AtomicBoolean(false);
     private Thread workerThread;
@@ -127,15 +127,17 @@ public class AirNavADSBSensor extends AbstractSensorModule<AirNavADSBConfig>
             throw new SensorHubException("Error while reading input stream", e);
         }
 
-        sbsParser = new SbsParser(msgIn, aircraftMap);
-
+        if (config.inputFormat == AirNavADSBConfig.InputFormat.BEAST)
+            parser = new BeastParser(msgIn, aircraftMap);
+        else
+            parser = new SbsParser(msgIn, aircraftMap);
 
         started.set(true);
 
         workerThread = new Thread(() -> {
             while (started.get()) {
                 try {
-                    AircraftState state = sbsParser.readNext();
+                    AircraftState state = parser.readNext();
 
                     if (state != null)
                         output.publishAircraftState(state);
@@ -166,7 +168,7 @@ public class AirNavADSBSensor extends AbstractSensorModule<AirNavADSBConfig>
         if (lookupExecutor != null)
             lookupExecutor.shutdownNow();
 
-        sbsParser = null;
+        parser = null;
 
         if (commProvider != null)
         {
