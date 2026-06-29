@@ -17,6 +17,7 @@ package org.sensorhub.impl.sensor.navDb;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -27,6 +28,7 @@ import org.sensorhub.impl.sensor.AbstractSensorModule;
 import org.sensorhub.utils.aero.INavDatabase;
 import org.sensorhub.utils.aero.INavDatabase.INavDbWaypoint;
 import org.sensorhub.utils.aero.impl.AeroUtils;
+import com.google.common.base.Strings;
 
 
 /**
@@ -37,14 +39,16 @@ import org.sensorhub.utils.aero.impl.AeroUtils;
  */
 public class NavDriver extends AbstractSensorModule<NavConfig>
 {
+    static final long BASE_TS_MILLIS = Instant.parse("2026-06-01T00:00:00Z").toEpochMilli();  
+    
     AirportOutput airptOutput;
 	WaypointOutput wayptOutput;
 	NavaidOutput navaidOutput;
 
     INavDatabase navDB;
-    boolean airports = true;
-    boolean waypoints = true;
-    boolean navaids = true;
+    boolean enableAirports = true;
+    boolean enableNavaids = true;
+    boolean enableWaypoints = false;
     
 
 	public NavDriver()
@@ -75,21 +79,21 @@ public class NavDriver extends AbstractSensorModule<NavConfig>
         // Initialize Outputs
         try
         {
-            if (airports)
+            if (enableAirports)
             {
                 this.airptOutput = new AirportOutput(this);
                 addOutput(airptOutput, false);
                 airptOutput.init();
             }
 
-            if (navaids)
+            if (enableNavaids)
             {
                 this.navaidOutput = new NavaidOutput(this);
                 addOutput(navaidOutput, false);
                 navaidOutput.init();
             }
 
-            if (waypoints)
+            if (enableWaypoints)
             {
                 this.wayptOutput = new WaypointOutput(this);
                 addOutput(wayptOutput, false);
@@ -106,7 +110,7 @@ public class NavDriver extends AbstractSensorModule<NavConfig>
 	@Override
 	protected void doStart() throws SensorHubException
 	{
-	    this.navDB = INavDatabase.getInstance(getParentHub(), config.navDbModuleId);
+	    this.navDB = INavDatabase.getInstance(getParentHub());
 	    loadAirports();
 	    loadNavaids();
 	    loadWaypoints();
@@ -115,39 +119,50 @@ public class NavDriver extends AbstractSensorModule<NavConfig>
 	
     private void loadAirports()
     {
-        var selectedAirports = (config.airportFilterPath != null) ?
-            readSelectedAirportIcaos(config.airportFilterPath) : null;
-        
-        // build filtered list of airports
-        var filteredAirports = navDB.getAirports().values().stream()
-            .filter(airport -> {
-                return selectedAirports == null || selectedAirports.contains(airport.getName());
-            })
-            .collect(Collectors.toList());
-        
-        // send entries to output
-        airptOutput.sendEntries(filteredAirports);
-        getLogger().info("{} airports loaded", filteredAirports.size());
+        if (this.enableAirports) {
+            var selectedAirports = (config.airportFilterPath != null) ?
+                readSelectedAirportIcaos(config.airportFilterPath) : null;
+            
+            // build filtered list of airports
+            var filteredAirports = navDB.getAllAirports().stream()
+                .filter(airport -> {
+                    // keep only ICAO airports
+                    if (Strings.isNullOrEmpty(airport.getCode()) || airport.getCode().length() != 4)
+                        return false;
+                    return selectedAirports == null ||
+                           selectedAirports.isEmpty() ||
+                           selectedAirports.contains(airport.getCode());
+                })
+                .collect(Collectors.toList());
+            
+            // send entries to output
+            airptOutput.sendEntries(filteredAirports);
+            getLogger().info("{} airports loaded", filteredAirports.size());
+        }
     }
 
 
     private void loadNavaids()
     {
-        var navaids = navDB.getNavaids().values();
-
-        // send entries to output
-        navaidOutput.sendEntries(navaids);
-        getLogger().info("{} navaids loaded", navaids.size());
+        if (this.enableNavaids) {
+            var navaids = navDB.getAllNavaids();
+    
+            // send entries to output
+            navaidOutput.sendEntries(navaids);
+            getLogger().info("{} navaids loaded", navaids.size());
+        }
     }
 
 
     private void loadWaypoints()
     {
-        var waypts = navDB.getWaypoints().values();
-
-        // send entries to output
-        wayptOutput.sendEntries(waypts);
-        getLogger().info("{} waypoints loaded", waypts.size());
+        if (this.enableWaypoints) {
+            var waypts = navDB.getAllWaypoints();
+    
+            // send entries to output
+            wayptOutput.sendEntries(waypts);
+            getLogger().info("{} waypoints loaded", waypts.size());
+        }
     }
 
 

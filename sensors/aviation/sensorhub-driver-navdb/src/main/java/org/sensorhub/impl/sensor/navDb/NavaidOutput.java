@@ -56,6 +56,7 @@ public class NavaidOutput extends AbstractSensorOutput<NavDriver>
         dataStruct = fac.createRecord()
             .name(getName())
             .definition(AeroHelper.AERO_RECORD_URI_PREFIX + "Navaid")
+            .addField("time", fac.createTime().asSamplingTimeIsoUTC())
             .addField("code", fac.createWaypointCode()
                 .label("Navaid Code"))
             .addField("name", fac.createText()
@@ -70,22 +71,27 @@ public class NavaidOutput extends AbstractSensorOutput<NavDriver>
     }
 
 
-	public void sendEntries(Collection<INavDbWaypoint> recs)
+	public void sendEntries(Collection<? extends INavDbWaypoint> recs)
 	{                
 	    long time = System.currentTimeMillis();
+	    
+	    int i = 0;
+        var dblkArray = new DataBlock[recs.size()];
+        var ts = NavDriver.BASE_TS_MILLIS;
         
         for(var rec: recs) {
 			DataBlock dataBlock = dataStruct.createDataBlock();
 
-			dataBlock.setStringValue(0, rec.getCode());
-            dataBlock.setStringValue(1, rec.getName());
-            dataBlock.setDoubleValue(2, rec.getLatitude());
-            dataBlock.setDoubleValue(3, rec.getLongitude());
+			dataBlock.setDoubleValue(0, ts++/1000.);
+            dataBlock.setStringValue(1, rec.getCode());
+            dataBlock.setStringValue(2, rec.getName());
+            dataBlock.setDoubleValue(3, rec.getLatitude());
+            dataBlock.setDoubleValue(4, rec.getLongitude());
 			
-			//if("USA".equals(rec.region) || "CAN".equals("rec.region"))
-			// TODO send as a single ObsEvent w/ multiple IObsData
-            eventHandler.publish(new DataEvent(time, NavaidOutput.this, dataBlock));
+            dblkArray[i++] = dataBlock;
 		}
+        
+        eventHandler.publish(new DataEvent(time, NavaidOutput.this, dblkArray));
 	}
 	
 

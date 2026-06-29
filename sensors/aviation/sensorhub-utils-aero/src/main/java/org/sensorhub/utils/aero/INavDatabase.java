@@ -14,8 +14,8 @@ Copyright (C) 2025 Sensia Software LLC. All Rights Reserved.
 
 package org.sensorhub.utils.aero;
 
+import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.TimeoutException;
 import org.sensorhub.api.ISensorHub;
 import org.sensorhub.api.common.SensorHubException;
@@ -50,13 +50,13 @@ public interface INavDatabase
     public boolean isReady();
     
     
-    public Map<String, INavDbWaypoint> getAirports();
+    public Collection<? extends INavDbWaypoint> getAllAirports();
     
     
-    public Map<String, INavDbWaypoint> getNavaids();
+    public Collection<? extends INavDbWaypoint> getAllNavaids();
     
     
-    public Map<String, INavDbWaypoint> getWaypoints();
+    public Collection<? extends INavDbWaypoint> getAllWaypoints();
     
     
     public IDecodedRoute decodeRoute(String codedRouteString);
