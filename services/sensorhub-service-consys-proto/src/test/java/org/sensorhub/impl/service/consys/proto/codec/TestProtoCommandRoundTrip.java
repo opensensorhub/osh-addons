@@ -30,8 +30,8 @@ import net.opengis.swe.v20.DataComponent;
 /**
  * Command-side codec tests: the command envelope schema
  * ({@link ProtoSchemaWriter#writeCommand}), outbound encoding
- * ({@link ProtoObsEncoder#encodeCommand}), and — most importantly — the
- * inbound path ({@link ProtoRecordDecoder}): wire bytes are decoded back into
+ * ({@link ProtoEncoder#encodeCommand}), and — most importantly — the
+ * inbound path ({@link ProtoDecoder}): wire bytes are decoded back into
  * a flat {@link net.opengis.swe.v20.DataBlock} and every atom is asserted.
  * The full round trip runs against a descriptor rebuilt ONLY from the wire
  * {@code FileDescriptorSet} (what a foreign sender would hold), so the test
@@ -95,23 +95,23 @@ public class TestProtoCommandRoundTrip
         block.setIntValue(2, 10);
         block.setIntValue(3, 90);
 
-        var env = new ProtoObsEncoder.CommandEnvelope("cmd123", "cs456", null, issueTime, "userA");
-        var wire = ProtoObsEncoder.encodeCommand(params, desc, block, env).toByteArray();
+        var env = new ProtoEncoder.CommandEnvelope("cmd123", "cs456", null, issueTime, "userA");
+        var wire = ProtoEncoder.encodeCommand(params, desc, block, env).toByteArray();
 
         // decode against the same descriptor
         var msg = DynamicMessage.parseFrom(desc, wire);
-        var decoded = ProtoRecordDecoder.decodeRecord(params, msg);
+        var decoded = ProtoDecoder.decodeRecord(params, msg);
         assertTrue(decoded.getBooleanValue(0));
         assertEquals(5, decoded.getIntValue(1));
         assertEquals(10, decoded.getIntValue(2));
         assertEquals(90, decoded.getIntValue(3));
 
         // envelope reads back, including sub-second issue time
-        assertEquals("cmd123", ProtoRecordDecoder.getString(msg, "id"));
-        assertEquals("cs456", ProtoRecordDecoder.getString(msg, "controlstream_id"));
-        assertNull(ProtoRecordDecoder.getString(msg, "foi_id"));      // unset → null
-        assertEquals(issueTime, ProtoRecordDecoder.getInstant(msg, "issue_time"));
-        assertEquals("userA", ProtoRecordDecoder.getString(msg, "sender"));
+        assertEquals("cmd123", ProtoDecoder.getString(msg, "id"));
+        assertEquals("cs456", ProtoDecoder.getString(msg, "controlstream_id"));
+        assertNull(ProtoDecoder.getString(msg, "foi_id"));      // unset → null
+        assertEquals(issueTime, ProtoDecoder.getInstant(msg, "issue_time"));
+        assertEquals("userA", ProtoDecoder.getString(msg, "sender"));
     }
 
 
@@ -146,8 +146,8 @@ public class TestProtoCommandRoundTrip
         block.setIntValue(0, 1);
         block.setIntValue(1, 25);
 
-        var env = new ProtoObsEncoder.CommandEnvelope(null, null, null, Instant.ofEpochSecond(1_700_000_000L), null);
-        var wire = ProtoObsEncoder.encodeCommand(choice, choiceDesc, block, env).toByteArray();
+        var env = new ProtoEncoder.CommandEnvelope(null, null, null, Instant.ofEpochSecond(1_700_000_000L), null);
+        var wire = ProtoEncoder.encodeCommand(choice, choiceDesc, block, env).toByteArray();
 
         // only the selected oneof field travels
         var msg = DynamicMessage.parseFrom(choiceDesc, wire);
@@ -155,7 +155,7 @@ public class TestProtoCommandRoundTrip
 
         // decode on a fresh copy (selection state unknown to the receiver)
         var rxStruct = choice.copy();
-        var decoded = ProtoRecordDecoder.decodeRecord(rxStruct, msg);
+        var decoded = ProtoDecoder.decodeRecord(rxStruct, msg);
         assertEquals(1, decoded.getIntValue(0));    // selection index
         assertEquals(25, decoded.getIntValue(1));   // setStep value
 
@@ -181,7 +181,7 @@ public class TestProtoCommandRoundTrip
         var empty = DynamicMessage.newBuilder(d).build();
         try
         {
-            ProtoRecordDecoder.decodeRecord(choice.copy(), empty);
+            ProtoDecoder.decodeRecord(choice.copy(), empty);
             fail("expected IllegalArgumentException for unset oneof");
         }
         catch (IllegalArgumentException e)
@@ -238,11 +238,11 @@ public class TestProtoCommandRoundTrip
             .toByteArray();
 
         var msg = DynamicMessage.parseFrom(desc, foreign);
-        var decoded = ProtoRecordDecoder.decodeRecord(params, msg);
+        var decoded = ProtoDecoder.decodeRecord(params, msg);
         assertTrue(decoded.getBooleanValue(0));
         assertEquals(25, decoded.getIntValue(1));
         assertEquals(0, decoded.getIntValue(2));
         assertEquals(50, decoded.getIntValue(3));
-        assertEquals(Instant.ofEpochSecond(1_700_000_123L), ProtoRecordDecoder.getInstant(msg, "issue_time"));
+        assertEquals(Instant.ofEpochSecond(1_700_000_123L), ProtoDecoder.getInstant(msg, "issue_time"));
     }
 }

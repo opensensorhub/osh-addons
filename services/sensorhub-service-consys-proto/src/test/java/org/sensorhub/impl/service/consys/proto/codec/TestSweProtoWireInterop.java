@@ -39,7 +39,7 @@ import net.opengis.swe.v20.DataType;
  * Proves the {@code application/swe+proto} wire is self-sufficient: a receiver
  * that has ONLY the delivered {@code FileDescriptorSet} bytes — never the local
  * generated {@code SweOptions}/observation classes — can rebuild the descriptor
- * and decode an observation that {@link ProtoObsEncoder} produced. Google
+ * and decode an observation that {@link ProtoEncoder} produced. Google
  * well-known types are seeded from the runtime, mirroring the OSHConnect-Python
  * receiver ({@code _build_message_class} / {@code seed_google}).
  */
@@ -126,9 +126,9 @@ public class TestSweProtoWireInterop
         data.setFloatValue(1, 21.5f);             // airTemp
         data.setDoubleValue(2, 34.7);             // location.lat
         data.setDoubleValue(3, -86.6);            // location.lon
-        var env = new ProtoObsEncoder.Envelope("obs-9", "ds-9", null,
+        var env = new ProtoEncoder.Envelope("obs-9", "ds-9", null,
             Instant.ofEpochSecond(1_600_000_000L, 250_000_000), null);
-        var obsBytes = ProtoObsEncoder.encode(record, localDesc, data, env).toByteArray();
+        var obsBytes = ProtoEncoder.encode(record, localDesc, data, env).toByteArray();
 
         // --- receiver side: descriptor comes ONLY from the wire FileDescriptorSet ---
         var fdsBytes = ProtoSchemaWriter.toFileDescriptorSet(schema);

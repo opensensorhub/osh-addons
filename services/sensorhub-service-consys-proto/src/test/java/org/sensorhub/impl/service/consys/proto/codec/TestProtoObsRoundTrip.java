@@ -32,7 +32,7 @@ import net.opengis.swe.v20.DataComponent;
  * Observation-side codec tests covering the inbound path that
  * {@link ObsBindingProto#deserialize} sits on top of: wire bytes are decoded
  * back into a flat {@link net.opengis.swe.v20.DataBlock} via
- * {@link ProtoRecordDecoder} and every atom is asserted, and the observation
+ * {@link ProtoDecoder} and every atom is asserted, and the observation
  * envelope ({@link ProtoSchemaWriter#ENVELOPE_FIELD_NAMES} — 3 strings plus
  * {@code phenomenon_time}/{@code result_time} Timestamps) reads back including
  * sub-second precision. This is the obs mirror of
@@ -97,23 +97,23 @@ public class TestProtoObsRoundTrip
         block.setIntValue(2, 7);
         block.setBooleanValue(3, true);
 
-        var env = new ProtoObsEncoder.Envelope("obs123", "ds456", "foi789", phenomenonTime, resultTime);
-        var wire = ProtoObsEncoder.encode(record, desc, block, env).toByteArray();
+        var env = new ProtoEncoder.Envelope("obs123", "ds456", "foi789", phenomenonTime, resultTime);
+        var wire = ProtoEncoder.encode(record, desc, block, env).toByteArray();
 
         // decode the record back from the wire bytes (the binding's inbound path)
         var msg = DynamicMessage.parseFrom(desc, wire);
-        var decoded = ProtoRecordDecoder.decodeRecord(record, msg);
+        var decoded = ProtoDecoder.decodeRecord(record, msg);
         assertEquals(21.5, decoded.getDoubleValue(0), 1e-9);
         assertEquals(60.0, decoded.getDoubleValue(1), 1e-9);
         assertEquals(7, decoded.getIntValue(2));
         assertTrue(decoded.getBooleanValue(3));
 
         // envelope reads back, including sub-second times
-        assertEquals("obs123", ProtoRecordDecoder.getString(msg, "id"));
-        assertEquals("ds456", ProtoRecordDecoder.getString(msg, "datastream_id"));
-        assertEquals("foi789", ProtoRecordDecoder.getString(msg, "foi_id"));
-        assertEquals(phenomenonTime, ProtoRecordDecoder.getInstant(msg, "phenomenon_time"));
-        assertEquals(resultTime, ProtoRecordDecoder.getInstant(msg, "result_time"));
+        assertEquals("obs123", ProtoDecoder.getString(msg, "id"));
+        assertEquals("ds456", ProtoDecoder.getString(msg, "datastream_id"));
+        assertEquals("foi789", ProtoDecoder.getString(msg, "foi_id"));
+        assertEquals(phenomenonTime, ProtoDecoder.getInstant(msg, "phenomenon_time"));
+        assertEquals(resultTime, ProtoDecoder.getInstant(msg, "result_time"));
     }
 
 
@@ -128,13 +128,13 @@ public class TestProtoObsRoundTrip
         block.setIntValue(2, 3);
         block.setBooleanValue(3, false);
 
-        var env = new ProtoObsEncoder.Envelope(null, null, null,
+        var env = new ProtoEncoder.Envelope(null, null, null,
             Instant.ofEpochSecond(1_700_000_000L), null);
-        var wire = ProtoObsEncoder.encode(record, desc, block, env).toByteArray();
+        var wire = ProtoEncoder.encode(record, desc, block, env).toByteArray();
 
         var msg = DynamicMessage.parseFrom(desc, wire);
-        assertNull(ProtoRecordDecoder.getString(msg, "id"));
-        assertEquals(Instant.ofEpochSecond(1_700_000_000L), ProtoRecordDecoder.getInstant(msg, "phenomenon_time"));
-        assertNull(ProtoRecordDecoder.getInstant(msg, "result_time"));
+        assertNull(ProtoDecoder.getString(msg, "id"));
+        assertEquals(Instant.ofEpochSecond(1_700_000_000L), ProtoDecoder.getInstant(msg, "phenomenon_time"));
+        assertNull(ProtoDecoder.getInstant(msg, "result_time"));
     }
 }

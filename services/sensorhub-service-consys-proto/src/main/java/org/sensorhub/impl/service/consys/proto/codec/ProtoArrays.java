@@ -28,7 +28,7 @@ public final class ProtoArrays
 
 
     /**
-     * True if {@code c}'s subtree contains a {@link DataChoice}. Rectangular
+     * True if {@code component}'s subtree contains a {@link DataChoice}. Rectangular
      * arrays — fixed- or variable-size, including nested (Matrix) — stay flat
      * ({@code DataBlockMixed}), so the flat-index codec handles them and they
      * are <b>not</b> flagged. A {@code DataChoice} as (or inside) an array
@@ -36,14 +36,14 @@ public final class ProtoArrays
      * selector would need the pre-pass to apply selections inside the array,
      * which it doesn't, so such an element is rejected rather than mis-decoded.
      */
-    public static boolean elementHasChoice(DataComponent c)
+    public static boolean elementHasChoice(DataComponent component)
     {
-        if (c instanceof DataChoice)
+        if (component instanceof DataChoice)
             return true;
-        if (c instanceof DataArray)
-            return elementHasChoice(((DataArray) c).getElementType());
-        for (int i = 0; i < c.getComponentCount(); i++)
-            if (elementHasChoice(c.getComponent(i)))
+        if (component instanceof DataArray)
+            return elementHasChoice(((DataArray) component).getElementType());
+        for (int i = 0; i < component.getComponentCount(); i++)
+            if (elementHasChoice(component.getComponent(i)))
                 return true;
         return false;
     }

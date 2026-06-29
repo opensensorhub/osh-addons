@@ -17,8 +17,8 @@ Author: Ian Patterson <ian.patterson@georobotix.us>
 package org.sensorhub.impl.service.consys.proto.commands;
 
 import org.sensorhub.impl.service.consys.proto.ProtoFormat;
-import org.sensorhub.impl.service.consys.proto.codec.ProtoObsEncoder;
-import org.sensorhub.impl.service.consys.proto.codec.ProtoRecordDecoder;
+import org.sensorhub.impl.service.consys.proto.codec.ProtoEncoder;
+import org.sensorhub.impl.service.consys.proto.codec.ProtoDecoder;
 import org.sensorhub.impl.service.consys.proto.observations.ObsBindingProto;
 import org.sensorhub.impl.service.consys.proto.schema.GeneratedSchemaCache;
 import org.sensorhub.impl.service.consys.proto.schema.ProtoSchemaWriter;
@@ -57,7 +57,7 @@ import net.opengis.swe.v20.DataComponent;
  * </p>
  *
  * <p>
- * <b>Outbound</b> (GET/stream): {@link ProtoObsEncoder#encodeCommand} fills
+ * <b>Outbound</b> (GET/stream): {@link ProtoEncoder#encodeCommand} fills
  * the envelope from command metadata — ids are encoded with the service's
  * {@link IdEncoders} so receivers can correlate to REST resources.
  * </p>
@@ -65,7 +65,7 @@ import net.opengis.swe.v20.DataComponent;
  * <p>
  * <b>Inbound</b> (POST/publish): {@link #deserialize} parses one delimited
  * message per command and decodes the parameters via
- * {@link ProtoRecordDecoder}. Wire envelope handling on ingest: {@code id} is
+ * {@link ProtoDecoder}. Wire envelope handling on ingest: {@code id} is
  * ignored (server-assigned), {@code controlstream_id} is ignored (the stream
  * is addressed by URL/topic), {@code sender} is ignored in favor of the
  * authenticated user (not spoofable), {@code issue_time} is honored when set,
@@ -73,8 +73,8 @@ import net.opengis.swe.v20.DataComponent;
  * </p>
  *
  * @see ProtoSchemaWriter
- * @see ProtoObsEncoder
- * @see ProtoRecordDecoder
+ * @see ProtoEncoder
+ * @see ProtoDecoder
  * @author Ian Patterson
  * @since 2026
  */
@@ -157,14 +157,14 @@ public class CommandBindingProto extends ResourceBinding<BigId, ICommandData>
         DataBlock params;
         try
         {
-            params = ProtoRecordDecoder.decodeRecord(paramStruct, msg);
+            params = ProtoDecoder.decodeRecord(paramStruct, msg);
         }
         catch (RuntimeException e)
         {
             throw new ResourceParseException("swe+proto command does not match the control stream schema: " + e.getMessage());
         }
 
-        var issueTime = ProtoRecordDecoder.getInstant(msg, "issue_time");
+        var issueTime = ProtoDecoder.getInstant(msg, "issue_time");
         return new CommandData.Builder()
             .withCommandStream(contextData.streamID)
             .withSender(userID)
@@ -178,13 +178,13 @@ public class CommandBindingProto extends ResourceBinding<BigId, ICommandData>
     public void serialize(BigId key, ICommandData cmd, boolean showLinks) throws IOException
     {
         var out = writer();
-        var env = new ProtoObsEncoder.CommandEnvelope(
+        var env = new ProtoEncoder.CommandEnvelope(
             key != null ? idEncoders.getCommandIdEncoder().encodeID(key) : null,
             cmd.getCommandStreamID() != null ? idEncoders.getCommandStreamIdEncoder().encodeID(cmd.getCommandStreamID()) : null,
             cmd.hasFoi() ? idEncoders.getFoiIdEncoder().encodeID(cmd.getFoiID()) : null,
             cmd.getIssueTime(),
             cmd.getSenderID());
-        var msg = ProtoObsEncoder.encodeCommand(paramStruct, descriptor, cmd.getParams(), env);
+        var msg = ProtoEncoder.encodeCommand(paramStruct, descriptor, cmd.getParams(), env);
         msg.writeDelimitedTo(out);
         out.flush();
     }

@@ -16,8 +16,8 @@ Author: Ian Patterson <ian.patterson@georobotix.us>
 
 package org.sensorhub.impl.service.consys.proto.schema;
 
-import org.sensorhub.impl.service.consys.proto.codec.ProtoObsEncoder;
-import org.sensorhub.impl.service.consys.proto.codec.ProtoRecordDecoder;
+import org.sensorhub.impl.service.consys.proto.codec.ProtoEncoder;
+import org.sensorhub.impl.service.consys.proto.codec.ProtoDecoder;
 import static org.junit.Assert.*;
 import org.junit.Test;
 import org.vast.swe.SWEHelper;
@@ -84,9 +84,9 @@ public class TestProtoSchemaReader
         blk.setDoubleValue(1, 7); blk.setDoubleValue(2, 8); blk.setDoubleValue(3, 9);
         blk.setBooleanValue(4, true);
 
-        var wire = ProtoObsEncoder.encode(orig, desc, blk, null).toByteArray();
+        var wire = ProtoEncoder.encode(orig, desc, blk, null).toByteArray();
         var msg = DynamicMessage.parseFrom(desc, wire);
-        var out = ProtoRecordDecoder.decodeRecord(rebuilt, msg);
+        var out = ProtoDecoder.decodeRecord(rebuilt, msg);
 
         assertEquals(5, out.getAtomCount());
         assertEquals(3, out.getIntValue(0));
@@ -192,14 +192,14 @@ public class TestProtoSchemaReader
         block.setDoubleValue(0, 19.25);
         block.setIntValue(1, 8);
         block.setBooleanValue(2, true);
-        var env = new ProtoObsEncoder.Envelope(null, null, null, null, null);
-        var wire = ProtoObsEncoder.encode(original, desc, block, env).toByteArray();
+        var env = new ProtoEncoder.Envelope(null, null, null, null, null);
+        var wire = ProtoEncoder.encode(original, desc, block, env).toByteArray();
 
         // decode using ONLY the structure rebuilt by the reader (we no longer
         // have the original record) — the round-trip that schema ingestion needs
         var rebuilt = new ProtoSchemaReader().readRecord(desc);
         var msg = DynamicMessage.parseFrom(desc, wire);
-        var decoded = ProtoRecordDecoder.decodeRecord(rebuilt, msg);
+        var decoded = ProtoDecoder.decodeRecord(rebuilt, msg);
 
         assertEquals(19.25, decoded.getDoubleValue(0), 1e-9);
         assertEquals(8, decoded.getIntValue(1));

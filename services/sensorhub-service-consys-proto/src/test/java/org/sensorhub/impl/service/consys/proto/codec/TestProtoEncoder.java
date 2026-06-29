@@ -30,13 +30,13 @@ import net.opengis.swe.v20.DataType;
 
 
 /**
- * Round-trips a SWE {@link DataBlock} through {@link ProtoObsEncoder}: a nested
+ * Round-trips a SWE {@link DataBlock} through {@link ProtoEncoder}: a nested
  * record (ISO time + scalars + a nested DataRecord + a Vector) is encoded to a
  * {@link DynamicMessage}, serialized, and parsed back against the same
  * descriptor. Nested leaf values are asserted specifically — if the recursion
  * or the flat atom-index threading were wrong, those assertions fail.
  */
-public class TestProtoObsEncoder
+public class TestProtoEncoder
 {
     static final String PKG = "test.obs";
     static final String MSG = "Obs";
@@ -78,9 +78,9 @@ public class TestProtoObsEncoder
     static final Instant PHEN_TIME = Instant.ofEpochSecond(1_600_000_000L, 250_000_000);
     static final Instant RESULT_TIME = Instant.ofEpochSecond(1_600_000_001L);
 
-    static ProtoObsEncoder.Envelope sampleEnvelope()
+    static ProtoEncoder.Envelope sampleEnvelope()
     {
-        return new ProtoObsEncoder.Envelope("obs-1", "ds-1", null, PHEN_TIME, RESULT_TIME);
+        return new ProtoEncoder.Envelope("obs-1", "ds-1", null, PHEN_TIME, RESULT_TIME);
     }
 
 
@@ -102,7 +102,7 @@ public class TestProtoObsEncoder
     @Test
     public void testEncodeValues()
     {
-        var msg = ProtoObsEncoder.encode(record, desc, sampleData(record), sampleEnvelope());
+        var msg = ProtoEncoder.encode(record, desc, sampleData(record), sampleEnvelope());
 
         // envelope (fields 1–5)
         assertEquals("obs-1", msg.getField(desc.findFieldByName("id")));
@@ -140,7 +140,7 @@ public class TestProtoObsEncoder
     @Test
     public void testWireRoundTrip() throws Exception
     {
-        var msg = ProtoObsEncoder.encode(record, desc, sampleData(record), sampleEnvelope());
+        var msg = ProtoEncoder.encode(record, desc, sampleData(record), sampleEnvelope());
         var parsed = DynamicMessage.parseFrom(desc, msg.toByteArray());
 
         assertEquals(21.5f, (float) parsed.getField(desc.findFieldByName("airTemp")), 1e-6);

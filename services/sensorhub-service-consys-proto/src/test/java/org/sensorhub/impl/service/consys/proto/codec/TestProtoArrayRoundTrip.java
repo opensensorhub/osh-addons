@@ -66,9 +66,9 @@ public class TestProtoArrayRoundTrip
         blk.setDoubleValue(1, 1.1); blk.setDoubleValue(2, 2.2); blk.setDoubleValue(3, 3.3);
         blk.setIntValue(4, 42);
 
-        var wire = ProtoObsEncoder.encode(rec, d, blk, null).toByteArray();
+        var wire = ProtoEncoder.encode(rec, d, blk, null).toByteArray();
         var msg = DynamicMessage.parseFrom(d, wire);
-        var out = ProtoRecordDecoder.decodeRecord(rec, msg);
+        var out = ProtoDecoder.decodeRecord(rec, msg);
 
         assertEquals(5, out.getAtomCount());
         assertEquals(9.9, out.getDoubleValue(0), 1e-9);
@@ -99,9 +99,9 @@ public class TestProtoArrayRoundTrip
         blk.setDoubleValue(2, 2.0); blk.setIntValue(3, 20);
         blk.setBooleanValue(4, true);
 
-        var wire = ProtoObsEncoder.encode(rec, d, blk, null).toByteArray();
+        var wire = ProtoEncoder.encode(rec, d, blk, null).toByteArray();
         var msg = DynamicMessage.parseFrom(d, wire);
-        var out = ProtoRecordDecoder.decodeRecord(rec, msg);
+        var out = ProtoDecoder.decodeRecord(rec, msg);
 
         assertEquals(1.0, out.getDoubleValue(0), 1e-9);
         assertEquals(10, out.getIntValue(1));
@@ -137,12 +137,12 @@ public class TestProtoArrayRoundTrip
         blk.setDoubleValue(3, 7); blk.setDoubleValue(4, 8);
         blk.setBooleanValue(5, true);
 
-        var wire = ProtoObsEncoder.encode(encStruct, d, blk, null).toByteArray();
+        var wire = ProtoEncoder.encode(encStruct, d, blk, null).toByteArray();
         var msg = DynamicMessage.parseFrom(d, wire);
 
         // decode against a FRESH structure with no array size (mirrors the binding,
         // whose schema struct carries no per-observation size) — prepass() sizes it
-        var out = ProtoRecordDecoder.decodeRecord(buildVarRec(), msg);
+        var out = ProtoDecoder.decodeRecord(buildVarRec(), msg);
 
         assertEquals(6, out.getAtomCount());
         assertEquals(4, out.getIntValue(0));
@@ -205,9 +205,9 @@ public class TestProtoArrayRoundTrip
         for (int i = 0; i < m * n; i++)
             blk.setDoubleValue(2 + i, (i + 1) * 0.5);
 
-        var wire = ProtoObsEncoder.encode(enc, d, blk, null).toByteArray();
+        var wire = ProtoEncoder.encode(enc, d, blk, null).toByteArray();
         var msg = DynamicMessage.parseFrom(d, wire);
-        var out = ProtoRecordDecoder.decodeRecord(buildVarGrid(), msg);
+        var out = ProtoDecoder.decodeRecord(buildVarGrid(), msg);
 
         assertEquals("atoms for " + m + "x" + n, 2 + m * n, out.getAtomCount());
         assertEquals(m, out.getIntValue(0));
@@ -248,9 +248,9 @@ public class TestProtoArrayRoundTrip
             blk.setDoubleValue(i, (i + 1) * 1.5);
         blk.setIntValue(6, 99);
 
-        var wire = ProtoObsEncoder.encode(rec, d, blk, null).toByteArray();
+        var wire = ProtoEncoder.encode(rec, d, blk, null).toByteArray();
         var msg = DynamicMessage.parseFrom(d, wire);
-        var out = ProtoRecordDecoder.decodeRecord(rec, msg);
+        var out = ProtoDecoder.decodeRecord(rec, msg);
 
         assertEquals(7, out.getAtomCount());
         for (int i = 0; i < 6; i++)
@@ -284,7 +284,7 @@ public class TestProtoArrayRoundTrip
             blk.setDoubleValue(1 + i, i + 1);
         blk.setBooleanValue(7, true);
 
-        var wire = ProtoObsEncoder.encode(enc, d, blk, null).toByteArray();
+        var wire = ProtoEncoder.encode(enc, d, blk, null).toByteArray();
         var msg = DynamicMessage.parseFrom(d, wire);
 
         // decode against a fresh structure (no row count) — prepass sizes the outer
@@ -296,7 +296,7 @@ public class TestProtoArrayRoundTrip
                     .build()))
             .addField("tail", swe.createBoolean().build())
             .build();
-        var out = ProtoRecordDecoder.decodeRecord(dec, msg);
+        var out = ProtoDecoder.decodeRecord(dec, msg);
 
         assertEquals(8, out.getAtomCount());
         assertEquals(2, out.getIntValue(0));

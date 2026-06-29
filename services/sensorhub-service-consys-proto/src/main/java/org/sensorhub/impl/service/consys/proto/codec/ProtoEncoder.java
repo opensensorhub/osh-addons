@@ -62,9 +62,9 @@ import net.opengis.swe.v20.Vector;
  * @author Ian Patterson
  * @since 2026
  */
-public final class ProtoObsEncoder
+public final class ProtoEncoder
 {
-    private ProtoObsEncoder() {}
+    private ProtoEncoder() {}
 
 
     /** Observation metadata for the fixed envelope (message fields 1–5). */

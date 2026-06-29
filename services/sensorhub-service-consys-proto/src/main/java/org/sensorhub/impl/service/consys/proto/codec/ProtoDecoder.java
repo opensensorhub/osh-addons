@@ -35,7 +35,7 @@ import net.opengis.swe.v20.Vector;
  * <p>
  * Decodes a protobuf message (parsed against a {@link ProtoSchemaWriter}-built
  * descriptor) back into a flat SWE Common {@link DataBlock} — the exact mirror
- * of {@link ProtoObsEncoder}. This is the inbound half of the swe+proto codec,
+ * of {@link ProtoEncoder}. This is the inbound half of the swe+proto codec,
  * used to ingest commands (and, later, observations) POSTed/published as
  * {@code application/swe+proto}.
  * </p>
@@ -57,14 +57,14 @@ import net.opengis.swe.v20.Vector;
  * a server ignores the wire {@code sender} in favor of the authenticated user).
  * </p>
  *
- * @see ProtoObsEncoder
+ * @see ProtoEncoder
  * @see ProtoSchemaWriter
  * @author Ian Patterson
  * @since 2026
  */
-public final class ProtoRecordDecoder
+public final class ProtoDecoder
 {
-    private ProtoRecordDecoder() {}
+    private ProtoDecoder() {}
 
 
     /**

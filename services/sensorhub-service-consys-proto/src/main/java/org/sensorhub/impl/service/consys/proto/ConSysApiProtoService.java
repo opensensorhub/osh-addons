@@ -60,14 +60,14 @@ public class ConSysApiProtoService extends AbstractModule<ConSysApiProtoServiceC
     @Override
     protected void doStart() throws SensorHubException
     {
-        var c = new DataStreamSchemaCache();
+        var dataStreamSchemaCache = new DataStreamSchemaCache();
 
         // Extension registry so swe_options FieldOptions (definition, uomCode,
         // referenceFrame, …) on ingested descriptors parse as typed extensions
         // rather than unknown fields — see DataStreamSchemaCache.setExtensionRegistry.
         var extReg = ExtensionRegistry.newInstance();
         SweOptions.registerAllExtensions(extReg);
-        c.setExtensionRegistry(extReg);
+        dataStreamSchemaCache.setExtensionRegistry(extReg);
 
         // Bootstrap the dependency descriptors that client/generated observation
         // FileDescriptorProtos import. The bootstrap key is FileDescriptor.getName(),
@@ -75,10 +75,10 @@ public class ConSysApiProtoService extends AbstractModule<ConSysApiProtoServiceC
         //   google/protobuf/timestamp.proto   (Time fields; WKT, always available)
         //   swecommon/swe_options.proto       (SWE FieldOptions annotations)
         // registerBootstrapTree pulls transitive deps too (swe_options -> descriptor.proto).
-        c.registerBootstrapTree(Timestamp.getDescriptor().getFile());
-        c.registerBootstrapTree(SweOptions.getDescriptor());
+        dataStreamSchemaCache.registerBootstrapTree(Timestamp.getDescriptor().getFile());
+        dataStreamSchemaCache.registerBootstrapTree(SweOptions.getDescriptor());
 
-        cache = c;
+        cache = dataStreamSchemaCache;
     }
 
 

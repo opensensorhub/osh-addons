@@ -17,8 +17,8 @@ Author: Ian Patterson <ian.patterson@georobotix.us>
 package org.sensorhub.impl.service.consys.proto.observations;
 
 import org.sensorhub.impl.service.consys.proto.ProtoFormat;
-import org.sensorhub.impl.service.consys.proto.codec.ProtoObsEncoder;
-import org.sensorhub.impl.service.consys.proto.codec.ProtoRecordDecoder;
+import org.sensorhub.impl.service.consys.proto.codec.ProtoEncoder;
+import org.sensorhub.impl.service.consys.proto.codec.ProtoDecoder;
 import org.sensorhub.impl.service.consys.proto.schema.GeneratedSchemaCache;
 import org.sensorhub.impl.service.consys.proto.schema.ProtoSchemaWriter;
 import java.io.IOException;
@@ -51,7 +51,7 @@ import net.opengis.swe.v20.DataComponent;
  * Observation binding for {@code application/swe+proto}. Encodes each
  * {@link IObsData} as a protobuf message whose schema is generated on the fly
  * from the datastream's record structure by {@link ProtoSchemaWriter}, with the
- * values filled in by {@link ProtoObsEncoder}. Messages are written
+ * values filled in by {@link ProtoEncoder}. Messages are written
  * length-delimited so a stream/collection of observations is individually
  * parseable.
  * </p>
@@ -69,7 +69,7 @@ import net.opengis.swe.v20.DataComponent;
  * <p>
  * <b>Inbound</b> (POST/publish): {@link #deserialize} parses one delimited
  * message per observation and decodes the result record via
- * {@link ProtoRecordDecoder}, against the same on-the-fly descriptor used for
+ * {@link ProtoDecoder}, against the same on-the-fly descriptor used for
  * encoding (the "schema once, observations bare" model — sender and receiver
  * generate the identical descriptor from the datastream's record structure).
  * Wire envelope handling on ingest: {@code id} is ignored (server-assigned),
@@ -82,8 +82,8 @@ import net.opengis.swe.v20.DataComponent;
  * </p>
  *
  * @see ProtoSchemaWriter
- * @see ProtoObsEncoder
- * @see ProtoRecordDecoder
+ * @see ProtoEncoder
+ * @see ProtoDecoder
  * @author Ian Patterson
  * @since 2026
  */
@@ -146,9 +146,9 @@ public class ObsBindingProto extends ResourceBinding<BigId, IObsData>
         var out = writer();
         // v1 envelope: phenomenon/result time only; id/datastream_id/foi_id are
         // left empty (valid proto3 defaults) until id-encoding is wired.
-        var env = new ProtoObsEncoder.Envelope(null, null, null,
+        var env = new ProtoEncoder.Envelope(null, null, null,
             obs.getPhenomenonTime(), obs.getResultTime());
-        var msg = ProtoObsEncoder.encode(recordStruct, descriptor, obs.getResult(), env);
+        var msg = ProtoEncoder.encode(recordStruct, descriptor, obs.getResult(), env);
         msg.writeDelimitedTo(out);
         out.flush();
     }
@@ -176,7 +176,7 @@ public class ObsBindingProto extends ResourceBinding<BigId, IObsData>
         DataBlock result;
         try
         {
-            result = ProtoRecordDecoder.decodeRecord(recordStruct, msg);
+            result = ProtoDecoder.decodeRecord(recordStruct, msg);
         }
         catch (RuntimeException e)
         {
@@ -185,7 +185,7 @@ public class ObsBindingProto extends ResourceBinding<BigId, IObsData>
 
         // phenomenon time: trust the envelope when set, else the record's own
         // time stamp (what the obs store indexes), else server time
-        var phenomenonTime = ProtoRecordDecoder.getInstant(msg, "phenomenon_time");
+        var phenomenonTime = ProtoDecoder.getInstant(msg, "phenomenon_time");
         if (phenomenonTime == null && timeIndexer != null)
         {
             double t = timeIndexer.getDoubleValue(result);
@@ -195,7 +195,7 @@ public class ObsBindingProto extends ResourceBinding<BigId, IObsData>
         if (phenomenonTime == null)
             phenomenonTime = Instant.now();
 
-        var resultTime = ProtoRecordDecoder.getInstant(msg, "result_time");
+        var resultTime = ProtoDecoder.getInstant(msg, "result_time");
 
         return new ObsData.Builder()
             .withDataStream(contextData.dsID)
