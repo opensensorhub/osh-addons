@@ -63,6 +63,7 @@ public class UnmannedSystem extends AbstractSensorModule<org.sensorhub.impl.sens
     UnmannedControlOffboard unmannedControlOffboard;
     UnmannedControlShell unmannedControlShell;
     UnmannedControlFlightMode unmannedControlFlightMode;
+    UnmannedControlDriveMode unmannedControlDriveMode;
     UnmannedControlEnableLocation unmannedControlEnableLocation;
     UnmannedControlArm unmannedControlArm;
     UnmannedControlPauseMission unmannedControlPauseMission;
@@ -171,6 +172,10 @@ public class UnmannedSystem extends AbstractSensorModule<org.sensorhub.impl.sens
         this.unmannedControlFlightMode = new UnmannedControlFlightMode(this);
         addControlInput(this.unmannedControlFlightMode);
         unmannedControlFlightMode.init();
+
+        this.unmannedControlDriveMode = new UnmannedControlDriveMode(this);
+        addControlInput(this.unmannedControlDriveMode);
+        unmannedControlDriveMode.init();
 
         this.unmannedControlEnableLocation= new UnmannedControlEnableLocation(this);
         addControlInput(this.unmannedControlEnableLocation);
@@ -324,6 +329,7 @@ public class UnmannedSystem extends AbstractSensorModule<org.sensorhub.impl.sens
                     unmannedControlRTL.setSystem(drone);
                     unmannedControlShell.setSystem(drone);
                     unmannedControlFlightMode.setSystem(drone);
+                    unmannedControlDriveMode.setSystem(drone);
                     unmannedControlPauseMission.setSystem(drone);
                     unmannedControlDriveToLocation.setSystem(drone);
                     unmannedControlDriveVelocity.setSystem(drone);
