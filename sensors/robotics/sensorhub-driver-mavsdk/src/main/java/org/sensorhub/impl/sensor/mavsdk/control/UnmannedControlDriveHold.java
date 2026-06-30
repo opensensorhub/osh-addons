@@ -157,12 +157,6 @@ public class UnmannedControlDriveHold extends AbstractSensorControl<UnmannedSyst
                     + domain + "). Use the air hold/brake control instead.");
         }
 
-        boolean engage = command.getBooleanValue(0);
-        if ( !engage ) {
-            log.debug("Drive-hold command received with engageHold=false; no action taken");
-            return true;
-        }
-
         if ( system == null ) {
             throw new CommandException("Unmanned System not initialized");
         }
