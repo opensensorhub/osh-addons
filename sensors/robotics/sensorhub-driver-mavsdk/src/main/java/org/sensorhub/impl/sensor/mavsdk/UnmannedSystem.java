@@ -69,6 +69,7 @@ public class UnmannedSystem extends AbstractSensorModule<org.sensorhub.impl.sens
     UnmannedControlRTL unmannedControlRTL;
     UnmannedControlDriveToLocation unmannedControlDriveToLocation; //ground/surface
     UnmannedControlDriveVelocity unmannedControlDriveVelocity;     //ground/surface
+    UnmannedControlDriveHold unmannedControlDriveHold;             //ground/surface
     UnmannedControlReboot unmannedControlReboot;
 
     MavSdkServerHandler mavsdkServer = new MavSdkServerHandler();
@@ -192,6 +193,10 @@ public class UnmannedSystem extends AbstractSensorModule<org.sensorhub.impl.sens
         this.unmannedControlDriveVelocity = new UnmannedControlDriveVelocity(this);
         addControlInput(this.unmannedControlDriveVelocity);
         unmannedControlDriveVelocity.init();
+
+        this.unmannedControlDriveHold = new UnmannedControlDriveHold(this);
+        addControlInput(this.unmannedControlDriveHold);
+        unmannedControlDriveHold.init();
 
         this.unmannedControlReboot = new UnmannedControlReboot(this);
         addControlInput(this.unmannedControlReboot);
@@ -322,6 +327,7 @@ public class UnmannedSystem extends AbstractSensorModule<org.sensorhub.impl.sens
                     unmannedControlPauseMission.setSystem(drone);
                     unmannedControlDriveToLocation.setSystem(drone);
                     unmannedControlDriveVelocity.setSystem(drone);
+                    unmannedControlDriveHold.setSystem(drone);
                     unmannedControlArm.setSystem(drone);
                     unmannedControlReboot.setSystem(drone);
                     locationOutput.subscribe(drone);
