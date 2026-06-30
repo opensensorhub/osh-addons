@@ -63,7 +63,6 @@ public class UnmannedSystem extends AbstractSensorModule<org.sensorhub.impl.sens
     UnmannedControlOffboard unmannedControlOffboard;
     UnmannedControlShell unmannedControlShell;
     UnmannedControlFlightMode unmannedControlFlightMode;
-    UnmannedControlDriveMode unmannedControlDriveMode;
     UnmannedControlEnableLocation unmannedControlEnableLocation;
     UnmannedControlArm unmannedControlArm;
     UnmannedControlPauseMission unmannedControlPauseMission;
@@ -71,7 +70,9 @@ public class UnmannedSystem extends AbstractSensorModule<org.sensorhub.impl.sens
     UnmannedControlDriveToLocation unmannedControlDriveToLocation; //ground/surface
     UnmannedControlDriveVelocity unmannedControlDriveVelocity;     //ground/surface
     UnmannedControlDriveHold unmannedControlDriveHold;             //ground/surface
+    UnmannedControlDriveMode unmannedControlDriveMode;             //ground/surface
     UnmannedControlReboot unmannedControlReboot;
+    UnmannedControlHome unmannedControlHome;                       //air/ground/surface
 
     MavSdkServerHandler mavsdkServer = new MavSdkServerHandler();
 
@@ -173,10 +174,6 @@ public class UnmannedSystem extends AbstractSensorModule<org.sensorhub.impl.sens
         addControlInput(this.unmannedControlFlightMode);
         unmannedControlFlightMode.init();
 
-        this.unmannedControlDriveMode = new UnmannedControlDriveMode(this);
-        addControlInput(this.unmannedControlDriveMode);
-        unmannedControlDriveMode.init();
-
         this.unmannedControlEnableLocation= new UnmannedControlEnableLocation(this);
         addControlInput(this.unmannedControlEnableLocation);
         unmannedControlEnableLocation.init(this.unmannedControlLocation);
@@ -203,9 +200,18 @@ public class UnmannedSystem extends AbstractSensorModule<org.sensorhub.impl.sens
         addControlInput(this.unmannedControlDriveHold);
         unmannedControlDriveHold.init();
 
+        this.unmannedControlDriveMode = new UnmannedControlDriveMode(this);
+        addControlInput(this.unmannedControlDriveMode);
+        unmannedControlDriveMode.init();
+
         this.unmannedControlReboot = new UnmannedControlReboot(this);
         addControlInput(this.unmannedControlReboot);
         unmannedControlReboot.init();
+
+        // Home position control (works for air, ground, and surface platforms).
+        this.unmannedControlHome = new UnmannedControlHome(this);
+        addControlInput(this.unmannedControlHome);
+        unmannedControlHome.init();
 
         videoOutput = new UnmannedVideoOutput(config.ffmpegConnection);
         if (null != config.ffmpegConnection.connectionString &&
@@ -329,11 +335,12 @@ public class UnmannedSystem extends AbstractSensorModule<org.sensorhub.impl.sens
                     unmannedControlRTL.setSystem(drone);
                     unmannedControlShell.setSystem(drone);
                     unmannedControlFlightMode.setSystem(drone);
-                    unmannedControlDriveMode.setSystem(drone);
                     unmannedControlPauseMission.setSystem(drone);
                     unmannedControlDriveToLocation.setSystem(drone);
                     unmannedControlDriveVelocity.setSystem(drone);
                     unmannedControlDriveHold.setSystem(drone);
+                    unmannedControlDriveMode.setSystem(drone);
+                    unmannedControlHome.setSystem(drone);
                     unmannedControlArm.setSystem(drone);
                     unmannedControlReboot.setSystem(drone);
                     locationOutput.subscribe(drone);
