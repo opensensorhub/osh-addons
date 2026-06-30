@@ -14,6 +14,7 @@ Copyright (C) 2025 Sensia Software LLC. All Rights Reserved.
 
 package org.sensorhub.utils.aero;
 
+import java.time.LocalDate;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.TimeoutException;
@@ -48,6 +49,12 @@ public interface INavDatabase
     
     
     public boolean isReady();
+    
+    
+    /**
+     * @return The AIRAC date of the loaded database or null if unknown
+     */
+    public LocalDate getAiracDate();
     
     
     public Collection<? extends INavDbWaypoint> getAllAirports();
