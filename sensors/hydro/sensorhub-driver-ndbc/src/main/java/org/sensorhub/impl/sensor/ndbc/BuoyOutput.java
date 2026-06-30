@@ -113,7 +113,7 @@ public class BuoyOutput extends AbstractSensorOutput<BuoySensor> {
 				.description("Pressure Tendency is the direction (plus or minus) and the amount of"
 						+ "pressure change (hPa)for a three hour period ending at the time of observation")
 				.definition("https://mmisw.org/ont/mx_testing/mxparms1/pressure_tendency")
-				// .uomCode() hPa/3 hours- not sure how to encode
+				.uomCode("hPa/(3.h)") // hectoPascals/3 hours
 				.build())
 			.addField("airTemperature", geoFac.createQuantity()
 				.description("Air temperature (Celsius) at sensor height")

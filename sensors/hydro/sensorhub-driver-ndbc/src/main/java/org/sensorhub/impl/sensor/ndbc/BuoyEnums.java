@@ -20,6 +20,7 @@ package org.sensorhub.impl.sensor.ndbc;
  * @author Tony Cook
  */
 
+@Deprecated // This is a legacy enum from original driver. Marking deprecated but may bring it back in future driver development 
 public class BuoyEnums {
 
 	public enum ObsParam

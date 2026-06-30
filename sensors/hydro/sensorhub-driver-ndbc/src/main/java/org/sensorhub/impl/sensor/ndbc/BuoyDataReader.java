@@ -37,22 +37,23 @@ public class BuoyDataReader
 {
 	static final String MISSING = "MM";
 	static final Logger logger = LoggerFactory.getLogger(BuoyDataReader.class);
+	static final String expectedFields = "#STN       LAT      LON  YYYY MM DD hh mm WDIR WSPD   GST WVHT  DPD APD MWD   PRES  PTDY  ATMP  WTMP  DEWP  VIS   TIDE";
+	static final String expectedUnits = "#text      deg      deg   yr mo day hr mn degT  m/s   m/s   m   sec sec degT   hPa   hPa  degC  degC  degC  nmi     ft";
 	
 	public static List<BuoyDataRecord> read(String url) throws IOException {
 		List<BuoyDataRecord> recs = new ArrayList<>();
 		URL dataUrl = new URL(url);
 		
 		try (BufferedReader reader = new BufferedReader(new InputStreamReader(dataUrl.openStream()))) {
-			// Skip Header lines
-			String header = reader.readLine();
-			boolean headerOk = checkHeader(header);
-			if(!headerOk) {
-				throw new IOException("Unexpected header format: " + header);
+			String fields = reader.readLine();
+			boolean fieldsOk = checkFields(fields);
+			if(!fieldsOk) {
+				logger.warn("Fields in header do not match expected fields:\n\t{}", fields);
 			}
 			String units = reader.readLine();
 			boolean unitsOk = checkUnits(units);
 			if(!unitsOk) {
-				throw new IOException("Unexpected units format: " + units);
+				logger.warn("Units in header do not match expected units:\n\t{}", units);
 			}
 			while(true) {
 				String inline = reader.readLine();
@@ -61,8 +62,6 @@ public class BuoyDataReader
 					if(inline.isBlank())  continue;
 				
 					String [] values = inline.split("\\s+");
-					//	#STN       LAT      LON  YYYY MM DD hh mm WDIR WSPD   GST WVHT  DPD APD MWD   PRES  PTDY  ATMP  WTMP  DEWP  VIS   TIDE
-					//	#text      deg      deg   yr mo day hr mn degT  m/s   m/s   m   sec sec degT   hPa   hPa  degC  degC  degC  nmi     ft
 					BuoyDataRecord rec = new BuoyDataRecord();
 					rec.id = values[0];
 					rec.lat = parseDouble(values[1]);
@@ -103,18 +102,14 @@ public class BuoyDataReader
 		}
 	}
 	
-	//	#STN       LAT      LON  YYYY MM DD hh mm WDIR WSPD   GST WVHT  DPD APD MWD   PRES  PTDY  ATMP  WTMP  DEWP  VIS   TIDE
-	public static boolean checkHeader(String header) {
-		// TODO check fields are as expected
-		String [] fields = header.split("\\s+");
-		return (fields.length == 22);
+	public static boolean checkFields(String fields) {
+		fields = fields.trim();
+		return fields.equalsIgnoreCase(expectedFields);
 	}
 	
-	//	#text      deg      deg   yr mo day hr mn degT  m/s   m/s   m   sec sec degT   hPa   hPa  degC  degC  degC  nmi     ft
 	public static boolean checkUnits(String units) {
-		String [] fields = units.split("\\s+");
-		// TODO check units are as expected
-		return (fields.length == 22);
+		units = units.trim();
+		return units.equalsIgnoreCase(expectedUnits);
 	}
 
 	// Default URL is https://www.ndbc.noaa.gov/data/latest_obs/latest_obs.txt
@@ -138,7 +133,7 @@ public class BuoyDataReader
 		try {
 			 return Double.parseDouble(s);
 		} catch (NumberFormatException e) {
-			logger.error("", e);
+			logger.error(e.getMessage(), e);
 			return null;
 		}
 	}
@@ -153,7 +148,7 @@ public class BuoyDataReader
 		try {
 			 return Integer.parseInt(s);
 		} catch (NumberFormatException e) {
-			logger.error("", e);
+			logger.error(e.getMessage(), e);
 			return null;
 		}
 	}
