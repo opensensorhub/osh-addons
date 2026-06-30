@@ -152,11 +152,6 @@ public class UnmannedControlMission extends AbstractSensorControl<UnmannedSystem
     @Override
     public CompletableFuture<ICommandStatus> submitCommand(ICommandData command) {
 
-        ActionServer.AllowableFlightModes flightModes = new ActionServer.AllowableFlightModes(
-                true,true,true
-        );
-        var res = system.getActionServer().setAllowableFlightModes(flightModes);
-
         String planJson = command.getParams().getStringValue(0);
 
         Instant start = Instant.now();

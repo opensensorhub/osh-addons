@@ -7,7 +7,7 @@ dependencies{
   implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
   implementation 'org.sensorhub:sensorhub-webui-core:' + oshCoreVersion
   implementation project(':sensorhub-driver-ffmpeg')
-  embeddedImpl 'io.mavsdk:mavsdk:3.14.0'
+  embeddedImpl 'io.mavsdk:mavsdk:3.16.0'
   implementation project(':sensorhub-process-ffmpeg')
 }
 
