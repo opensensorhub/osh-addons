@@ -241,8 +241,7 @@ public class StreamContext {
             if (getDataBufferListener() == null) return;
             if (avPacket.stream_index() != getStreamId()) return;
 
-
-            if (bsfContext != null) {
+            if (bsfContext != null && !hasAnnexB(avPacket)) {
                 AVPacket filtered = avcodec.av_packet_alloc();
                 try {
                     avcodec.av_bsf_send_packet(bsfContext, avPacket);
@@ -263,6 +262,17 @@ public class StreamContext {
                 getDataBufferListener().onDataBuffer(new DataBufferRecord(avPacket.pts() * getStreamTimeBase(), dataBuffer));
             }
         }
+    }
+
+    /**
+     * Scan the first few bytes of the packet to determine if it is in Annex B format.
+     * @param avPacket Input packet
+     * @return true if the packet is in Annex B format, false otherwise
+     */
+    private static boolean hasAnnexB(AVPacket avPacket) {
+        byte[] data = new byte[avPacket.size()];
+        avPacket.data().get(data);
+        return data[0] == 0x00 && data[1] == 0x00 && (data[2] == 0x01 || (data[2] == 0x00 && data[3] == 0x01));
     }
 
     public void close() {
