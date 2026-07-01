@@ -3,6 +3,7 @@ package org.sensorhub.mpegts;
 import org.bytedeco.ffmpeg.avcodec.*;
 import org.bytedeco.ffmpeg.avformat.AVFormatContext;
 import org.bytedeco.ffmpeg.global.avcodec;
+import org.bytedeco.javacpp.BytePointer;
 import org.bytedeco.javacpp.PointerPointer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -241,7 +242,7 @@ public class StreamContext {
             if (getDataBufferListener() == null) return;
             if (avPacket.stream_index() != getStreamId()) return;
 
-            if (bsfContext != null && !hasAnnexB(avPacket)) {
+            if (bsfContext != null && !packetHasInlineParamSets(avPacket.data(), avPacket.size(), getCodecName())) {
                 AVPacket filtered = avcodec.av_packet_alloc();
                 try {
                     avcodec.av_bsf_send_packet(bsfContext, avPacket);
@@ -269,12 +270,32 @@ public class StreamContext {
      * @param avPacket Input packet
      * @return true if the packet is in Annex B format, false otherwise
      */
-    private static boolean hasAnnexB(AVPacket avPacket) {
-        byte[] data = new byte[avPacket.size()];
-        avPacket.data().get(data);
-        return data[0] == 0x00 && data[1] == 0x00 && (data[2] == 0x01 || (data[2] == 0x00 && data[3] == 0x01));
-    }
+    static boolean packetHasInlineParamSets(BytePointer data, int size, String codec) {
+        int i = 0;
+        while (i < size - 4) {
+            if (data.get(i) == 0 && data.get(i+1) == 0 &&
+                    (data.get(i+2) == 1 || (data.get(i+2) == 0 && data.get(i+3) == 1))) {
+                int scLen = (data.get(i+2) == 1) ? 3 : 4;
 
+                int nalType;
+                if (codec.equalsIgnoreCase("hevc") || codec.equalsIgnoreCase("h265")) {
+                    nalType = (data.get(i + scLen) >> 1) & 0x3F;
+                    if (nalType == 32 || nalType == 33 || nalType == 34) return true;  // VPS/SPS/PPS
+                    if (nalType <= 31) return false;  // hit VCL data first
+                } else if (codec.equalsIgnoreCase("h264")) {
+                    nalType = data.get(i + scLen) & 0x1F;
+                    if (nalType == 7 || nalType == 8) return true;   // SPS/PPS
+                    if (nalType == 1 || nalType == 5) return false;  // slice
+                } else {
+                    return false;
+                }
+                i += scLen + 1;
+            } else {
+                i++;
+            }
+        }
+        return false;
+    }
     public void close() {
         synchronized (lock) {
             if (!isOpen) return;
