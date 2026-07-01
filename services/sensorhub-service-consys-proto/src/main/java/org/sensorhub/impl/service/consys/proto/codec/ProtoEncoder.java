@@ -18,9 +18,12 @@ package org.sensorhub.impl.service.consys.proto.codec;
 
 import org.sensorhub.impl.service.consys.proto.schema.ProtoSchemaWriter;
 import java.time.Instant;
+import java.util.HashMap;
+import java.util.Map;
 import com.google.protobuf.Descriptors.Descriptor;
 import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.protobuf.DynamicMessage;
+import net.opengis.swe.v20.Count;
 import net.opengis.swe.v20.DataArray;
 import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataChoice;
@@ -117,7 +120,7 @@ public final class ProtoEncoder
      */
     public static DynamicMessage encode(DataComponent struct, Descriptor desc, DataBlock data, Envelope env)
     {
-        struct.setData(data);   // bind so variable-size DataArray.getComponentCount() reflects the data
+        sizeVariableArrays(struct, data);   // make variable-size DataArray.getComponentCount() reflect the data
         var msg = DynamicMessage.newBuilder(desc);
         setEnvelope(msg, desc, env);
         encodeRecord(msg, desc, struct, data);
@@ -132,7 +135,7 @@ public final class ProtoEncoder
      */
     public static DynamicMessage encodeCommand(DataComponent struct, Descriptor desc, DataBlock data, CommandEnvelope env)
     {
-        struct.setData(data);   // bind so variable-size DataArray.getComponentCount() reflects the data
+        sizeVariableArrays(struct, data);   // make variable-size DataArray.getComponentCount() reflect the data
         var msg = DynamicMessage.newBuilder(desc);
         setCommandEnvelope(msg, desc, env);
         encodeRecord(msg, desc, struct, data);
@@ -152,6 +155,87 @@ public final class ProtoEncoder
             var child = structured ? struct.getComponent(i) : struct;
             fieldNum = encodeComponent(msg, desc, child, fieldNum, data, idx);
         }
+    }
+
+
+    /**
+     * Encode pre-pass: size every variable-size {@link DataArray} in {@code struct}
+     * from {@code data} so the flat-index encode walk below sees the right
+     * {@link DataComponent#getComponentCount()}. This is the encode counterpart to
+     * {@link ProtoDecoder}'s prepass: the decoder reads each array's length from the
+     * wire's {@code repeated}-field count; here we read it from the array's size
+     * {@link Count} component, whose value rides in the flat block (e.g. the {@code
+     * LEN}/{@code ROWS}/{@code COLS} atoms) ahead of the array.
+     *
+     * <p>Replaces a single {@code struct.setData(data)}, which derives sizes from
+     * a child's cached {@code scalarCount} and so cannot size nested (Matrix)
+     * variable arrays carried by sibling Count fields in one pass — it threw
+     * {@code "Datablock is incompatible with specified array size"}. We walk in
+     * the same atom order as {@link #encodeComponent} so the running index lines
+     * up; only Count values (the possible size sources) are captured.</p>
+     */
+    private static void sizeVariableArrays(DataComponent struct, DataBlock data)
+    {
+        var counts = new HashMap<String, Integer>();
+        var idx = new int[]{0};
+        var structured = struct instanceof DataRecord || struct instanceof Vector;
+        var n = structured ? struct.getComponentCount() : 1;
+        for (int i = 0; i < n; i++)
+            sizeComponent(structured ? struct.getComponent(i) : struct, data, idx, counts);
+    }
+
+
+    private static void sizeComponent(DataComponent comp, DataBlock data, int[] idx, Map<String, Integer> counts)
+    {
+        if (comp instanceof DataArray)
+        {
+            var array = (DataArray) comp;
+            if (array.isVariableSize())
+            {
+                var sizeComp = array.getArraySizeComponent();
+                var sizeId = sizeComp != null ? sizeComp.getId() : null;
+                var size = sizeId != null ? counts.get(sizeId) : null;
+                if (size == null)
+                    throw new IllegalStateException(
+                        "swe+proto encode: cannot size variable array '" + comp.getName()
+                        + "' — its size component" + (sizeId != null ? " '" + sizeId + "'" : "")
+                        + " was not found as a Count before it in the record");
+                array.updateSize(size);
+            }
+            int size = array.getComponentCount();
+            var elt = array.getElementType();
+            for (int e = 0; e < size; e++)
+                sizeComponent(elt, data, idx, counts);   // advances idx through each element (incl. nested arrays)
+            return;
+        }
+
+        if (comp instanceof DataChoice)
+        {
+            var choice = (DataChoice) comp;
+            int selected = data.getIntValue(idx[0]++);   // selector atom, mirrors encodeComponent
+            if (selected >= 0 && selected < choice.getComponentCount())
+                sizeComponent(choice.getComponent(selected), data, idx, counts);
+            return;
+        }
+
+        if (comp instanceof DataRecord || comp instanceof Vector)
+        {
+            for (int i = 0; i < comp.getComponentCount(); i++)
+                sizeComponent(comp.getComponent(i), data, idx, counts);
+            return;
+        }
+
+        if (comp instanceof RangeComponent)   // two atoms, never a size source
+        {
+            idx[0] += 2;
+            return;
+        }
+
+        // scalar (incl. ISO Time): one atom. Remember Count values — these are the
+        // only components a variable array can reference for its size.
+        if (comp instanceof Count && comp.getId() != null)
+            counts.put(comp.getId(), data.getIntValue(idx[0]));
+        idx[0]++;
     }
 
 

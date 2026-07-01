@@ -304,4 +304,169 @@ public class TestProtoArrayRoundTrip
             assertEquals(i + 1, out.getDoubleValue(1 + i), 1e-9);
         assertTrue(out.getBooleanValue(7));
     }
+
+
+    // ---- encode against an UNSIZED struct (the real binding path) ----
+    // ObsBindingProto encodes every observation against ONE shared datastream
+    // schema copy (recordStruct = dsInfo.getRecordStructure().copy()) that is
+    // NOT pre-sized per observation. encode() must therefore size the struct's
+    // variable arrays from the block itself. The round-trip tests above all
+    // pre-size the encode struct via updateSize(), so they never exercised this.
+
+    @Test
+    public void variableArrayEncodeAgainstUnsizedStruct() throws Exception
+    {
+        var d = desc(buildVarRec());
+
+        // block produced by the data source (a separately sized component)
+        var src = buildVarRec();
+        ((DataArray) src.getComponent("samples")).updateSize(3);
+        var blk = src.createDataBlock();                 // [n, v0,v1,v2, tail] = 5
+        assertEquals(5, blk.getAtomCount());
+        blk.setIntValue(0, 3);
+        blk.setDoubleValue(1, 5); blk.setDoubleValue(2, 6); blk.setDoubleValue(3, 7);
+        blk.setBooleanValue(4, true);
+
+        var encStruct = buildVarRec();                   // UNSIZED, like recordStruct
+        var wire = ProtoEncoder.encode(encStruct, d, blk, null).toByteArray();
+        var out = ProtoDecoder.decodeRecord(buildVarRec(), DynamicMessage.parseFrom(d, wire));
+
+        assertEquals(5, out.getAtomCount());
+        assertEquals(3, out.getIntValue(0));
+        assertEquals(7.0, out.getDoubleValue(3), 1e-9);
+        assertTrue(out.getBooleanValue(4));
+    }
+
+
+    @Test
+    public void matrixEncodeAgainstUnsizedStruct() throws Exception
+    {
+        // nested rectangular variable matrix — the swetypes 'arrays' case that
+        // threw "Datablock is incompatible with specified array size" at runtime.
+        var d = desc(buildVarGrid());
+
+        int m = 2, n = 3;
+        var src = buildVarGrid();
+        var outer = (DataArray) src.getComponent("grid");
+        outer.updateSize(m);
+        for (int r = 0; r < m; r++)
+            ((DataArray) outer.getComponent(r)).updateSize(n);
+        var blk = src.createDataBlock();                 // [M, N, m*n doubles]
+        blk.setIntValue(0, m); blk.setIntValue(1, n);
+        for (int i = 0; i < m * n; i++)
+            blk.setDoubleValue(2 + i, (i + 1) * 0.5);
+
+        var encStruct = buildVarGrid();                  // UNSIZED, like recordStruct
+        var wire = ProtoEncoder.encode(encStruct, d, blk, null).toByteArray();
+        var out = ProtoDecoder.decodeRecord(buildVarGrid(), DynamicMessage.parseFrom(d, wire));
+
+        assertEquals(2 + m * n, out.getAtomCount());
+        assertEquals(m, out.getIntValue(0));
+        assertEquals(n, out.getIntValue(1));
+        for (int i = 0; i < m * n; i++)
+            assertEquals((i + 1) * 0.5, out.getDoubleValue(2 + i), 1e-9);
+    }
+
+
+    /** Exact shape of the swetypes 'arrays' output: a Count preamble, then a
+     *  variable vector AND a nested variable matrix, then a trailing fixed array.
+     *  Two leading variable arrays mean a mis-sized first array drifts the offset
+     *  into the second — the case the last-field grid above never exposed. */
+    static DataComponent buildSweTypesArrays()
+    {
+        var swe = new SWEHelper();
+        return swe.createRecord()
+            .addField("len", swe.createCount().id("LEN").build())
+            .addField("rows", swe.createCount().id("ROWS").build())
+            .addField("cols", swe.createCount().id("COLS").build())
+            .addField("vector", swe.createArray().withVariableSize("LEN")
+                .withElement("v", swe.createQuantity().dataType(DataType.DOUBLE).build()))
+            .addField("matrix", swe.createArray().withVariableSize("ROWS")
+                .withElement("row", swe.createArray().withVariableSize("COLS")
+                    .withElement("c", swe.createQuantity().dataType(DataType.DOUBLE).build())
+                    .build()))
+            .addField("fixed3", swe.createArray().withFixedSize(3)
+                .withElement("f", swe.createQuantity().dataType(DataType.DOUBLE).build()))
+            .build();
+    }
+
+
+    @Test
+    public void sweTypesArraysEncodeAgainstUnsizedStruct() throws Exception
+    {
+        var d = desc(buildSweTypesArrays());
+
+        int len = 2, m = 2, n = 3;   // cols=3 reproduces "array size: 3"
+        var src = buildSweTypesArrays();
+        ((DataArray) src.getComponent("vector")).updateSize(len);
+        var matrix = (DataArray) src.getComponent("matrix");
+        matrix.updateSize(m);
+        for (int r = 0; r < m; r++)
+            ((DataArray) matrix.getComponent(r)).updateSize(n);
+        var blk = src.createDataBlock();   // [len,rows,cols, vec(len), mtx(m*n), fixed3(3)]
+        int expected = 3 + len + m * n + 3;
+        assertEquals(expected, blk.getAtomCount());
+        int i = 0;
+        blk.setIntValue(i++, len); blk.setIntValue(i++, m); blk.setIntValue(i++, n);
+        for (int k = 0; k < len; k++) blk.setDoubleValue(i++, k + 0.5);
+        for (int k = 0; k < m * n; k++) blk.setDoubleValue(i++, 10.0 + k);
+        for (int k = 0; k < 3; k++) blk.setDoubleValue(i++, 100.0 + k);
+
+        var encStruct = buildSweTypesArrays().copy();   // mirror dsInfo.getRecordStructure().copy()
+        var wire = ProtoEncoder.encode(encStruct, d, blk, null).toByteArray();
+        var out = ProtoDecoder.decodeRecord(buildSweTypesArrays(), DynamicMessage.parseFrom(d, wire));
+
+        assertEquals(expected, out.getAtomCount());
+        assertEquals(len, out.getIntValue(0));
+        assertEquals(m, out.getIntValue(1));
+        assertEquals(n, out.getIntValue(2));
+        for (int k = 0; k < len; k++)
+            assertEquals(k + 0.5, out.getDoubleValue(3 + k), 1e-9);
+        for (int k = 0; k < m * n; k++)
+            assertEquals(10.0 + k, out.getDoubleValue(3 + len + k), 1e-9);
+        for (int k = 0; k < 3; k++)
+            assertEquals(100.0 + k, out.getDoubleValue(3 + len + m * n + k), 1e-9);   // trailing fixed3
+    }
+
+
+    @Test
+    public void sweTypesArraysReusedStructVaryingDims() throws Exception
+    {
+        // The binding reuses ONE recordStruct across observations; swetypes
+        // randomizes its dimensions each sample. After the first obs sizes the
+        // nested arrays, the next encode must re-size them from a NON-default
+        // state. This is the production trigger.
+        var d = desc(buildSweTypesArrays());
+        var encStruct = buildSweTypesArrays().copy();   // reused, like ObsBindingProto.recordStruct
+
+        int[][] dims = { {2, 2, 3}, {3, 1, 2}, {1, 3, 4}, {4, 2, 2}, {2, 2, 3} };
+        for (var dim : dims)
+        {
+            int len = dim[0], m = dim[1], n = dim[2];
+            var src = buildSweTypesArrays();
+            ((DataArray) src.getComponent("vector")).updateSize(len);
+            var matrix = (DataArray) src.getComponent("matrix");
+            matrix.updateSize(m);
+            for (int r = 0; r < m; r++)
+                ((DataArray) matrix.getComponent(r)).updateSize(n);
+            var blk = src.createDataBlock();
+            int expected = 3 + len + m * n + 3;
+            assertEquals(expected, blk.getAtomCount());
+            int i = 0;
+            blk.setIntValue(i++, len); blk.setIntValue(i++, m); blk.setIntValue(i++, n);
+            for (int k = 0; k < len; k++) blk.setDoubleValue(i++, k + 0.5);
+            for (int k = 0; k < m * n; k++) blk.setDoubleValue(i++, 10.0 + k);
+            for (int k = 0; k < 3; k++) blk.setDoubleValue(i++, 100.0 + k);
+
+            var wire = ProtoEncoder.encode(encStruct, d, blk, null).toByteArray();
+            var out = ProtoDecoder.decodeRecord(buildSweTypesArrays(), DynamicMessage.parseFrom(d, wire));
+
+            assertEquals("dims " + len + "/" + m + "/" + n, expected, out.getAtomCount());
+            assertEquals(len, out.getIntValue(0));
+            assertEquals(m, out.getIntValue(1));
+            assertEquals(n, out.getIntValue(2));
+            for (int k = 0; k < m * n; k++)
+                assertEquals(10.0 + k, out.getDoubleValue(3 + len + k), 1e-9);
+        }
+    }
 }
