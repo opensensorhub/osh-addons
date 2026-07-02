@@ -1,0 +1,29 @@
+description = 'Tempest Weather Station Driver'
+ext.details = "Driver to decode json messages from Tempest Weather Station"
+version = '1.0.0'
+
+dependencies {
+    implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.17.2'
+    testImplementation('junit:junit:4.13.1')
+}
+
+// add info to OSGi manifest
+osgi {
+    manifest {
+        attributes ('Bundle-Vendor': 'Botts Inc')
+        attributes ('Bundle-Activator': 'org.sensorhub.impl.sensor.tempest.Activator')
+    }
+}
+
+// add info to maven pom
+ext.pom >>= {
+    developers {
+        developer {
+            id 'BillBrown341'
+            name 'Bill Brown'
+            organization 'GeoRobotix Innovative Research'
+            organizationUrl 'https://georobotix.us'
+        }
+    }
+}
