@@ -60,10 +60,6 @@ public class TempestDriver extends AbstractSensorModule<TempestConfig> {
         generateXmlID(XML_PREFIX, config.serialNumber);
 
         // INITIALIZE OUTPUT
-        tempestOutputAirObservation = new TempestOutputAirObservation(this);
-        addOutput(tempestOutputAirObservation, false);
-        tempestOutputAirObservation.doInit();
-
         tempestOutputDeviceStatus = new TempestOutputDeviceStatus(this);
         addOutput(tempestOutputDeviceStatus, false);
         tempestOutputDeviceStatus.doInit();
@@ -88,9 +84,17 @@ public class TempestDriver extends AbstractSensorModule<TempestConfig> {
         addOutput(tempestOutputRapidWind, false);
         tempestOutputRapidWind.doInit();
 
-        tempestOutputSkyObservation = new TempestOutputSkyObservation(this);
-        addOutput(tempestOutputSkyObservation, false);
-        tempestOutputSkyObservation.doInit();
+        // Handle Legacy Outputs
+        if (config.legacyDevice){
+            tempestOutputAirObservation = new TempestOutputAirObservation(this);
+            addOutput(tempestOutputAirObservation, false);
+            tempestOutputAirObservation.doInit();
+
+            tempestOutputSkyObservation = new TempestOutputSkyObservation(this);
+            addOutput(tempestOutputSkyObservation, false);
+            tempestOutputSkyObservation.doInit();
+        }
+
 
     }
 
@@ -216,11 +220,11 @@ public class TempestDriver extends AbstractSensorModule<TempestConfig> {
 
             switch (type)
             {
-                case "obs_air":
-                    tempestOutputAirObservation.setData(tempestJsonMsg);
-                    break;
                 case "device_status":
                     tempestOutputDeviceStatus.setData(tempestJsonMsg);
+                    break;
+                case "hub_status":
+                    tempestOutputHubStatus.setData(tempestJsonMsg);
                     break;
                 case "evt_strike":
                     tempestOutputLightningStrikeEvent.setData(tempestJsonMsg);
@@ -234,11 +238,18 @@ public class TempestDriver extends AbstractSensorModule<TempestConfig> {
                 case "rapid_wind":
                     tempestOutputRapidWind.setData(tempestJsonMsg);
                     break;
+                // Handle Legacy Device Options
                 case "obs_sky":
-                    tempestOutputSkyObservation.setData(tempestJsonMsg);
+                    if (tempestOutputSkyObservation != null)
+                        tempestOutputSkyObservation.setData(tempestJsonMsg);
+                    else
+                        getLogger().warn("Received obs_sky message but legacyDevice is not enabled — ignoring");
                     break;
-                case "hub_status":
-                    tempestOutputHubStatus.setData(tempestJsonMsg);
+                case "obs_air":
+                    if (tempestOutputAirObservation != null)
+                        tempestOutputAirObservation.setData(tempestJsonMsg);
+                    else
+                        getLogger().warn("Received obs_air message but legacyDevice is not enabled — ignoring");
                     break;
                 default:
                     getLogger().debug("Unhandled Tempest message type: {}", type);

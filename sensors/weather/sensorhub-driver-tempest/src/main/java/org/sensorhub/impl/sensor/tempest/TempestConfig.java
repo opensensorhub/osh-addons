@@ -32,6 +32,9 @@ public class TempestConfig extends SensorConfig {
     @DisplayInfo(desc = "Serial number or unique identifier")
     public String serialNumber = "myTempestDevice";
 
+    @DisplayInfo(desc = "Legacy devices refer to the discontinued WeatherFlow AIR and SKY sensors that were replaced by the all-in-one Tempest weather station")
+    public boolean legacyDevice = false;
+
     @DisplayInfo(desc = "Communication settings for receiving Tepest json Messges (e.g. UDP, TCP, serial)")
     public CommProviderConfig<?> commSettings;
 }
