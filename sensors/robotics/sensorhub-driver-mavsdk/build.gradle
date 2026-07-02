@@ -1,13 +1,13 @@
 description = 'Unmanned System'
 ext.details = 'MAVLink adapter'
 
-version='2.1.0'
+version='2.1.1'
 
 dependencies{
   implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
   implementation 'org.sensorhub:sensorhub-webui-core:' + oshCoreVersion
   implementation project(':sensorhub-driver-ffmpeg')
-  embeddedImpl 'io.mavsdk:mavsdk:3.14.0'
+  embeddedImpl 'io.mavsdk:mavsdk:3.16.0'
   implementation project(':sensorhub-process-ffmpeg')
 }
 
@@ -17,8 +17,7 @@ osgi {
     attributes('Bundle-Activator': 'org.sensorhub.impl.sensor.mavsdk.UnmannedActivator')
   }
 }
-jar {
-    // Take the file from a folder in your project
+tasks.withType(Jar).configureEach {
     from('dist') {
         include 'mavsdk_server_linux-arm64-musl'
         include 'mavsdk_server_macos_arm64'
@@ -28,17 +27,7 @@ jar {
         include 'mavsdk_server_win_x64.exe'
         into 'natives'
 
-        // Critical for Linux/Mac: preserves execution permissions
-        filePermissions {
-            user {
-                read = true
-                execute = true
-                write = true
-            }
-            other {
-                read = true
-                execute = true
-            }
-        }
+        // 0755 = rwxr-xr-x — preserves execute bit on Linux/Mac
+        fileMode = 0755
     }
 }
