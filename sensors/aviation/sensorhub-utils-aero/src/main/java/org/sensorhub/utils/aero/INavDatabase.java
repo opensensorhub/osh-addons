@@ -14,8 +14,9 @@ Copyright (C) 2025 Sensia Software LLC. All Rights Reserved.
 
 package org.sensorhub.utils.aero;
 
+import java.time.LocalDate;
+import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.TimeoutException;
 import org.sensorhub.api.ISensorHub;
 import org.sensorhub.api.common.SensorHubException;
@@ -50,13 +51,19 @@ public interface INavDatabase
     public boolean isReady();
     
     
-    public Map<String, INavDbWaypoint> getAirports();
+    /**
+     * @return The AIRAC date of the loaded database or null if unknown
+     */
+    public LocalDate getAiracDate();
     
     
-    public Map<String, INavDbWaypoint> getNavaids();
+    public Collection<? extends INavDbWaypoint> getAllAirports();
     
     
-    public Map<String, INavDbWaypoint> getWaypoints();
+    public Collection<? extends INavDbWaypoint> getAllNavaids();
+    
+    
+    public Collection<? extends INavDbWaypoint> getAllWaypoints();
     
     
     public IDecodedRoute decodeRoute(String codedRouteString);
@@ -71,7 +78,7 @@ public interface INavDatabase
     
     public static INavDatabase getInstance(ISensorHub hub) throws SensorHubException
     {
-        return getInstance(hub, 10000);
+        return getInstance(hub, 60000);
     }
     
     

@@ -165,7 +165,7 @@ public class FFMpegTranscoder extends ExecutableProcessImpl
         if (!isUncompressed(inCodec)) {
             decoder = new Decoder(inCodec, outCodec, decOptions);
             inCodec.pixelFmt = decoder.init();
-            if (inCodec.pixelFmt == null)
+            if (inCodec.pixelFmt == null || inCodec.pixelFmt == FullPixelEnum.NONE)
                 inCodec.pixelFmt = FullPixelEnum.YUV420P;
             //videoProcs.add(decoder);
         }

@@ -1,0 +1,29 @@
+description = 'AirNav Radar FlightStick'
+ext.details = 'ADS-B receiver USB dongle designed for flight tracking'
+version = '1.1.0'
+
+dependencies {
+    implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
+    implementation project(':sensorhub-utils-aero')
+
+}
+
+// add info to OSGi manifest
+osgi {
+    manifest {
+        attributes('Bundle-Vendor': 'GeoRobotix Innovative Research')
+        attributes('Bundle-Activator': 'org.sensorhub.impl.sensor.adsb.Activator')
+    }
+}
+
+// add info to maven pom
+ext.pom >>= {
+    developers {
+        developer {
+            id 'kalynstricklin'
+            name 'Kalyn Stricklin'
+            organization 'GeoRobotix Innovative Research'
+            organizationUrl 'https://georobotix.us'
+        }
+    }
+}
