@@ -524,6 +524,9 @@ public class MpegTsProcessor extends Thread {
         logger.debug("closeStream");
 
         if (streamOpened) {
+            videoStreamContext.close();
+            audioStreamContext.close();
+            dataStreamContext.close();
 
             synchronized (avFormatContextLock) {
                 if (avFormatContext != null) {
