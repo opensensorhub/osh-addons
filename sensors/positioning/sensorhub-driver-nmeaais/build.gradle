@@ -1,0 +1,39 @@
+description = 'NMEA AIS Decoder'
+ext.details = "Driver to Decode NMEA AIS Messages"
+version = '1.0.0'
+
+dependencies {
+    implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
+    testImplementation('junit:junit:4.13.1')
+    implementation 'dk.dma.ais.lib:ais-lib-messages:2.8.5'
+    implementation 'dk.dma.ais.lib:ais-lib-communication:2.8.5'
+
+}
+
+// exclude tests requiring connection to the sensor
+// these have to be run manually
+//      If tests are to be excluded list them here as follows
+//          exclude '**/TestNameClass.class'
+//test {
+//    useJUnit()
+//}
+
+// add info to OSGi manifest
+osgi {
+    manifest {
+        attributes ('Bundle-Vendor': 'Botts Inc')
+        attributes ('Bundle-Activator': 'org.sensorhub.impl.sensor.nmeaais.Activator')
+    }
+}
+
+// add info to maven pom
+ext.pom >>= {
+    developers {
+        developer {
+            id 'BillBrown341'
+            name 'Bill Brown'
+            organization 'GeoRobotix Innovative Research'
+            organizationUrl 'https://georobotix.us'
+        }
+    }
+}

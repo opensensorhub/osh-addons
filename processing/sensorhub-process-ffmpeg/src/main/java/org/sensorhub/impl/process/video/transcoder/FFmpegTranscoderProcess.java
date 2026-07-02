@@ -19,15 +19,18 @@ public class FFmpegTranscoderProcess extends FFmpegProcess {
     @Override
     public void initExcProcess(IProcessExec executable) {
         DataBlock inCodec = new DataBlockString(1);
-        if (!((FFmpegTranscoderConfig)config).inCodecOverride.isBlank()) {
-            inCodec.setStringValue(((FFmpegTranscoderConfig)config).inCodecOverride);
+        String configInCodec = ((FFmpegTranscoderConfig)config).inCodecOverride;
+        String configOutCodec = ((FFmpegTranscoderConfig)config).outCodecOverride;
+
+        if (configInCodec != null && !configInCodec.isBlank()) {
+            inCodec.setStringValue(configInCodec);
         } else {
             inCodec.setStringValue(((FFmpegTranscoderConfig) config).inCodec.toString());
         }
 
         DataBlock outCodec = new DataBlockString(1);
-        if (!((FFmpegTranscoderConfig)config).outCodecOverride.isBlank()) {
-            outCodec.setStringValue(((FFmpegTranscoderConfig)config).outCodecOverride);
+        if (configOutCodec != null && !configOutCodec.isBlank()) {
+            outCodec.setStringValue(configOutCodec);
         } else {
             outCodec.setStringValue(((FFmpegTranscoderConfig) config).outCodec.toString());
         }

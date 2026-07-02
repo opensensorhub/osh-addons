@@ -15,21 +15,11 @@ Copyright (C) 2018 Delta Air Lines, Inc. All Rights Reserved.
 package org.sensorhub.impl.sensor.navDb;
 
 import org.sensorhub.api.config.DisplayInfo;
-import org.sensorhub.api.config.DisplayInfo.FieldType;
-import org.sensorhub.api.config.DisplayInfo.ModuleType;
-import org.sensorhub.api.config.DisplayInfo.FieldType.Type;
 import org.sensorhub.api.sensor.SensorConfig;
-import org.sensorhub.utils.aero.INavDatabase;
 
 
 public class NavConfig extends SensorConfig
-{
-    
-    @DisplayInfo(label="NavDB Module ID", desc="ID of navigation database module")
-    @FieldType(Type.MODULE_ID)
-    @ModuleType(INavDatabase.class)
-    public String navDbModuleId;
-    
+{   
     
     @DisplayInfo(desc="Path of CSV file containing a subset of airports to expose data for")
     public String airportFilterPath;

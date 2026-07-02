@@ -1,0 +1,41 @@
+description = 'Rules Engine'
+ext.details = 'Library providing a semantic rules based knowledge system'
+
+version= '1.0.2'
+if (project.hasProperty("snapshot") && project.property("snapshot") == "true") {
+  version = "${version}-SNAPSHOT"
+}
+
+dependencies {
+  implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
+  implementation 'org.sensorhub:sensorhub-service-consys:' + oshCoreVersion
+
+  embeddedImpl 'com.google.code.gson:gson:2.9.0'
+}
+
+test {
+  useJUnit()
+}
+
+osgi {
+  manifest {
+    attributes('Bundle-Vendor': 'GeoRobotix Innovative Research')
+    attributes('Bundle-Activator': 'com.georobotix.ai.impl.rulesengine.Activator')
+  }
+}
+
+// add info to maven pom
+ext.pom >>= {
+  developers {
+    developer {
+      id 'nickgaray'
+      name 'Nicolas Garay'
+      organization 'GeoRobotix Innovative Research'
+      organizationUrl 'http://www.georobotix.us'
+    }
+  } 
+}
+
+repositories {
+  mavenCentral()
+}

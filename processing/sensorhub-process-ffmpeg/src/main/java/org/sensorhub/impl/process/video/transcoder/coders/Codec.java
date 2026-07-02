@@ -178,11 +178,9 @@ public abstract class Codec<I extends Pointer, O extends Pointer> implements Aut
         headers = getExtradata(codec_ctx);
 
         try {
-            var desc = av_pix_fmt_desc_get(codec_ctx.pix_fmt());
-            pixelFmt = FullPixelEnum.valueOf(desc.name().getString().toUpperCase());
+            pixelFmt = FullPixelEnum.fromId(codec_ctx.pix_fmt());
             inputFormat.pixelFmt = pixelFmt;
             outputFormat.pixelFmt = pixelFmt;
-            desc.deallocate();
         } catch (Exception e) {
             pixelFmt = null;
             logger.warn("Could not determine codec info for " + codec.name().getString(), e);
@@ -299,16 +297,16 @@ public abstract class Codec<I extends Pointer, O extends Pointer> implements Aut
                         I inPacket = inQueue.poll();
                         processInputPacket(inPacket);
                         deallocateInputPacket(inPacket);
-                    }
 
-                    if (!outQueue.isEmpty() && isNotifying.compareAndSet(false, true)) {
-                        outputExecutor.submit(() -> {
-                            while (!outQueue.isEmpty()) {
-                                O outputPacket = outQueue.poll();
-                                notifyCallbacks(outputPacket);
-                            }
-                            isNotifying.set(false);
-                        });
+                        if (!outQueue.isEmpty() && isNotifying.compareAndSet(false, true)) {
+                            outputExecutor.submit(() -> {
+                                while (!outQueue.isEmpty()) {
+                                    O outputPacket = outQueue.poll();
+                                    notifyCallbacks(outputPacket);
+                                }
+                                isNotifying.set(false);
+                            });
+                        }
                     }
 
                     isProcessing.set(false);

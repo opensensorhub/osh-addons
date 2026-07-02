@@ -1,21 +1,20 @@
 description = 'Unmanned System'
 ext.details = 'MAVLink adapter'
 
-version='2.0.0'
+version='2.1.0'
 
 dependencies{
   implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
   implementation 'org.sensorhub:sensorhub-webui-core:' + oshCoreVersion
   implementation project(':sensorhub-driver-ffmpeg')
   embeddedImpl 'io.mavsdk:mavsdk:3.14.0'
-  embeddedImpl 'com.vaadin:vaadin-client:8.14.3'
   implementation project(':sensorhub-process-ffmpeg')
 }
 
 osgi {
   manifest {
     attributes('Bundle-Vendor': 'Botts Innovative Research')
-    attributes('Bundle-Activator': 'org.sensorhub.impl.driver.mavsdk.UnmannedActivator')
+    attributes('Bundle-Activator': 'org.sensorhub.impl.sensor.mavsdk.UnmannedActivator')
   }
 }
 jar {
