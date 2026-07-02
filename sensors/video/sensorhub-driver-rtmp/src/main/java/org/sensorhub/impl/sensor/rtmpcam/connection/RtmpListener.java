@@ -19,6 +19,10 @@ public interface RtmpListener {
     /** Called once after negotiation succeeds and this listener is selected. */
     public void onConnected(RtmpConnectEvent event);
 
+    /**
+     * Called once when a new stream is connected. Implementations MUST set up the video and audio outputs here.
+     * @param event Event containing the stream info.
+     */
     public void onStreamConnected(RtmpStreamEvent event);
 
     /** Called once when the client disconnects or the pipeline faults. */

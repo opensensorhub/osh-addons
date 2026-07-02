@@ -58,8 +58,8 @@ public class RtmpDriver extends AbstractSensorModule<RtmpConfig> implements Rtmp
     private final AtomicReference<MpegTsProcessor> mpegTsProcessor = new AtomicReference<>();
     private final RtmpListenerManager rtmpListenerManager = RtmpListenerManager.getInstance();
     private ExecutorService executorService;
-    private ExecutorService videoExecutorService;
-    private ExecutorService audioExecutorService;
+    private ExecutorService videoExecutorService = Executors.newSingleThreadExecutor();
+    private ExecutorService audioExecutorService = Executors.newSingleThreadExecutor();
     private ScheduledExecutorService heartbeatExecutorService;
 
     // TODO: Create a DataOutput
@@ -98,6 +98,10 @@ public class RtmpDriver extends AbstractSensorModule<RtmpConfig> implements Rtmp
         if (getUniqueIdentifier() == null) {
             generateUniqueID("urn:osh:sensor:rtmp:", config.serialNumber);
             generateXmlID("RTMP_", config.serialNumber);
+        }
+        if (config.connectionConfig.generateRandomKey) {
+            config.connectionConfig.streamKey = generateStreamKey();
+            config.connectionConfig.generateRandomKey = false;
         }
 
         rtmpListenerManager.removeListener(this);
@@ -156,8 +160,27 @@ public class RtmpDriver extends AbstractSensorModule<RtmpConfig> implements Rtmp
 
     @Override
     public void onStreamConnected(RtmpStreamEvent event) {
-        addOutput(videoOutput.get(), false);
-        addOutput(audioOutput.get(), false);
+        var streamInfo = event.getPayload();
+
+        if (streamInfo == null) {
+            logger.warn("StreamInfo is null");
+            return;
+        }
+        if (streamInfo.videoCodec() != null) {
+            videoOutput.set(new VideoOutput<>(this, streamInfo.videoDimensions(), streamInfo.videoCodec()));
+            videoExecutorService = Executors.newSingleThreadExecutor();
+            videoOutput.get().setExecutor(videoExecutorService);
+            videoOutput.get().doInit();
+            addOutput(videoOutput.get(), false);
+
+        }
+        if (streamInfo.audioCodec() != null) {
+            audioOutput.set(new AudioOutput<>(this, streamInfo.audioSampleRate(), streamInfo.audioCodec()));
+            audioExecutorService = Executors.newSingleThreadExecutor();
+            audioOutput.get().setExecutor(audioExecutorService);
+            audioOutput.get().doInit();
+            addOutput(audioOutput.get(), false);
+        }
     }
 
     @Override

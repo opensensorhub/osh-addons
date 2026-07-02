@@ -13,6 +13,7 @@
 package org.sensorhub.impl.sensor.rtmpcam.config;
 
 import org.sensorhub.api.config.DisplayInfo;
+import org.sensorhub.impl.sensor.rtmpcam.connection.RtmpConnectionContext;
 
 public class ConnectionConfig {
 
@@ -64,4 +65,6 @@ public class ConnectionConfig {
                 (path != null ? path : "") + ":" +
                 (streamKey != null ? streamKey : "");
     }
+
+    public static String compositeKey(RtmpConnectionContext ctx) { return compositeKey(ctx.username(), ctx.password(), ctx.port(), ctx.path(), ctx.streamKey()); }
 }

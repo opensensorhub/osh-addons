@@ -1,5 +1,6 @@
 package org.sensorhub.impl.sensor.rtmpcam.connection;
 
+import org.bytedeco.ffmpeg.avcodec.AVCodec;
 import org.bytedeco.ffmpeg.avcodec.AVPacket;
 import org.bytedeco.ffmpeg.avformat.*;
 import org.bytedeco.ffmpeg.avutil.AVDictionary;
@@ -10,6 +11,7 @@ import org.bytedeco.javacpp.Pointer;
 import org.sensorhub.impl.sensor.rtmpcam.event.RtmpConnectEvent;
 import org.sensorhub.impl.sensor.rtmpcam.event.RtmpDisconnectEvent;
 import org.sensorhub.impl.sensor.rtmpcam.event.RtmpStreamEvent;
+import org.sensorhub.impl.sensor.rtmpcam.stream.StreamInfo;
 import org.sensorhub.mpegts.DataBufferListener;
 import org.sensorhub.mpegts.StreamContext;
 import org.slf4j.Logger;
@@ -21,6 +23,7 @@ import java.net.Socket;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 import static org.bytedeco.ffmpeg.global.avcodec.*;
 import static org.bytedeco.ffmpeg.global.avformat.*;
@@ -85,7 +88,7 @@ class RtmpConnectionHandler {
             }
 
         } catch (Exception e) {
-            System.err.printf("[RTMP:%d] connection fault: %s%n", port, e.getMessage());
+            logger.error("[RTMP:{}] Error handling RTMP connection", port, e);
         }
     }
 
@@ -97,7 +100,7 @@ class RtmpConnectionHandler {
         //   readCb  — stored as a raw native function pointer inside AVIOContext
         //   avioBuf — FFmpeg takes ownership; free via ctx.buffer(), not this reference
         Read_packet_Pointer_BytePointer_int readCb  = buildReadCb(flvStream);
-        BytePointer             avioBuf = new BytePointer(av_malloc(AVIO_BUF)).capacity(AVIO_BUF);
+        BytePointer avioBuf = new BytePointer(av_malloc(AVIO_BUF)).capacity(AVIO_BUF);
 
         AVIOContext avioCtx = avio_alloc_context(
                 avioBuf, AVIO_BUF,
@@ -113,9 +116,12 @@ class RtmpConnectionHandler {
 
         if (ret < 0) { logError("avformat_open_input", ret); freeAVIO(avioCtx); return; }
 
+        logger.debug("Here 1");
         avformat_find_stream_info(fmtCtx, (AVDictionary) null);
 
+        logger.debug("Here 2");
         streamContextSetup(fmtCtx, listener);
+        logger.debug("Here 3");
 
         packetLoop(fmtCtx, listener);
 
@@ -124,28 +130,57 @@ class RtmpConnectionHandler {
         // readCb and avioBuf are now safe to collect
     }
 
-    private void queryEmbeddedStreams(AVFormatContext avFormatContext) {
+    private StreamInfo queryEmbeddedStreams(AVFormatContext avFormatContext) {
         streamContextMap.clear();
 
+        int[] videoDimensions = new int[2];
+        String videoCodec = null;
+        int audioSampleRate = 0;
+        String audioCodec = null;
+
         for (int streamId = 0; streamId < avFormatContext.nb_streams(); ++streamId) {
-            int codecType = avFormatContext.streams(streamId).codecpar().codec_type();
+            var stream = avFormatContext.streams(streamId);
+            var codecpar = stream.codecpar();
+            int codecType = codecpar.codec_type();
 
             AVRational timeBase = avFormatContext.streams(streamId).time_base();
             double timeBaseUnits = (double) timeBase.num() / timeBase.den();
 
-            if (!videoStreamContext.hasStream() && codecType == avutil.AVMEDIA_TYPE_VIDEO) {
+            if (!videoStreamContext.hasStream() && codecType == AVMEDIA_TYPE_VIDEO) {
                 logger.debug("Video stream present with id: {}", streamId);
+
+                try (AVCodec avCodec = avcodec_find_decoder(codecpar.codec_id())) {
+                    if (avCodec == null) {
+                        logger.error("Unsupported codec: {}", codecpar.codec_id());
+                        continue;
+                    } else {
+                        videoCodec = avCodec.name().getString();
+                    }
+                }
+
+                videoDimensions[0] = codecpar.width();
+                videoDimensions[1] = codecpar.height();
 
                 videoStreamContext.setStreamId(streamId);
                 videoStreamContext.setStreamTimeBase(timeBaseUnits);
                 streamContextMap.put(streamId, videoStreamContext);
-            } else if (!audioStreamContext.hasStream() && codecType == avutil.AVMEDIA_TYPE_AUDIO) {
+            } else if (!audioStreamContext.hasStream() && codecType == AVMEDIA_TYPE_AUDIO) {
                 logger.debug("Audio stream present with id: {}", streamId);
+
+                try (AVCodec avCodec = avcodec_find_decoder(codecpar.codec_id())) {
+                    if (avCodec == null) {
+                        logger.error("Unsupported codec: {}", codecpar.codec_id());
+                        continue;
+                    } else {
+                        audioCodec = avCodec.name().getString();
+                    }
+                }
+                audioSampleRate = codecpar.sample_rate();
 
                 audioStreamContext.setStreamId(streamId);
                 audioStreamContext.setStreamTimeBase(timeBaseUnits);
                 streamContextMap.put(streamId, audioStreamContext);
-            } else if (!dataStreamContext.hasStream() && codecType == avutil.AVMEDIA_TYPE_DATA) {
+            } else if (!dataStreamContext.hasStream() && codecType == AVMEDIA_TYPE_DATA) {
                 logger.debug("Data stream present with id: {}", streamId);
 
                 dataStreamContext.setStreamId(streamId);
@@ -153,21 +188,25 @@ class RtmpConnectionHandler {
                 streamContextMap.put(streamId, dataStreamContext);
             }
         }
+
+        return new StreamInfo(videoDimensions, videoCodec, audioSampleRate, audioCodec);
     }
 
     private void streamContextSetup(AVFormatContext avFormatContext, RtmpListener listener) {
-        queryEmbeddedStreams(avFormatContext);
+        var streamInfo = queryEmbeddedStreams(avFormatContext);
 
+        videoStreamContext.setInjectingExtradata(true);
         videoStreamContext.openCodecContext(avFormatContext);
         audioStreamContext.openCodecContext(avFormatContext);
         dataStreamContext.openCodecContext(avFormatContext);
 
-        videoStreamContext.setDataBufferListener(listener.getVideoOutput());
-        audioStreamContext.setDataBufferListener(listener.getAudioOutput());
-
-        // TODO Probably don't need the parameters added to the RtmpStreamEvent. Remove
-        RtmpStreamEvent streamEvent = new RtmpStreamEvent(null);
+        RtmpStreamEvent streamEvent = new RtmpStreamEvent(streamInfo);
         listener.onStreamConnected(streamEvent);
+
+        if (listener.getVideoOutput() != null)
+            videoStreamContext.setDataBufferListener(listener.getVideoOutput());
+        if (listener.getAudioOutput() != null)
+            audioStreamContext.setDataBufferListener(listener.getAudioOutput());
     }
 
     public void setVideoBufferListener(@Nonnull DataBufferListener videoDataBufferListener) {
@@ -218,8 +257,6 @@ class RtmpConnectionHandler {
 
     private static void freeAVIO(AVIOContext ctx) {
         if (ctx == null || ctx.isNull()) return;
-        BytePointer buf = ctx.buffer();
-        if (buf != null && !buf.isNull()) av_freep(buf);
         avio_context_free(ctx);
     }
 
