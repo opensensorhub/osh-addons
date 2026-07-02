@@ -1,0 +1,83 @@
+// OGC Connected Systems API — shared helper types
+//
+// Types used across multiple CS API resource messages: Link (RFC 5988 web
+// link with OGC and RFC 6690 extensions), TimeInstant (an absolute
+// timestamp or the sentinel "now"), TimePeriod (paired TimeInstants).
+// Imported by every CS API resource .proto in this directory.
+
+syntax = "proto3";
+
+package georobotix.csapi;
+
+option java_package = "com.georobotix.csapi";
+option java_outer_classname = "CsCommonProto";
+option go_package = "github.com/georobotix/csapi";
+
+import "google/protobuf/timestamp.proto";
+
+// Web link object — RFC 5988 / RFC 6690 with OGC API extensions.
+//
+// Per the CS API common schema (common/link.json), `href` is required;
+// the rest are optional. Within a CS API resource, associations to other
+// resources (subsystem, systemKind, datastream, …) flow through a `Link`
+// with the appropriate `ogc-rel:*` relation type in `rel` and the target
+// addressed by `href` (or by `uid` for local-system references where the
+// target's unique identifier is preferred over a server URL).
+message Link {
+  string href          = 1;  // URL of target (required per spec)
+  string rel           = 2;  // relation type, e.g. "ogc-rel:subsystem"
+  string type          = 3;  // media type of target
+  string hreflang      = 4;  // language tag of target (BCP 47)
+  string title         = 5;  // human-readable title of target
+  string uid           = 6;  // unique identifier of target (CS API ext.)
+  string rt            = 7;  // semantic type of target (RFC 6690)
+  string interface_uri = 8;  // interface descriptor (RFC 6690 "if";
+                             // renamed to avoid the `if` keyword in
+                             // generated target languages)
+}
+
+// A single time instant — either an absolute timestamp or a sentinel
+// value. Mirrors the CS API common schema's `timeInstantOrNow` (a
+// oneOf of an ISO datetime and the literal string "now"). The enum
+// leaves room for additional sentinels if introduced upstream.
+message TimeInstant {
+  oneof value {
+    google.protobuf.Timestamp instant = 1;
+    Sentinel sentinel = 2;
+  }
+  enum Sentinel {
+    SENTINEL_UNSPECIFIED = 0;
+    SENTINEL_NOW         = 1;
+  }
+}
+
+// Time period — a pair of time instants per the CS API common schema
+// (common/timePeriod.json: exactly two `timeInstantOrNow` values).
+message TimePeriod {
+  TimeInstant begin = 1;
+  TimeInstant end   = 2;
+}
+
+// Protobuf form of the per-stream message schema, shared by `DataStream`
+// (for observations) and `ControlStream` (for commands). Carries a
+// pre-compiled `FileDescriptorProto` so receivers can add it to their
+// descriptor pool and decode/encode messages dynamically — no `protoc`
+// on the consumer side. Or a `Link` pointing at an external `.proto`
+// file when the descriptor is delivered out of band.
+//
+// Maps to the spec's `messageSchema` (string or link) for the Protobuf
+// variant of `observationSchema` / `commandSchema`; we diverge from the
+// spec's literal string form because the FileDescriptorProto is what
+// receivers actually consume.
+message ProtoMessageSchema {
+  oneof source {
+    bytes file_descriptor_proto = 1;  // serialized
+                                      // google.protobuf.FileDescriptorProto
+    Link  external              = 2;  // external `.proto` file link
+                                      // (matches the spec's link variant)
+  }
+  // Fully-qualified name of the per-stream message type within the
+  // descriptor (e.g., "georobotix.csapi.examples.weather.WeatherObservation").
+  // Required when the descriptor carries more than one message type.
+  string message_type = 10;
+}
