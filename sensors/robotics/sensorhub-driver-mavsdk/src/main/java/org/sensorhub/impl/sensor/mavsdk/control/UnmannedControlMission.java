@@ -227,6 +227,7 @@ public class UnmannedControlMission extends AbstractSensorControl<UnmannedSystem
         Instant start = Instant.now();
 
         MissionRaw missionRaw = system.getMissionRaw();
+        missionRaw.importQgroundcontrolMissionFromString(planJson)
                 .flatMapCompletable(importData -> {
                     return missionRaw.uploadMission(importData.getMissionItems());
                 })
