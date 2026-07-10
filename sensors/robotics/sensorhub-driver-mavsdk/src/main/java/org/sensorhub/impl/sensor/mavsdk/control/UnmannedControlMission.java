@@ -16,10 +16,12 @@
 
 package org.sensorhub.impl.sensor.mavsdk.control;
 
+import com.google.gson.JsonObject;
 import io.mavsdk.action.Action;
 import io.mavsdk.action_server.ActionServer;
 import io.mavsdk.mission.Mission;
 import io.mavsdk.mission_raw.MissionRaw;
+import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.DataRecord;
 import org.sensorhub.api.command.CommandStatus;
@@ -218,12 +220,13 @@ public class UnmannedControlMission extends AbstractSensorControl<UnmannedSystem
     @Override
     public CompletableFuture<ICommandStatus> submitCommand(ICommandData command) {
 
-        String planJson = command.getParams().getStringValue(0);
+        DataBlock data = command.getParams();
+        log.debug(data.toString());
+        String planJson = reconstructQgcPlanJson(data);
 
         Instant start = Instant.now();
 
         MissionRaw missionRaw = system.getMissionRaw();
-        missionRaw.importQgroundcontrolMissionFromString(planJson)
                 .flatMapCompletable(importData -> {
                     return missionRaw.uploadMission(importData.getMissionItems());
                 })
@@ -318,6 +321,15 @@ public class UnmannedControlMission extends AbstractSensorControl<UnmannedSystem
         });
     }
 
+
+    /**
+     * Reconstructs a QGroundControl plan JSON string
+     */
+    private String reconstructQgcPlanJson(DataBlock data) {
+        JsonObject root = new JsonObject();
+
+        return null;
+    }
 
     /**
      * Currently missions through MAVSDK appear to not work via ArduPilot SITL. For now
