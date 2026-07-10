@@ -29,6 +29,12 @@ dependencies {
     exclude group: 'org.jsoup', module: 'jsoup'
     exclude group: 'org.slf4j', module: 'slf4j-api'
   }
+  
+  implementation('com.google.protobuf:protobuf-java') {
+    version {
+      strictly '3.25.5' 
+    }
+  }
 }
 
 // add info to OSGi manifest
