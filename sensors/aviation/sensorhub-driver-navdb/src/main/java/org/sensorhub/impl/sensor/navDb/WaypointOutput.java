@@ -81,7 +81,8 @@ public class WaypointOutput extends AbstractSensorOutput<NavDriver>
         
         int i = 0;
         var dblkArray = new DataBlock[recs.size()];
-        var ts = NavDriver.BASE_TS_MILLIS;
+        var airacTime = parent.getAiracTime();
+        var ts = airacTime.toEpochMilli();
         
         for (var rec: recs) {
             DataBlock dataBlock = dataStruct.createDataBlock();
@@ -95,7 +96,7 @@ public class WaypointOutput extends AbstractSensorOutput<NavDriver>
             dblkArray[i++] = dataBlock;
 		}
         
-        eventHandler.publish(new DataEvent(time, WaypointOutput.this, dblkArray));
+        eventHandler.publish(new DataEvent(time, WaypointOutput.this, airacTime, null, dblkArray));
 	}
 
 

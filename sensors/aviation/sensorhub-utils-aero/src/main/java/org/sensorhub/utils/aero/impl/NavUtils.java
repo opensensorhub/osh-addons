@@ -150,12 +150,37 @@ public class NavUtils
     
     
     /**
-     * Compute nearest point 
-     * @param p1
-     * @param p2
-     * @param lat
-     * @param lon
-     * @return
+     * Compute distance to a great circle
+     * @param p1 Coordinate of 1st segment end (x=lon, y=lat, in deg)
+     * @param p2 Coordinate of 2nd segment end (x=lon, y=lat, in deg)
+     * @param lat Latitude of point to compute distance from (in deg)
+     * @param lon Longitude of point to compute distance from (in deg)
+     * @return The distance to the great circle in kilometers
+     */
+    public static double distanceToGreatCircle(Coordinate p1, Coordinate p2, double posLon, double posLat, double maxDist)
+    {
+        GeoTransforms transforms = new GeoTransforms(Ellipsoid.SPHERICAL);
+        
+        var p1Vec = new Vect3d(Math.toRadians(p1.x), Math.toRadians(p1.y), 0.0);
+        transforms.LLAtoECEF(p1Vec, p1Vec);
+        
+        var p2Vec = new Vect3d(Math.toRadians(p2.x), Math.toRadians(p2.y), 0.0);
+        transforms.LLAtoECEF(p2Vec, p2Vec);
+        
+        var posVec = new Vect3d(Math.toRadians(posLon), Math.toRadians(posLat), 0.0);
+        transforms.LLAtoECEF(posVec, posVec);
+        
+        return nearestPointOnGreatCircle(p1Vec, p2Vec, posVec, posVec, maxDist);
+    }
+    
+    
+    /**
+     * Compute distance to a great circle segment
+     * @param p1 Coordinate of 1st segment end (x=lon, y=lat, in deg)
+     * @param p2 Coordinate of 2nd segment end (x=lon, y=lat, in deg)
+     * @param lat Latitude of point to compute distance from (in deg)
+     * @param lon Longitude of point to compute distance from (in deg)
+     * @return The distance to the great circle in kilometers
      */
     public static double distanceToSegment(Coordinate p1, Coordinate p2, double posLon, double posLat, double maxDist)
     {
@@ -183,9 +208,21 @@ public class NavUtils
      * @param pos ECEF position to compute distance to
      * @param nearest vector that will receive computed nearest point, in ECEF coordinates
      * @param maxDist if given max distance (in nautical miles) is reached, the nearest point is not computed
-     * @return distance to nearest point in nautical miles, or NaN if too far or outside segment
+     * @return distance to nearest point in kilometers, or NaN if too far or outside segment
      **/
     public static double nearestPointOnSegment(Vect3d p1, Vect3d p2, Vect3d pos, Vect3d nearest, double maxDist)
+    {
+        var dist = nearestPointOnGreatCircle(p1, p2, pos, nearest, maxDist);
+        
+        // check if point is on segment
+        if (isPointOnSegment(p1, p2, nearest))
+            return dist;
+        else
+            return Double.NaN;
+    }
+    
+    
+    public static double nearestPointOnGreatCircle(Vect3d p1, Vect3d p2, Vect3d pos, Vect3d nearest, double maxDist)
     {
         var n = new Vect3d();
         
@@ -197,7 +234,7 @@ public class NavUtils
         
         // convert to angle and then distance on earth surface
         double angle = Math.PI/2 - Math.acos(dot/pos.norm());
-        double dist = KILOMETERS_TO_NAUTICALMILES * EARTH_RADIUS_KM * Math.abs(angle);
+        double dist = EARTH_RADIUS_KM * Math.abs(angle);
         log.trace("Orthogonal distance to segment = {} NM", dist);
         if (dist > maxDist)
         {
@@ -210,11 +247,7 @@ public class NavUtils
         nearest.set(pos).sub(n);
         log.trace("Nearest point is {}", nearest);
         
-        // check if point is on segment
-        if (isPointOnSegment(p1, p2, nearest))
-            return dist;
-        else
-            return Double.NaN;
+        return dist;
     }
     
     

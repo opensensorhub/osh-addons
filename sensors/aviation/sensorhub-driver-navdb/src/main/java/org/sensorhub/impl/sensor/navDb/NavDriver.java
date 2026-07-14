@@ -18,6 +18,8 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 import java.time.Instant;
+import java.time.ZoneOffset;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -39,8 +41,6 @@ import com.google.common.base.Strings;
  */
 public class NavDriver extends AbstractSensorModule<NavConfig>
 {
-    static final long BASE_TS_MILLIS = Instant.parse("2026-06-01T00:00:00Z").toEpochMilli();  
-    
     AirportOutput airptOutput;
 	WaypointOutput wayptOutput;
 	NavaidOutput navaidOutput;
@@ -213,8 +213,17 @@ public class NavDriver extends AbstractSensorModule<NavConfig>
 
 
 	@Override
-	public boolean isConnected() 
+	public boolean isConnected()
 	{
 		return true;
+	}
+	
+	
+	protected Instant getAiracTime()
+	{
+	    var airacDate = navDB.getAiracDate();
+	    return airacDate != null ?
+	        airacDate.atStartOfDay().toInstant(ZoneOffset.UTC) :
+	        Instant.now().truncatedTo(ChronoUnit.MONTHS); 
 	}
 }
