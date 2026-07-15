@@ -58,7 +58,7 @@ public class SimUavDriver extends AbstractSensorModule<SimUavConfig>
         super.doInit();
         
         // generate identifiers
-        generateUniqueID("urn:osh:system:simuav:", config.serialNumber);
+        generateUniqueID("urn:osh:system:georobotix:simuav:", config.serialNumber);
         generateXmlID("SIMULATED_UAV_", config.serialNumber);
         
         // init outputs

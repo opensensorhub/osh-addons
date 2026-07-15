@@ -29,7 +29,7 @@ public class SimOrientationSensor extends AbstractSensorModule<SimOrientationCon
         super.doInit();
         
         // generate identifiers
-        generateUniqueID("urn:osh:sensor:simorientation:", config.serialNumber);
+        generateUniqueID("urn:osh:sensor:georobotix:simorientation:", config.serialNumber);
         generateXmlID("SIMULATED_ORIENTATION_SENSOR_", config.serialNumber);
         
         // init main data interface

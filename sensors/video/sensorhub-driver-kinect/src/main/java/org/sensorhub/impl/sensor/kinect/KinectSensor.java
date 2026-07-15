@@ -135,7 +135,7 @@ public class KinectSensor extends AbstractSensorModule<KinectConfig> {
 
 			kinectDevice = kinectContext.openDevice(0);
 
-			generateUniqueID("urn:osh:sensor:kinect:", config.serialNumber);
+			generateUniqueID("urn:osh:sensor:georobotix:kinect:", config.serialNumber);
 
 			generateXmlID("KINECT_", config.serialNumber);
 

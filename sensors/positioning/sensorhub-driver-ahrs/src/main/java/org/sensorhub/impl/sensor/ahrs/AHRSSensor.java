@@ -35,7 +35,7 @@ public class AHRSSensor extends AbstractSensorModule<AHRSConfig>
         super.doInit();
         
         // generate IDs
-        generateUniqueID("urn:osh:sensor:ahrs:", null);
+        generateUniqueID("urn:osh:sensor:georobotix:ahrs:", null);
         generateXmlID("AHRS_", null);
 
         dataInterface = new AHRSOutput(this);

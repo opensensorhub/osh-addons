@@ -38,6 +38,9 @@ import org.slf4j.LoggerFactory;
  */
 public class FoscamDriver extends AbstractSensorModule<FoscamConfig> {
 	private static final Logger logger = LoggerFactory.getLogger(FoscamDriver.class);
+	static final String UID_PREFIX = "urn:osh:system:georobotix:foscam:";
+	static final String XML_PREFIX = "foscam";
+
 	private FoscamPtzControl ptzControlInterface;
 	RobustIPConnection connection;
 	FoscamVideoOutput videoDataInterface;
@@ -58,6 +61,10 @@ public class FoscamDriver extends AbstractSensorModule<FoscamConfig> {
 		videoDataInterface = null;
 		ptzControlInterface = null;
 		ptzSupported = false;
+
+		// Create SensorHub Identifiers using designated prefix and serial number from Admin Panel
+		generateUniqueID(UID_PREFIX, config.cameraID);
+		generateXmlID(XML_PREFIX, config.cameraID);
 
 		// create connection handler
         this.connection = new RobustIPConnection(this, config.connection, "Foscam Camera")

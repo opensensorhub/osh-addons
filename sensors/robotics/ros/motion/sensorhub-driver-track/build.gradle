@@ -1,6 +1,6 @@
 description = 'Track Control Sensor'
 ext.details = 'ROS interface for OpenSensorHub to Send Direct Remote Controlled Operations to drive a platform and Receive Commanded Velocities'
-version = '1.0.0'
+version = '1.0.1'
 
 repositories {
     mavenCentral()

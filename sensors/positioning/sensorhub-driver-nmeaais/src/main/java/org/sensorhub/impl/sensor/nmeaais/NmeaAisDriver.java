@@ -47,7 +47,7 @@ import java.io.PipedOutputStream;
  * as properties on the vessel FOI. Navigational status is streamed in the vesselLocation output.
  */
 public class NmeaAisDriver extends AbstractSensorModule<NmeaAisConfig> {
-    static final String UID_PREFIX = "urn:osh:sensor:nmea:ais:";
+    static final String UID_PREFIX = "urn:osh:sensor:georobotix:nmea:ais:";
     static final String XML_PREFIX = "nmea:ais:";
 
     NmeaAisHandler nmeaAisHandler;

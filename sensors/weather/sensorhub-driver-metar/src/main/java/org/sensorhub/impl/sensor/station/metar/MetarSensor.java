@@ -16,7 +16,7 @@ import net.opengis.sensorml.v20.PhysicalSystem;
 public class MetarSensor extends AbstractSensorModule<MetarConfig>
 {
 	static final Logger log = LoggerFactory.getLogger(MetarSensor.class);
-	static final String SENSOR_UID_PREFIX = "urn:osh:sensor:metar:";
+	static final String SENSOR_UID_PREFIX = "urn:osh:sensor:georobotix:metar:";
 	static final String STATION_UID_PREFIX = SENSOR_UID_PREFIX + "station:";
 
 	MetarOutput metarInterface;

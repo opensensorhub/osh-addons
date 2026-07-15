@@ -46,7 +46,7 @@ subprojects {
       }
     }
   }
-  
+
   version = oshCoreVersion
   ext.pom = {} // pom data that subprojects can append to
   
@@ -328,29 +328,30 @@ subprojects {
       repositories {
         //mavenLocal()
         maven {
-          name = "GitHubPackages"
-          url = "https://maven.pkg.github.com/opensensorhub/osh-addons"
+          name = "Nexus"
+          url = System.getenv("NEXUS_REPO_URL")
+          allowInsecureProtocol=true
           credentials {
-            username = System.getenv("GITHUB_ACTOR")
-            password = System.getenv("GITHUB_TOKEN")
+            username = System.getenv("NEXUS_ACTOR")
+            password = System.getenv("NEXUS_TOKEN")
           }
         }
       }
     }
     
-    p.tasks.named("generateMetadataFileForMavenJavaPublication") {
+    project.tasks.named("generateMetadataFileForMavenJavaPublication") {
       doFirst {
-        if (System.getenv("GITHUB_ACTOR") == null) {
-          throw new Exception("Environment variable GITHUB_ACTOR not set. Please set to your github username.")
+        if (System.getenv("NEXUS_ACTOR") == null) {
+          throw new Exception("Environment variable NEXUS_ACTOR not set. Please set to your github username.")
         }
         
-        if (System.getenv("GITHUB_TOKEN") == null) {
-          throw new Exception("Environment variable GITHUB_TOKEN not set. Please generate and set to your personal access token: https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens")
+        if (System.getenv("NEXUS_TOKEN") == null) {
+          throw new Exception("Environment variable NEXUS_TOKEN  not set. Please generate and set to your personal access token: https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens")
         }
       }
     }
     
-    p.tasks.named("publishMavenJavaPublicationToGitHubPackagesRepository") {
+    project.tasks.named("publishMavenJavaPublicationToNexusRepository") {
       onlyIf {
         //
         MavenArtifactRepository repo = repository as MavenArtifactRepository;

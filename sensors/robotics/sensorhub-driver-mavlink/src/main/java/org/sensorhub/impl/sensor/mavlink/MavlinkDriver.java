@@ -92,7 +92,7 @@ public class MavlinkDriver extends AbstractSensorModule<MavlinkConfig>
     protected void doInit() throws SensorHubException
     {
         // generate identifiers
-        generateUniqueID("urn:osh:sensor:mavlink:", config.vehicleID);
+        generateUniqueID("urn:osh:sensor:georobotix:mavlink:", config.vehicleID);
         generateXmlID("MAVLINK_SYSTEM_", config.vehicleID);
         
         // create outputs depending on selected sentences

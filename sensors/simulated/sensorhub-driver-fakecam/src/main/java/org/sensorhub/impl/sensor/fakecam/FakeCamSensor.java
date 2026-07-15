@@ -44,7 +44,7 @@ public class FakeCamSensor extends AbstractSensorModule<FakeCamConfig>
         super.doInit();
         
         // generate IDs
-        generateUniqueID("urn:osh:sensor:simcam:", config.cameraID);
+        generateUniqueID("urn:osh:sensor:georobotix:simcam:", config.cameraID);
         generateXmlID("VIDEO_CAM_", config.cameraID);       
         
         // create output

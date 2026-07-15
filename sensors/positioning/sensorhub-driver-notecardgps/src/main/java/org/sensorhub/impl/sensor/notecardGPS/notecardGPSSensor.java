@@ -39,7 +39,7 @@ import java.nio.charset.StandardCharsets;
  * and performing initialization and shutdown for the driver and its outputs.
  */
 public class notecardGPSSensor extends AbstractSensorModule<Config> implements Runnable {
-    static final String UID_PREFIX = "osh:notecardGPS:";
+    static final String UID_PREFIX = "urn:osh:system:georobotix:notecardGPS:";
     static final String XML_PREFIX = "notecardGPS";
 
     private static final Logger logger = LoggerFactory.getLogger(notecardGPSSensor.class);

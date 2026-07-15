@@ -1,6 +1,6 @@
 description = 'Boston Dynamics Spot Driver'
 ext.details = "Driver to control Boston Dynamics SPOT platform"
-version = '1.1.0'
+version = '1.1.1'
 
 repositories {
     mavenCentral()

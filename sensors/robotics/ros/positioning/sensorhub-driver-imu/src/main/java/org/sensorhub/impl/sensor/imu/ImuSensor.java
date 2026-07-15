@@ -35,7 +35,7 @@ public class ImuSensor extends AbstractSensorModule<ImuConfig> {
         super.doInit();
 
         // Generate identifiers
-        generateUniqueID("ros-imu-", config.id);
+        generateUniqueID("urn:osh:sensor:georobotix:ros-imu:", config.id);
         generateXmlID("ros-imu-", config.id);
 
         // Create and initialize output

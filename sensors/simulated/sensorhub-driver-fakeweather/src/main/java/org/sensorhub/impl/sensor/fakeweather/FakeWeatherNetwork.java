@@ -35,7 +35,7 @@ public class FakeWeatherNetwork extends AbstractSensorModule<FakeWeatherNetworkC
         super.doInit();
         
         // generate identifiers
-        generateUniqueID("urn:osh:sensor:simweathernetwork:", config.networkID);
+        generateUniqueID("urn:osh:sensor:georobotix:simweathernetwork:", config.networkID);
         generateXmlID("WEATHER_NETWORK_", config.networkID);
         
         // init main data interface

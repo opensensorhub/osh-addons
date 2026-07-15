@@ -52,7 +52,7 @@ public class STAService extends AbstractHttpServiceModule<STAServiceConfig> impl
 {
     static final String SERVICE_INSTANCE_ID = "oshServiceId";
     static final HashMap<Integer, STAService> serviceInstances = new HashMap<>(); // static map needed to get access to service from persistence manager
-    static final String DEFAULT_GROUP_UID = "urn:osh:sta:group";
+    static final String DEFAULT_GROUP_UID = "urn:osh:sensor:georobotix:sta:group";
     static final long HUB_THING_ID = 1;
 
     IObsSystemDatabase readDatabase;
