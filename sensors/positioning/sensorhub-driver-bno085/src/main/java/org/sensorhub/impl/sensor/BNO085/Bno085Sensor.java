@@ -37,7 +37,7 @@ import java.util.List;
  * and performing initialization and shutdown for the driver and its outputs.
  */
 public class Bno085Sensor extends AbstractSensorModule<Bno085Config> implements Runnable {
-    static final String UID_PREFIX = "urn:osh:system:georobotix:bno085:";
+    static final String UID_PREFIX = "urn:osh:sensor:georobotix:bno085:";
     static final String XML_PREFIX = "BNO085";
 
     private static final Logger logger = LoggerFactory.getLogger(Bno085Sensor.class);
