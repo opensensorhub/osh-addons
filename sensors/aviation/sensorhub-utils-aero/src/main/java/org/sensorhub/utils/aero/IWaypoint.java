@@ -33,6 +33,11 @@ public interface IWaypoint
      */
     public static final String ROUTE_CHANGE_TAG = "ROUTE_CHANGE";
 
+    /**
+     * Required waypoint
+     */
+    public static final String REQUIRED_TAG = "REQUIRED";
+
     
     /**
      * @return Waypoint code (3 to 5 letters ICAO code) 
