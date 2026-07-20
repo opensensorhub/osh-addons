@@ -16,10 +16,12 @@
 
 package org.sensorhub.impl.sensor.mavsdk.control;
 
+import com.google.gson.JsonObject;
 import io.mavsdk.action.Action;
 import io.mavsdk.action_server.ActionServer;
 import io.mavsdk.mission.Mission;
 import io.mavsdk.mission_raw.MissionRaw;
+import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.DataRecord;
 import org.sensorhub.api.command.CommandStatus;
@@ -144,6 +146,72 @@ public class UnmannedControlMission extends AbstractSensorControl<UnmannedSystem
                                 .definition(SWEHelper.getPropertyUri("VehicleType")))
                         .addField("version", helper.createCount())
                         .build())
+                .addField("geoFence", helper.createRecord()
+                        .definition(SWEHelper.getPropertyUri("GeoFence"))
+                        .addField("circlesCount", helper.createCount()
+                                .label("Circles Count")
+                                .definition(SWEHelper.getPropertyUri("Count"))
+                                .id("circlesCount")
+                                .build())
+                        .addField("circles", helper.createArray()
+                                .withVariableSize("circlesCount")
+                                .withElement("circle", helper.createRecord()
+                                        .addField("center", helper.createArray()
+                                                .withFixedSize(2)
+                                                .definition(SWEHelper.getPropertyUri("Center"))
+                                                .withElement("coordinate", helper.createQuantity())
+                                                .build())
+                                        .addField("inclusion", helper.createBoolean()
+                                                .definition(SWEHelper.getPropertyUri("Inclusion")))
+                                        .addField("radius", helper.createQuantity()
+                                                .definition(SWEHelper.getPropertyUri("Radius")))
+                                        .addField("version", helper.createCount())
+                                        .build())
+                                .build())
+                        .addField("polygonsCount", helper.createCount()
+                                .label("Polygons Count")
+                                .definition(SWEHelper.getPropertyUri("Count"))
+                                .id("polygonsCount")
+                                .build())
+                        .addField("polygons", helper.createArray()
+                                .withVariableSize("polygonsCount")
+                                .withElement("polygon", helper.createRecord()
+                                        .addField("inclusion", helper.createBoolean()
+                                                .definition(SWEHelper.getPropertyUri("Inclusion")))
+                                        .addField("vertexCount", helper.createCount()
+                                                .label("Vertex Count")
+                                                .definition(SWEHelper.getPropertyUri("Count"))
+                                                .id("vertexCount")
+                                                .build())
+                                        .addField("polygon", helper.createArray()
+                                                .withVariableSize("vertexCount")
+                                                .withElement("vertex", helper.createArray()
+                                                        .withFixedSize(2)
+                                                        .withElement("coordinate", helper.createQuantity())
+                                                        .build())
+                                                .build())
+                                        .addField("version", helper.createCount())
+                                        .build())
+                                .build())
+                        .addField("version", helper.createCount())
+                        .build())
+                .addField("rallyPoints", helper.createRecord()
+                        .definition(SWEHelper.getPropertyUri("RallyPoints"))
+                        .addField("pointsCount", helper.createCount()
+                                .label("Points Count")
+                                .definition(SWEHelper.getPropertyUri("Count"))
+                                .id("pointsCount")
+                                .build())
+                        .addField("points", helper.createArray()
+                                .withVariableSize("pointsCount")
+                                .withElement("point", helper.createArray()
+                                        .withFixedSize(3)
+                                        .definition(SWEHelper.getPropertyUri("RallyPoint"))
+                                        .withElement("coordinate", helper.createQuantity())
+                                        .build())
+                                .build())
+                        .addField("version", helper.createCount())
+                        .build())
                 .addField("version", helper.createCount()
                         .definition(SWEHelper.getPropertyUri("Version")))
                 .build();
@@ -152,12 +220,9 @@ public class UnmannedControlMission extends AbstractSensorControl<UnmannedSystem
     @Override
     public CompletableFuture<ICommandStatus> submitCommand(ICommandData command) {
 
-        ActionServer.AllowableFlightModes flightModes = new ActionServer.AllowableFlightModes(
-                true,true,true
-        );
-        var res = system.getActionServer().setAllowableFlightModes(flightModes);
-
-        String planJson = command.getParams().getStringValue(0);
+        DataBlock data = command.getParams();
+        log.debug(data.toString());
+        String planJson = reconstructQgcPlanJson(data);
 
         Instant start = Instant.now();
 
@@ -257,6 +322,15 @@ public class UnmannedControlMission extends AbstractSensorControl<UnmannedSystem
         });
     }
 
+
+    /**
+     * Reconstructs a QGroundControl plan JSON string
+     */
+    private String reconstructQgcPlanJson(DataBlock data) {
+        JsonObject root = new JsonObject();
+
+        return null;
+    }
 
     /**
      * Currently missions through MAVSDK appear to not work via ArduPilot SITL. For now

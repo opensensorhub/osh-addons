@@ -14,8 +14,6 @@ package org.sensorhub.impl.sensor.mavsdk;
 import io.mavsdk.core.Core;
 import io.mavsdk.mavlink_direct.MavlinkDirect;
 import org.sensorhub.api.common.SensorHubException;
-import org.sensorhub.impl.sensor.ffmpeg.FFMPEGSensor;
-import org.sensorhub.impl.sensor.ffmpeg.config.Connection;
 import org.sensorhub.impl.sensor.mavsdk.control.*;
 import org.sensorhub.impl.sensor.mavsdk.outputs.*;
 import org.sensorhub.impl.sensor.mavsdk.util.*;
@@ -35,6 +33,11 @@ public class UnmannedSystem extends AbstractSensorModule<org.sensorhub.impl.sens
     static final String XML_PREFIX = "MAVSDK_DRIVER_";
 
     private static final Logger logger = LoggerFactory.getLogger(UnmannedSystem.class);
+
+    // High-level class of the connected vehicle, derived from the autopilot HEARTBEAT.
+    // Controls query this (via getVehicleDomain()) to refuse mismatched commands, e.g.
+    // takeoff to a rover or a ground "drive" command to a multirotor.
+    private volatile VehicleDomain vehicleDomain = VehicleDomain.UNKNOWN;
 
     private UnmannedLocationOutput locationOutput;
     private UnmannedAttitudeOutput attitudeOutput;
@@ -61,10 +64,25 @@ public class UnmannedSystem extends AbstractSensorModule<org.sensorhub.impl.sens
     UnmannedControlShell unmannedControlShell;
     UnmannedControlFlightMode unmannedControlFlightMode;
     UnmannedControlEnableLocation unmannedControlEnableLocation;
+    UnmannedControlArm unmannedControlArm;
     UnmannedControlPauseMission unmannedControlPauseMission;
     UnmannedControlRTL unmannedControlRTL;
+    UnmannedControlDriveToLocation unmannedControlDriveToLocation; //ground/surface
+    UnmannedControlDriveVelocity unmannedControlDriveVelocity;     //ground/surface
+    UnmannedControlDriveHold unmannedControlDriveHold;             //ground/surface
+    UnmannedControlDriveMode unmannedControlDriveMode;             //ground/surface
+    UnmannedControlReboot unmannedControlReboot;
+    UnmannedControlHome unmannedControlHome;                       //air/ground/surface
 
     MavSdkServerHandler mavsdkServer = new MavSdkServerHandler();
+
+    /**
+     * @return the most recently detected class of the connected vehicle (AIR, GROUND,
+     *         SURFACE, SUBMARINE, or UNKNOWN if no autopilot heartbeat has been parsed yet).
+     */
+    public VehicleDomain getVehicleDomain() {
+        return vehicleDomain;
+    }
 
     @Override
     public void doInit() throws SensorHubException {
@@ -160,9 +178,40 @@ public class UnmannedSystem extends AbstractSensorModule<org.sensorhub.impl.sens
         addControlInput(this.unmannedControlEnableLocation);
         unmannedControlEnableLocation.init(this.unmannedControlLocation);
 
+        this.unmannedControlArm= new UnmannedControlArm(this);
+        addControlInput(this.unmannedControlArm);
+        unmannedControlArm.init();
+
         this.unmannedControlPauseMission = new UnmannedControlPauseMission(this);
         addControlInput(this.unmannedControlPauseMission);
         unmannedControlPauseMission.init();
+
+        // Ground rover / surface vessel controls (ArduRover). These refuse to run if the
+        // connected vehicle is positively identified as airborne.
+        this.unmannedControlDriveToLocation = new UnmannedControlDriveToLocation(this);
+        addControlInput(this.unmannedControlDriveToLocation);
+        unmannedControlDriveToLocation.init();
+
+        this.unmannedControlDriveVelocity = new UnmannedControlDriveVelocity(this);
+        addControlInput(this.unmannedControlDriveVelocity);
+        unmannedControlDriveVelocity.init();
+
+        this.unmannedControlDriveHold = new UnmannedControlDriveHold(this);
+        addControlInput(this.unmannedControlDriveHold);
+        unmannedControlDriveHold.init();
+
+        this.unmannedControlDriveMode = new UnmannedControlDriveMode(this);
+        addControlInput(this.unmannedControlDriveMode);
+        unmannedControlDriveMode.init();
+
+        this.unmannedControlReboot = new UnmannedControlReboot(this);
+        addControlInput(this.unmannedControlReboot);
+        unmannedControlReboot.init();
+
+        // Home position control (works for air, ground, and surface platforms).
+        this.unmannedControlHome = new UnmannedControlHome(this);
+        addControlInput(this.unmannedControlHome);
+        unmannedControlHome.init();
 
         videoOutput = new UnmannedVideoOutput(config.ffmpegConnection);
         if (null != config.ffmpegConnection.connectionString &&
@@ -255,10 +304,28 @@ public class UnmannedSystem extends AbstractSensorModule<org.sensorhub.impl.sens
                             0,
                             0,
                             0,
-                           ""
+                            ""
                     )).doOnError( t -> {
                         log.debug("Error sending heartbeat: " + t.getMessage());
                     });
+
+                    // Watch the autopilot's HEARTBEAT to learn the vehicle type (MAV_TYPE).
+                    // Only the autopilot component (id 1) is trusted; GCS/companion heartbeats
+                    // are ignored. UNKNOWN results never overwrite a previously known domain.
+                    drone.getMavlinkDirect().getMessage("HEARTBEAT")
+                            .subscribe(
+                                    msg -> {
+                                        if ( msg.getComponentId() != 1 )
+                                            return;
+
+                                        VehicleDomain detected = VehicleDomain.fromHeartbeat(msg.getFieldsJson());
+                                        if ( detected != VehicleDomain.UNKNOWN && detected != vehicleDomain ) {
+                                            vehicleDomain = detected;
+                                            log.debug("Detected vehicle domain: " + detected);
+                                        }
+                                    },
+                                    t -> log.debug("HEARTBEAT subscription error: " + t.getMessage())
+                            );
 
                     unmannedControlLocation.setSystem(drone);
                     unmannedControlTakeoff.setSystem(drone);
@@ -269,6 +336,13 @@ public class UnmannedSystem extends AbstractSensorModule<org.sensorhub.impl.sens
                     unmannedControlShell.setSystem(drone);
                     unmannedControlFlightMode.setSystem(drone);
                     unmannedControlPauseMission.setSystem(drone);
+                    unmannedControlDriveToLocation.setSystem(drone);
+                    unmannedControlDriveVelocity.setSystem(drone);
+                    unmannedControlDriveHold.setSystem(drone);
+                    unmannedControlDriveMode.setSystem(drone);
+                    unmannedControlHome.setSystem(drone);
+                    unmannedControlArm.setSystem(drone);
+                    unmannedControlReboot.setSystem(drone);
                     locationOutput.subscribe(drone);
                     homeOutput.subscribe(drone);
                     attitudeOutput.subscribe(drone);
