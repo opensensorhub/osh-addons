@@ -9,12 +9,13 @@
 
  Copyright (C) 2020-2025 Botts Innovative Research, Inc. All Rights Reserved.
  ******************************* END LICENSE BLOCK ***************************/
-package org.sensorhub.impl.sensor.krakensdr;
+package org.sensorhub.impl.sensor.krakensdr.outputs;
 
 import com.google.gson.JsonObject;
 import net.opengis.swe.v20.*;
 import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
+import org.sensorhub.impl.sensor.krakensdr.KrakenSdrDriver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.vast.swe.SWEBuilders;
@@ -27,9 +28,9 @@ import java.time.ZoneOffset;
 
 
 /**
- * Output specification and provider for {@link KrakenSdrSensor}.
+ * Output specification and provider for {@link KrakenSdrDriver}.
  */
-public class KrakenSdrOutputDoA extends AbstractSensorOutput<KrakenSdrSensor> {
+public class KrakenSdrOutputDoA extends AbstractSensorOutput<KrakenSdrDriver> {
     static final String SENSOR_OUTPUT_NAME = "kraken_doa";
     static final String SENSOR_OUTPUT_LABEL = "DoA";
     static final String SENSOR_OUTPUT_DESCRIPTION = "This is the DoA output for the krakenSDR";
@@ -52,7 +53,7 @@ public class KrakenSdrOutputDoA extends AbstractSensorOutput<KrakenSdrSensor> {
      *
      * @param parentSensor Sensor driver providing this output.
      */
-    public KrakenSdrOutputDoA(KrakenSdrSensor parentSensor) {
+    public KrakenSdrOutputDoA(KrakenSdrDriver parentSensor) {
         super(SENSOR_OUTPUT_NAME, parentSensor);
     }
 
@@ -110,12 +111,6 @@ public class KrakenSdrOutputDoA extends AbstractSensorOutput<KrakenSdrSensor> {
                         .label("Location")
                         .description("Lat and Long of the Kraken's Position")
                 )
-                .addField("heading", sweFactory.createQuantity()
-                        .label("Heading")
-                        .uomCode("deg")
-                        .description("heading")
-                        .definition(GeoPosHelper.DEF_HEADING_MAGNETIC)
-                )
                 ;
         dataStruct = recordBuilder.build();
 
@@ -143,8 +138,24 @@ public class KrakenSdrOutputDoA extends AbstractSensorOutput<KrakenSdrSensor> {
         }
         return accumulator / (double) MAX_NUM_TIMING_SAMPLES;
     }
-
-    public void setData() {
+    /**
+     * Called by {@link KrakenSdrDriver} when a WebSocket {@code "doa"} message arrives.
+     *
+     * <p>WS field → SWE output field mapping:
+     * <ul>
+     *   <li>{@code timestamp} (epoch ms) → time</li>
+     *   <li>{@code bearing}              → raw_lob (deg, true north)</li>
+     *   <li>{@code confidence}           → confidence (0.0–1.0)</li>
+     *   <li>{@code power_db}             → rssi (dBFS)</li>
+     *   <li>{@code freq_hz}              → frequency (Hz)</li>
+     *   <li>{@code latency_ms}           → time-delta (ms)</li>
+     *   <li>{@code station_id}           → uuid</li>
+     *   <li>{@code latitude}/{@code longitude} → location</li>
+     * </ul>
+     *
+     * @param doaMsg the parsed JSON object from the WebSocket frame
+     */
+    public void setData(JsonObject doaMsg) {
         DataBlock dataBlock;
         try {
             if (latestRecord == null) {
@@ -161,22 +172,22 @@ public class KrakenSdrOutputDoA extends AbstractSensorOutput<KrakenSdrSensor> {
             }
             ++setCount;
 
-
-            JsonObject doaJson = parentSensor.util.getDoA();
             // Convert Unix Epoch time provided by GPS to OffsetDateTime
-            Instant krakenTimeInstant = Instant.ofEpochMilli(doaJson.get("time").getAsLong());
+            Instant krakenTimeInstant = Instant.ofEpochMilli(doaMsg.get("timestamp").getAsLong());
             OffsetDateTime odt = krakenTimeInstant.atOffset(ZoneOffset.UTC);
 
             dataBlock.setDateTime(0, odt);
-            dataBlock.setDoubleValue(1, doaJson.get("doa").getAsDouble());
-            dataBlock.setDoubleValue(2, doaJson.get("confidence").getAsDouble());
-            dataBlock.setDoubleValue(3, doaJson.get("rssi").getAsDouble());
-            dataBlock.setDoubleValue(4, doaJson.get("frequency").getAsDouble());
-            dataBlock.setDoubleValue(5, doaJson.get("latency").getAsDouble());
-            dataBlock.setStringValue(6, doaJson.get("stationId").getAsString());
-            dataBlock.setDoubleValue(7, doaJson.get("latitude").getAsDouble());
-            dataBlock.setDoubleValue(8, doaJson.get("longitude").getAsDouble());
-            dataBlock.setDoubleValue(9, doaJson.get("heading").getAsDouble());
+            dataBlock.setDoubleValue(1, doaMsg.get("bearing").getAsDouble());
+            dataBlock.setDoubleValue(2, doaMsg.get("confidence").getAsDouble());
+            dataBlock.setDoubleValue(3, doaMsg.get("power_db").getAsDouble());
+            dataBlock.setDoubleValue(4, doaMsg.get("freq_hz").getAsDouble());
+            dataBlock.setDoubleValue(5, doaMsg.get("latency_ms").getAsDouble());
+            dataBlock.setStringValue(6, doaMsg.has("station_id")
+                    ? doaMsg.get("station_id").getAsString() : "");
+            dataBlock.setDoubleValue(7, doaMsg.has("latitude")
+                    ? doaMsg.get("latitude").getAsDouble() : 0.0);
+            dataBlock.setDoubleValue(8, doaMsg.has("longitude")
+                    ? doaMsg.get("longitude").getAsDouble() : 0.0);
 
             latestRecord = dataBlock;
             latestRecordTime = System.currentTimeMillis();

@@ -1,121 +1,248 @@
-# Kraken SDR
-The KrakenSDR is a five-channel, phase-coherent software-defined radio (SDR) 
-built using RTL-SDR components, designed primarily for radio direction finding. 
-It utilizes five synchronized RTL-SDR receivers to achieve accurate 
-[beamforming](https://www.techtarget.com/searchnetworking/definition/beamforming) 
-and direction-of-arrival estimation. This allows users to locate the source of 
-radio signals, making it useful for applications like locating interference, 
-tracking assets, and even search and rescue efforts. 
+# KrakenSDR Direction Finding System
 
-# Hardware Setup
-- KrakenSDR
-- VK-162 USB GPS
+The KrakenSDR is a five-channel, phase-coherent software-defined radio (SDR) built using RTL-SDR components, designed for radio direction finding. It uses five synchronized receivers to perform direction-of-arrival (DOA) estimation, making it useful for locating interference, tracking assets, and search and rescue operations.
 
+---
 
-# MANUAL SETUP with Fresh Image of RPi4
-## Expected Process:
-For the following steps to work, it is assumed that you're starting with a fresh image of a raspberry pi 4. These
-steps can be broken into (4) parts:
-- Initial Pi setup
-- Installation of [Kraken's Heimdall Firmware](https://github.com/krakenrf/heimdall_daq_fw) to handle synchronization of all 5 antennas and serve data
-- Installation of  [Kraken DoA DSP](https://github.com/krakenrf/krakensdr_doa) for DoA Digital Signal Processing and establishing DoA
+## Hardware
 
-To begin these steps, logon to your Raspberry Pi and begin:
+| Component | Notes |
+|---|---|
+| KrakenSDR | 5-channel phase-coherent SDR |
+| Krakentennas | 5-element antenna array |
+| VK-162 USB GPS | For location/heading data |
+| Raspberry Pi 4 | With 128 GB SD card |
+| USB-C Power | Separate supplies for KrakenSDR and Pi |
 
-## Setup Pi
-1. SSH into your pi and update / install dependencies:
-    ```
-    sudo apt update && sudo apt upgrade
-   ```
-2. Make sure java is installed on raspberry pi (latest 21 was used during testing)
-   ```
-    sudo apt install openjdk-21-jdk
-   ```
-3. Install prerequisites to turn RTL2832U chip of the Kraken Device into SDR
-    ```
-    sudo apt-get install libusb-dev libusb-1.0-0-dev build-essential cmake git
-    ```
-   - Purge old RTL-SDR and librtlsdr install
-    ```
-    sudo apt purge librtlsdr*
-    sudo rm -rvf /usr/lib/librtlsdr* /usr/include/rtl-sdr* /usr/local/lib/librtlsdr* /usr/local/include/rtl-sdr*
-    ```
-## Install HeIMDALL DAQ Firmware
-Follow the [Manual Step by Step Install](https://github.com/krakenrf/heimdall_daq_fw?tab=readme-ov-file#manual-step-by-step-install) instructions
-to install the HeIMDALL DAQ Firmware. Depending on your setup, take special car in following the instructions. For example, if you
-are using a Raspberry Pi, make sure to follow the ARM instructions. 
+---
 
-## Install DoA DSP Software
-Follow the [Manual Install](https://github.com/krakenrf/krakensdr_doa?tab=readme-ov-file#manual-installation-from-a-fresh-os) instructions
-to install teh DoA Data Signal Processing Software. 
+## Quick Start — Flash the Existing Image
 
-### Additional Info for GPS Integration
-For ***Section 4***, I used a [VK-162](https://www.amazon.com/Navigation-External-Receiver-Raspberry-Geekstory/dp/B078Y52FGQ) GPS. 
-To set this up properly, i found the following [YouTube Tutorial](https://www.youtube.com/watch?v=A1zmhxcUOxw). However, you should be able
-to type these commands in your Raspberry Pi's terminal:
-1. Install GPSD
-```commandline
+This is the recommended path. A pre-configured master image is available that includes the full software stack: Raspberry Pi OS, heimdall DAQ firmware, the custom `krakensdr_doa` WebSocket application, and a systemd service that auto-starts on boot.
+
+**Additional hardware needed:** SD card reader
+
+### Default credentials
+
+| Setting | Value |
+|---|---|
+| Hostname | `kraken1` |
+| Username | `osh` |
+| Password | `oshtest1234` |
+
+### Steps
+
+**1. Flash the image**
+
+Download and install [Raspberry Pi Imager](https://www.raspberrypi.com/software/). Open it, select your Pi model, then scroll to the bottom of the OS list and choose **Use Custom**. Select the [`kraken_master.img.gz`](https://drive.google.com/file/d/1OIIlloYC_ZOIv3CSfz0G7qAH_DmJRhhZ/view?usp=drive_link) file. Complete the setup — flashing may take several hours.
+
+**2. Set a unique hostname (multi-unit deployments)**
+
+If you're running more than one unit on the same network, each Pi must have a unique hostname. SSH into the new Pi and run:
+
+```bash
+# Edit the cloud-init user-data
+sudo nano /boot/firmware/user-data
+# Change: hostname: kraken1  →  hostname: kraken2
+
+# Prevent cloud-init from overwriting the hostname on reboot
+sudo nano /etc/cloud/cloud.cfg
+# Ensure: preserve_hostname: true
+
+# Apply immediately and reboot
+sudo hostnamectl set-hostname kraken2
+sudo reboot
+```
+
+**3. Fix a known DoA issue**
+
+The Direction of Arrival function won't work until one setting is changed. Open the GUI at `http://<kraken-ip>:8080` in a browser, go to **VFO Configuration**, and change **Output VFO** from `1` to `ALL`.
+
+**4. Assign static IPs (multi-unit deployments)**
+
+Cloned units may initially receive conflicting IP addresses because your router's DHCP history is tied to MAC addresses. The cleanest fix is to set static DHCP reservations in your router admin panel — one entry per Pi, each mapped by MAC address to a fixed IP. Find each Pi's MAC with:
+
+```bash
+ip link show wlan0   # Wi-Fi
+ip link show eth0    # Ethernet
+```
+
+---
+
+## Running the Software
+
+### Normal operation (auto-start)
+
+The `kraken.service` systemd unit starts automatically on boot. Make sure the Raspberry Pi is configured to your local network. Use the following url to access your Kraken's GUI:
+
+```
+https://<KRAKEN_IP>:8080/
+```
+
+### WebSocket interface
+
+All data output and remote control is available via a single WebSocket endpoint:
+
+```
+ws://<KRAKEN_IP>:8082/ws/kraken
+```
+
+No authentication required. On connect, the server immediately pushes the current settings snapshot.
+
+**Outbound messages (server → client)**
+
+Every message is a JSON object with a `type` field and a `timestamp` (epoch milliseconds):
+
+```json
+{ "type": "settings", "timestamp": 1714000000000, "center_freq": 416.588 }
+{ "type": "doa",      "timestamp": 1714000000000, "doa_max": 135.0 }
+{ "type": "spectrum", "timestamp": 1714000000000, "freq_axis": [], "channels": { "ch0": [] } }
+```
+
+**Inbound commands (client → server)**
+
+Send a JSON object to update settings. Only included keys are changed — everything else is preserved.
+
+```json
+{
+  "type": "command",
+  "action": "update_settings",
+  "data": {
+    "center_freq": 433.92,
+    "uniform_gain": 20.0
+  }
+}
+```
+
+### Settings reference
+
+| Key | Type | Valid values | Default |
+|---|---|---|---|
+| `center_freq` | float (MHz) | ≥ 24.0 | `416.588` |
+| `uniform_gain` | float (dB) or string | See gain table below, or `"Auto"` | `15.7` |
+| `data_interface` | string | `"shmem"`, `"eth"` | `"shmem"` |
+| `default_ip` | string | Any IP | `"0.0.0.0"` |
+| **DoA** | | | |
+| `en_doa` | bool | `true`, `false` | `true` |
+| `ant_arrangement` | string | `"UCA"`, `"ULA"`, `"Custom"` | `"UCA"` |
+| `ula_direction` | string | `"Both"`, `"Forward"`, `"Backward"` | `"Both"` |
+| `ant_spacing_meters` | float (m) | ≥ 0.001 | `0.21` |
+| `custom_array_x_meters` | string | Comma-separated floats | `"0.21,0.06,-0.17,-0.17,0.07"` |
+| `custom_array_y_meters` | string | Comma-separated floats | `"0.00,-0.20,-0.12,0.12,0.20"` |
+| `array_offset` | int (degrees) | Any integer | `0` |
+| `doa_method` | string | `"Bartlett"`, `"Capon"`, `"MEM"`, `"TNA"`, `"MUSIC"`, `"ROOT-MUSIC"` | `"MUSIC"` |
+| `doa_decorrelation_method` | string | `"Off"`, `"FBA"`, `"TOEP"`, `"FBSS"`, `"FBTOEP"` | `"Off"` |
+| `expected_num_of_sources` | int | 1–4 | `1` |
+| `compass_offset` | int (degrees) | Any integer | `0` |
+| `doa_fig_type` | string | `"Linear"`, `"Polar"`, `"Compass"` | `"Linear"` |
+| `en_peak_hold` | bool | `true`, `false` | `false` |
+| **Station** | | | |
+| `station_id` | string | Any string | `"NOCALL"` |
+| `location_source` | string | `"None"`, `"Static"`, `"gpsd"` | `"None"` |
+| `latitude` | float | -90.0 to 90.0 | `0.0` |
+| `longitude` | float | -180.0 to 180.0 | `0.0` |
+| `heading` | float (degrees) | 0.0–360.0 | `0.0` |
+| `gps_fixed_heading` | bool | `true`, `false` | `false` |
+| `gps_min_speed` | float (m/s) | > 0 | `2` |
+| `gps_min_speed_duration` | int (s) | > 0 | `3` |
+| `doa_data_format` | string | `"Kraken App"`, `"Kraken Pro Local"`, `"Kraken Pro Remote"`, `"Kerberos App"`, `"DF Aggregator"`, `"RDF Mapper"`, `"Full POST"` | `"Kraken App"` |
+| `krakenpro_key` | string | Any string | — |
+| `mapping_server_url` | string | WebSocket URL | `"wss://map.krakenrf.com:2096"` |
+| `rdf_mapper_server` | string | HTTP URL | — |
+| **VFO** | | | |
+| `spectrum_calculation` | string | `"Single"`, `"All"` | `"Single"` |
+| `vfo_mode` | string | `"Standard"`, `"Auto"` | `"Standard"` |
+| `active_vfos` | int | 1–16 | `1` |
+| `output_vfo` | int | -1 (all), 0–15 | `0` |
+| `dsp_decimation` | int | ≥ 1 | `1` |
+| `vfo_default_squelch_mode` | string | `"Auto"`, `"Manual"`, `"Auto Channel"` | `"Auto"` |
+| `vfo_default_demod` | string | `"None"`, `"FM"` | `"None"` |
+| `vfo_default_iq` | string | `"False"`, `"True"` | `"False"` |
+| `max_demod_timeout` | int (s) | > 0 | `60` |
+| `en_optimize_short_bursts` | bool | `true`, `false` | `false` |
+| **Per-VFO** (replace `N` with 0–15) | | | |
+| `vfo_freq_N` | float (Hz) | Within tuned bandwidth | center freq |
+| `vfo_bw_N` | int (Hz) | ≥ 100 | `12500` |
+| `vfo_fir_order_factor_N` | int | ≥ 2 | `2` |
+| `vfo_squelch_N` | int (dBFS) | Any integer | `-120` |
+| `vfo_squelch_mode_N` | string | `"Default"`, `"Auto"`, `"Manual"`, `"Auto Channel"` | `"Default"` |
+| `vfo_demod_N` | string | `"Default"`, `"None"`, `"FM"` | `"Default"` |
+| `vfo_iq_N` | string | `"Default"`, `"False"`, `"True"` | `"Default"` |
+
+**Valid gain values (dB):** `0, 0.9, 1.4, 2.7, 3.7, 7.7, 8.7, 12.5, 14.4, 15.7, 16.6, 19.7, 20.7, 22.9, 25.4, 28.0, 29.7, 32.8, 33.8, 36.4, 37.2, 38.6, 40.2, 42.1, 43.4, 43.9, 44.5, 48.0, 49.6`
+
+### Middleware API (port 8042)
+
+```bash
+GET  http://<KRAKEN_IP>:8042/settings   # retrieve current settings
+POST http://<KRAKEN_IP>:8042/settings   # update settings
+```
+
+---
+
+## GPS Setup (VK-162)
+
+```bash
 sudo apt-get install gpsd gpsd-clients
 pip3 install gpsd-py3
-```
-2. Stop current GPSD service, rebind to the correct serial, and then restart it.
 
-```
 sudo systemctl stop gpsd.socket
 sudo systemctl disable gpsd.socket
-```
-3. Update config StreamAdd
-```commandline
-sudo nano /lib/systemd/system/gpsd.socket 
-```
-Update ```ListenStream=127.0.0.1:2947``` to ```0.0.0.0:2947``` and save settings.
 
-4. Kill any ongoing process and rebind gpsd to serial port, most likely ttyAMC0
-```
+# Update ListenStream to 0.0.0.0:2947
+sudo nano /lib/systemd/system/gpsd.socket
+
 sudo killall gpsd
 sudo gpsd /dev/ttyACM0 -F /var/run/gpsd.socket
-```
-5. Feel free to test by typing ```gpsmon``` in your terminal
 
-### Additional Help for Remote Control
-According to the `gui_run.sh` shell script located in the *krakensdr_doa* directory, the web-server is
-created either using php (if remote control in not enabled) or miniserve (if remote control is enabled). 
-
-To update this, navigate to `krakensdr_doa/_share/settings.json` and update the `en_remote_control` value to *true*
-
-Sometimes, miniserve must be set manaully. If you are not getting data from 8081, try manually setting up miniserve using the following command in the :
-```commandline
-miniserve -i 0.0.0.0 -p 8081 -P -u --on-duplicate-files overwrite -- _share
+# Verify
+gpsmon
 ```
 
-this allows the remote server to be updatable. If you continue to run into errors with the above command, make sure any process
-using port 8081 has been terminated:
-```java
-// Check if 8081 is being used:
-sudo lsof -i :8081
+---
 
-// Terminate existing process:
-sudo kill -9 $(sudo lsof -t -i :8081)
+## Manual Installation (Fresh Pi Image)
+
+Use this path only if you need to rebuild from scratch. If you have access to the pre-built image, use the Quick Start section above.
+
+**Software stack:**
+- [heimdall DAQ firmware](https://github.com/krakenrf/heimdall_daq_fw) — handles synchronization across all 5 antennas
+- [Botts Inc. krakensdr_doa](https://github.com/Botts-Innovative-Research/krakensdr_doa) — DoA DSP and WebSocket server
+
+### 1. Initial Pi setup
+
+```bash
+sudo apt update && sudo apt upgrade
+sudo apt install openjdk-21-jdk
+sudo apt-get install libusb-dev libusb-1.0-0-dev build-essential cmake git
+
+# Remove any conflicting RTL-SDR packages
+sudo apt purge librtlsdr*
+sudo rm -rvf /usr/lib/librtlsdr* /usr/include/rtl-sdr* \
+             /usr/local/lib/librtlsdr* /usr/local/include/rtl-sdr*
 ```
 
-### More Troubleshooting
-If you find that the OSH node is still not updating the KrakenSDR's settings, check the permissions of the `_share` directory 
-and make sure you have write access:
-```java
-//Check Permissions:
-ls -ld /home/user/krakensdr/krakensdr_doa/_share
+### 2. Install heimdall DAQ firmware
 
-// Make sure the ownership is correct and change if needed:
-sudo chown -R user:user /home/user/krakensdr/krakensdr_doa/_share
+Follow the [Manual Step-by-Step Install](https://github.com/krakenrf/heimdall_daq_fw?tab=readme-ov-file#manual-step-by-step-install) instructions. If you're on a Raspberry Pi, follow the ARM-specific steps.
 
-// Update permissions:
-chmod -R u+rw /home/user/krakensdr/krakensdr_doa/_share
+### 3. Install the DoA DSP software
 
+Follow the [Manual Install](https://github.com/Botts-Innovative-Research/krakensdr_doa#manual-install) instructions for the Botts Inc. modified DoA software.
+
+### 4. First run
+
+```bash
+./kraken_doa_start.sh
 ```
 
+On the first run, allow 1–2 minutes for the numba JIT compiler to compile optimized functions. Subsequent starts will be much faster as they read from cache.
 
-## Helpful Resources
+---
+
+## Resources
+
 - [KrakenSDR Wiki](https://github.com/krakenrf/krakensdr_docs/wiki/)
-- [Kraken Pi Image](https://github.com/krakenrf/krakensdr_doa/releases)
-- [Kraken DOA video](https://www.youtube.com/watch?v=3ugAT5BLBc0)
-- [DOA QUICKSTART](https://github.com/krakenrf/krakensdr_docs/wiki/02.-Direction-Finding-Quickstart-Guide)
+- [Direction Finding Quickstart Guide](https://github.com/krakenrf/krakensdr_docs/wiki/02.-Direction-Finding-Quickstart-Guide)
+- [DoA overview video](https://www.youtube.com/watch?v=3ugAT5BLBc0)
+- [GPS setup tutorial](https://www.youtube.com/watch?v=A1zmhxcUOxw)
