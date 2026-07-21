@@ -132,32 +132,20 @@ public class StreamContext {
     }
 
     private String selectBsfName(int codecId, AVFormatContext avFormatContext) {
-        boolean needsMp4Bsf = needsMp4Bsf(avFormatContext);
         boolean isAvi = isAviContainer(avFormatContext);
 
         // Best guess at useful BSFs. If a video format does not work, may
         // need to add a corresponding BSF here.
         return switch (codecId) {
-            case avcodec.AV_CODEC_ID_H264 ->
-                    needsMp4Bsf ? "h264_mp4toannexb" : "dump_extra";
-            case avcodec.AV_CODEC_ID_HEVC ->
-                    needsMp4Bsf ? "hevc_mp4toannexb" : "dump_extra";
-            case avcodec.AV_CODEC_ID_VVC ->
-                    needsMp4Bsf ? "vvc_mp4toannexb" : "dump_extra";
-            case avcodec.AV_CODEC_ID_EVC ->
-                    needsMp4Bsf ? "evc_mp4toannexb" : "dump_extra";
-            case avcodec.AV_CODEC_ID_MPEG4 ->
-                    isAvi ? "mpeg4_unpack_bframes" : "dump_extra";
-            case avcodec.AV_CODEC_ID_MPEG2VIDEO ->
-                    "dump_extra";
-            case avcodec.AV_CODEC_ID_VC1, avcodec.AV_CODEC_ID_WMV3 ->
-                    "dump_extra";
-            case avcodec.AV_CODEC_ID_MJPEG ->
-                    needsMp4Bsf ? "mjpeg2jpeg" : null;
-            case avcodec.AV_CODEC_ID_VP9 ->
-                    needsMp4Bsf ? "vp9_superframe_split" : null;
-            case avcodec.AV_CODEC_ID_AV1 ->
-                    "av1_frame_split";
+            case avcodec.AV_CODEC_ID_H264 -> "h264_mp4toannexb,filter_units=pass_types=1|5,dump_extra";
+            case avcodec.AV_CODEC_ID_HEVC -> "hevc_mp4toannexb,filter_units=pass_types=0-31,dump_extra";
+            case avcodec.AV_CODEC_ID_VVC -> "vvc_mp4toannexb,dump_extra";
+            case avcodec.AV_CODEC_ID_EVC -> "evc_mp4toannexb,dump_extra";
+            case avcodec.AV_CODEC_ID_MPEG4 -> "mpeg4_unpack_bframes,dump_extra";
+            case avcodec.AV_CODEC_ID_MPEG2VIDEO, avcodec.AV_CODEC_ID_VC1, avcodec.AV_CODEC_ID_WMV3 -> "dump_extra";
+            case avcodec.AV_CODEC_ID_MJPEG -> "mjpeg2jpeg";
+            case avcodec.AV_CODEC_ID_VP9 -> "vp9_superframe_split";
+            case avcodec.AV_CODEC_ID_AV1 -> "av1_frame_split";
             default -> null;
         };
     }
@@ -204,12 +192,30 @@ public class StreamContext {
             setCodecId(codec.id());
 
             if (isInjectingExtradata) {
-                String bsfName = selectBsfName(codecId, avFormatContext);
+                String bsfNames = selectBsfName(codecId, avFormatContext);
 
-                if (bsfName != null) {
-                    AVBitStreamFilter filter = avcodec.av_bsf_get_by_name(bsfName);
+                // Initialize BSFs if needed
+                if (bsfNames != null) {
+                    bsfContext = new AVBSFContext(null);
+                    if (avcodec.av_bsf_list_parse_str(bsfNames, bsfContext) < 0) {
+                        throw new IllegalStateException("Failed to parse BSF list: " + bsfNames);
+
+                    }
+                    if (avcodec.avcodec_parameters_copy(bsfContext.par_in(), params) < 0) {
+                        throw new IllegalStateException("Failed to copy codec parameters");
+                    }
+
+                    bsfContext.time_base_in(avFormatContext.streams(getStreamId()).time_base());
+
+                    if (avcodec.av_bsf_init(bsfContext) < 0) {
+                        throw new IllegalStateException("Failed to initialize BSF: " + bsfNames);
+                    }
+                }
+                /*
+                if (bsfNames != null) {
+                    AVBitStreamFilter filter = avcodec.av_bsf_get_by_name(bsfNames);
                     if (filter == null) {
-                        throw new IllegalStateException("BSF not found: " + bsfName);
+                        throw new IllegalStateException("BSF not found: " + bsfNames);
                     }
                     PointerPointer<AVBSFContext> bsfPtr = new PointerPointer<>(1);
                     avcodec.av_bsf_alloc(filter, bsfPtr);
@@ -217,13 +223,15 @@ public class StreamContext {
                     avcodec.avcodec_parameters_copy(bsfContext.par_in(), params);
                     bsfContext.time_base_in(avFormatContext.streams(getStreamId()).time_base());
                     if (avcodec.av_bsf_init(bsfContext) < 0) {
-                        throw new IllegalStateException("Failed to initialize BSF: " + bsfName);
+                        throw new IllegalStateException("Failed to initialize BSF: " + bsfNames);
                     }
                     logger.debug("Using BSF {} for codec {} (format: {})",
-                            bsfName, codecName, avFormatContext.iformat().name().getString());
+                            bsfNames, codecName, avFormatContext.iformat().name().getString());
                 } else {
                     logger.debug("No BSF needed for codec {}", codecName);
                 }
+
+                 */
             }
             isOpen = true;
         }
@@ -242,60 +250,36 @@ public class StreamContext {
             if (getDataBufferListener() == null) return;
             if (avPacket.stream_index() != getStreamId()) return;
 
-            if (bsfContext != null && !packetHasInlineParamSets(avPacket.data(), avPacket.size(), getCodecName())) {
+            if (bsfContext != null) {
                 AVPacket filtered = avcodec.av_packet_alloc();
+                AVPacket clonePacket = avcodec.av_packet_clone(avPacket);
                 try {
-                    avcodec.av_bsf_send_packet(bsfContext, avPacket);
+                    avcodec.av_bsf_send_packet(bsfContext, clonePacket);
                     while (avcodec.av_bsf_receive_packet(bsfContext, filtered) >= 0) {
-                        byte[] dataBuffer = new byte[filtered.size()];
-                        filtered.data().get(dataBuffer);
-                        getDataBufferListener().onDataBuffer(
-                                new DataBufferRecord(filtered.pts() * getStreamTimeBase(), dataBuffer));
+                        notifyPacketListener(filtered);
                         avcodec.av_packet_unref(filtered);
                     }
                 } finally {
+                    avcodec.av_packet_free(clonePacket);
                     avcodec.av_packet_free(filtered);
                 }
             } else {
-                // Extract the data buffer from the packet
-                byte[] dataBuffer = new byte[avPacket.size()];
-                avPacket.data().get(dataBuffer);
-                getDataBufferListener().onDataBuffer(new DataBufferRecord(avPacket.pts() * getStreamTimeBase(), dataBuffer));
+                // Pass packet data straight to listener
+                notifyPacketListener(avPacket);
             }
         }
     }
 
     /**
-     * Scan the first few bytes of the packet to determine if it is in Annex B format.
-     * @param avPacket Input packet
-     * @return true if the packet is in Annex B format, false otherwise
+     * Notify the listener with the data buffer extracted from the packet.
+     * @param avPacket The packet containing the data buffer
      */
-    static boolean packetHasInlineParamSets(BytePointer data, int size, String codec) {
-        int i = 0;
-        while (i < size - 4) {
-            if (data.get(i) == 0 && data.get(i+1) == 0 &&
-                    (data.get(i+2) == 1 || (data.get(i+2) == 0 && data.get(i+3) == 1))) {
-                int scLen = (data.get(i+2) == 1) ? 3 : 4;
-
-                int nalType;
-                if (codec.equalsIgnoreCase("hevc") || codec.equalsIgnoreCase("h265")) {
-                    nalType = (data.get(i + scLen) >> 1) & 0x3F;
-                    if (nalType == 32 || nalType == 33 || nalType == 34) return true;  // VPS/SPS/PPS
-                    if (nalType <= 31) return false;  // hit VCL data first
-                } else if (codec.equalsIgnoreCase("h264")) {
-                    nalType = data.get(i + scLen) & 0x1F;
-                    if (nalType == 7 || nalType == 8) return true;   // SPS/PPS
-                    if (nalType == 1 || nalType == 5) return false;  // slice
-                } else {
-                    return false;
-                }
-                i += scLen + 1;
-            } else {
-                i++;
-            }
-        }
-        return false;
+    private void notifyPacketListener(AVPacket avPacket) {
+        byte[] dataBuffer = new byte[avPacket.size()];
+        avPacket.data().get(dataBuffer);
+        getDataBufferListener().onDataBuffer(new DataBufferRecord(avPacket.pts() * getStreamTimeBase(), dataBuffer));
     }
+
     public void close() {
         synchronized (lock) {
             if (!isOpen) return;
