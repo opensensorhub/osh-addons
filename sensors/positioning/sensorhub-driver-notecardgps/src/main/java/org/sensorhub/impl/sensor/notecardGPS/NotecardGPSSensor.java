@@ -38,11 +38,11 @@ import java.nio.charset.StandardCharsets;
  * This class is responsible for providing sensor information, managing output registration,
  * and performing initialization and shutdown for the driver and its outputs.
  */
-public class notecardGPSSensor extends AbstractSensorModule<Config> implements Runnable {
-    static final String UID_PREFIX = "urn:osh:sensor:georobotix:notecardGPS:";
-    static final String XML_PREFIX = "notecardGPS";
+public class NotecardGPSSensor extends AbstractSensorModule<Config> implements Runnable {
+    static final String UID_PREFIX = "urn:osh:sensor:georobotix:notecardgps:";
+    static final String XML_PREFIX = "notecardgps";
 
-    private static final Logger logger = LoggerFactory.getLogger(notecardGPSSensor.class);
+    private static final Logger logger = LoggerFactory.getLogger(NotecardGPSSensor.class);
 
     ///  REQUIRED VARIABLES FOR SENSOR OPERATION
     // I2C Initialization Variables from Pi4j
@@ -52,7 +52,7 @@ public class notecardGPSSensor extends AbstractSensorModule<Config> implements R
 
     // Class Variables to handle output operations during the sensor's primary readSensor() method
     notecardGPSOutput notecardGPSOutput;
-    notecardMSGControl notecardMSGControl;
+    NotecardMSGControl notecardMSGControl;
 
     // Local variables
     private volatile boolean keepRunning = false;
@@ -80,7 +80,7 @@ public class notecardGPSSensor extends AbstractSensorModule<Config> implements R
         notecardGPSOutput.doInit();
 
         // Initialize Control
-        notecardMSGControl = new notecardMSGControl(this);
+        notecardMSGControl = new NotecardMSGControl(this);
         addControlInput(notecardMSGControl);
         notecardMSGControl.doInit();
 
@@ -101,10 +101,10 @@ public class notecardGPSSensor extends AbstractSensorModule<Config> implements R
 
         // CONFIGURE THE NOTECARD
         Transaction(HubSet);
-        Transaction(notecardGPSConstantsI2C.ENABLE_ACCELEROMETER);
-        Transaction(notecardGPSConstantsI2C.TURNON_TRIANGLULATION);
-        Transaction(notecardGPSConstantsI2C.DISABLE_GPS);
-        Transaction(notecardGPSConstantsI2C.SET_LOCATION_CONT);
+        Transaction(NotecardGPSConstantsI2C.ENABLE_ACCELEROMETER);
+        Transaction(NotecardGPSConstantsI2C.TURNON_TRIANGLULATION);
+        Transaction(NotecardGPSConstantsI2C.DISABLE_GPS);
+        Transaction(NotecardGPSConstantsI2C.SET_LOCATION_CONT);
 
         keepRunning = true;
         Thread readNoteCardworker = new Thread(this, "Notecard Worker");
@@ -115,7 +115,7 @@ public class notecardGPSSensor extends AbstractSensorModule<Config> implements R
     public void run() {
         while (keepRunning){
             try {
-                Transaction(notecardGPSConstantsI2C.GET_LOC);
+                Transaction(NotecardGPSConstantsI2C.GET_LOC);
                 Thread.sleep(config.NCconfig.gpsSampleRate * 1000L);
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
@@ -128,11 +128,11 @@ public class notecardGPSSensor extends AbstractSensorModule<Config> implements R
         super.doStop();
         keepRunning = false;
 
-        Transaction(notecardGPSConstantsI2C.HUB_SYNC);
-        Transaction(notecardGPSConstantsI2C.HUBSET_OFF);
-        Transaction(notecardGPSConstantsI2C.DISABLE_ACCELEROMETER);
-        Transaction(notecardGPSConstantsI2C.TURNOFF_TRIANGLULATION);
-        Transaction(notecardGPSConstantsI2C.DISABLE_GPS);
+        Transaction(NotecardGPSConstantsI2C.HUB_SYNC);
+        Transaction(NotecardGPSConstantsI2C.HUBSET_OFF);
+        Transaction(NotecardGPSConstantsI2C.DISABLE_ACCELEROMETER);
+        Transaction(NotecardGPSConstantsI2C.TURNOFF_TRIANGLULATION);
+        Transaction(NotecardGPSConstantsI2C.DISABLE_GPS);
     }
 
     @Override
@@ -207,7 +207,7 @@ public class notecardGPSSensor extends AbstractSensorModule<Config> implements R
         String json = convertSignedBytesToJson(jsonBytes);
 
         /// IF REQUEST IS CARD.LOCATION, THEN GATHER DATA FOR OUTPUT
-        if(notecardGPSConstantsI2C.GET_LOC.equals(prevReq)){
+        if(NotecardGPSConstantsI2C.GET_LOC.equals(prevReq)){
             // Convert JSON to Object and Send Output
             Gson gson = new Gson();
             GPSmsg gpsmsg = gson.fromJson(json,GPSmsg.class);
@@ -267,7 +267,7 @@ public class notecardGPSSensor extends AbstractSensorModule<Config> implements R
         if(viewInTerminal){
             System.out.println("Resetting Sensor...preparing to temporarily lose I²C connection");
         }
-        Transaction(notecardGPSConstantsI2C.RESTORE);
+        Transaction(NotecardGPSConstantsI2C.RESTORE);
         // When using RESTORE, Notecard will temporarily lose connection, poll I²C until connection is lost
         while(true){
             try {

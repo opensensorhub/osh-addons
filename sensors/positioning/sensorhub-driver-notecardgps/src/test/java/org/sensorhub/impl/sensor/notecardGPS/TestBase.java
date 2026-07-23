@@ -20,7 +20,7 @@ import org.junit.Before;
  * Base class for unit tests which initializes the sensor before each test and cleans up after.
  */
 public class TestBase {
-    notecardGPSSensor sensor;
+    NotecardGPSSensor sensor;
     AbstractSensorOutput<?> output;
 
     @Before
@@ -29,7 +29,7 @@ public class TestBase {
         config.serialNumber = "123456789";
         config.name = "Sensor Template";
         config.description = "Description of the sensor";
-        sensor = new notecardGPSSensor();
+        sensor = new NotecardGPSSensor();
         sensor.init(config);
         sensor.start();
 //        output = sensor.output;
