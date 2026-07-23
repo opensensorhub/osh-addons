@@ -6,10 +6,10 @@ package com.botts.impl.service.discovery.servlet.handler;
 
 import com.botts.impl.service.discovery.DiscoveryServlet;
 import com.botts.impl.service.discovery.ResourcePermissions;
-import com.botts.impl.service.discovery.engine.RulesEngine;
-import com.botts.impl.service.discovery.engine.rules.RuleManager;
-import com.botts.impl.service.discovery.engine.rules.Rules;
+import com.botts.impl.service.discovery.engine.RulesEngineWrapper;
 import com.botts.impl.service.discovery.servlet.context.RequestContext;
+import com.georobotix.ai.impl.rulesengine.rules.RuleManager;
+import com.georobotix.ai.impl.rulesengine.rules.Rules;
 import j2html.attributes.Attr;
 import j2html.tags.specialized.ButtonTag;
 import org.slf4j.Logger;
@@ -122,7 +122,7 @@ public class RulesHandler extends BaseHandler {
 
             String ruleId = context.popNextPathElt();
 
-            if(RulesEngine.getInstance().getRules().getRule(ruleId) != null) {
+            if(RulesEngineWrapper.getInstance().getRules().getRule(ruleId) != null) {
 
                 String content = context.getReader().readLine();
 
@@ -149,7 +149,7 @@ public class RulesHandler extends BaseHandler {
 
             RuleManager.loadRules(new File(rulesFilePath), rules);
 
-            RulesEngine.getInstance().setRules(rules);
+            RulesEngineWrapper.getInstance().setRules(rules);
 
             out.println("\n" +
                             "   ____                      _____                             _    _       _     \n" +
