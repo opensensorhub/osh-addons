@@ -132,7 +132,6 @@ public class StreamContext {
     }
 
     private String selectBsfName(int codecId, AVFormatContext avFormatContext) {
-        boolean isAvi = isAviContainer(avFormatContext);
 
         // Best guess at useful BSFs. If a video format does not work, may
         // need to add a corresponding BSF here.
@@ -150,23 +149,6 @@ public class StreamContext {
             case avcodec.AV_CODEC_ID_AV1 -> "av1_frame_split";
             default -> null;
         };
-    }
-
-    private boolean isAviContainer(AVFormatContext avFormatContext) {
-        if (avFormatContext.iformat() == null) return false;
-        String name = avFormatContext.iformat().name().getString();
-        return name != null && name.equals("avi");
-    }
-
-    private boolean needsMp4Bsf(AVFormatContext avFormatContext) {
-        if (avFormatContext.iformat() == null) return false;
-        String name = avFormatContext.iformat().name().getString();
-        if (name == null) return false;
-        // All containers that use AVCC/HVCC length-prefix framing
-        return name.contains("mov")        // mp4, mov, m4a, 3gp, 3g2, mj2
-                || name.contains("matroska")   // mkv, webm
-                || name.equals("flv")          // flv, rtmp
-                || name.equals("mxf");         // professional broadcast format
     }
 
     /**
