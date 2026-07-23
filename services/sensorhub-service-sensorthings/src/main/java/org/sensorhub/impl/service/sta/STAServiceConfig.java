@@ -43,7 +43,7 @@ public class STAServiceConfig extends HttpServiceConfig
     
     
     @DisplayInfo(label="UID Prefix", desc="Prefix to use for Things, Sensors and FOIs UIDs")
-    public String uidPrefix = "urn:osh:sensor:georobotix:sta:";
+    public String uidPrefix = "urn:osh:data:georobotix:sta:";
     
     
     @DisplayInfo(desc="Metadata of system group that will be created to contain all sensors "
