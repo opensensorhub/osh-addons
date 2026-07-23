@@ -4,12 +4,11 @@
  ******************************* END LICENSE BLOCK ***************************/
 package com.botts.impl.service.discovery.servlet.handler;
 
-import com.botts.impl.service.discovery.DiscoveryServlet;
 import com.botts.impl.service.discovery.ResourcePermissions;
-import com.botts.impl.service.discovery.engine.Constants;
-import com.botts.impl.service.discovery.engine.RulesEngine;
+import com.botts.impl.service.discovery.engine.RulesEngineWrapper;
 import com.botts.impl.service.discovery.servlet.context.RequestContext;
-import org.sensorhub.impl.SensorHub;
+
+import com.georobotix.ai.impl.rulesengine.Constants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -139,18 +138,16 @@ public class DiscoveryHandler extends BaseHandler {
      */
     private void executeDiscovery(RequestContext context, List<String> ruleIds) throws IOException {
 
-        RulesEngine.getInstance().setRuleIds(ruleIds);
+        RulesEngineWrapper.getInstance().setTargetRuleIds(ruleIds);
 
-//        RulesEngine.getInstance().fire();
-        DiscoveryServlet discoveryServlet = (DiscoveryServlet)context.getServlet();
-        RulesEngine.getInstance().getFilteredResults((SensorHub) discoveryServlet.parentService.getParentHub());
+        RulesEngineWrapper.getInstance().fire();
 
         context.setResponseContentType(APPLICATION_JSON_MIME_TYPE);
 
         // Writing the message on the web page
         PrintWriter out = context.getWriter();
 
-        String result = RulesEngine.getInstance().getResultSet().toJsonString();
+        String result = RulesEngineWrapper.getInstance().getResultSet().toJsonString(RulesEngineWrapper.getInstance().getRules());
 
         logger.debug("{}", result);
 
