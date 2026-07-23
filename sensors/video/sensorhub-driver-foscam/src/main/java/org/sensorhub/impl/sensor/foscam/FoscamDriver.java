@@ -38,7 +38,7 @@ import org.slf4j.LoggerFactory;
  */
 public class FoscamDriver extends AbstractSensorModule<FoscamConfig> {
 	private static final Logger logger = LoggerFactory.getLogger(FoscamDriver.class);
-	static final String UID_PREFIX = "urn:osh:system:georobotix:foscam:";
+	static final String UID_PREFIX = "urn:osh:sensor:georobotix:foscam:";
 	static final String XML_PREFIX = "foscam";
 
 	private FoscamPtzControl ptzControlInterface;
