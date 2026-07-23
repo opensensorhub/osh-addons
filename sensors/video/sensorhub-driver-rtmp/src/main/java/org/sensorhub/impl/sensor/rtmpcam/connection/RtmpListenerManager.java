@@ -7,14 +7,21 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.IntStream;
 
+/**
+ * Manages the registration and lifecycle of RTMP listeners and port servers.
+ *
+ * This class provides a singleton instance for handling RTMP listeners, ensuring that
+ * multiple registrations with the same composite key will overwrite the prior registration.
+ * It also manages the mapping between RTMP port servers and their associated listeners,
+ * ensuring resources allocated for specific ports are initialized or cleaned up as
+ * necessary.
+ */
 public class RtmpListenerManager {
 
     private static final RtmpListenerManager INSTANCE = new RtmpListenerManager();
 
     public static RtmpListenerManager getInstance() { return INSTANCE; }
 
-    // One entry per unique composite key — second registration with the same
-    // config overwrites the first (unlike the old CopyOnWriteArrayList).
     private final ConcurrentHashMap<String, RtmpListener> listeners =
             new ConcurrentHashMap<>();
 
@@ -22,8 +29,6 @@ public class RtmpListenerManager {
             new ConcurrentHashMap<>();
 
     private final Object portLock = new Object();
-
-    // ── Registration ───────────────────────────────────────────────────────
 
     public void addListener(RtmpListener listener) {
         listeners.put(listener.config().compositeKey(), listener);
@@ -52,8 +57,6 @@ public class RtmpListenerManager {
             }
         }
     }
-
-    // ── Routing ────────────────────────────────────────────────────────────
 
     Optional<RtmpListener> route(RtmpConnectionContext ctx) {
         return Optional.of(listeners.get(ConnectionConfig.compositeKey(ctx)));

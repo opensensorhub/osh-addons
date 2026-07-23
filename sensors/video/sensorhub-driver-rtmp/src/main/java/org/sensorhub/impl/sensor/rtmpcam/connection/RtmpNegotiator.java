@@ -20,8 +20,7 @@ import java.util.concurrent.ThreadLocalRandom;
  */
 public class RtmpNegotiator {
 
-    // ── Protocol constants ─────────────────────────────────────────────────
-
+    // Protocol constants
     private static final int RTMP_VERSION       = 3;
     private static final int HANDSHAKE_SIZE     = 1536;
     private static final int DEFAULT_CHUNK_SIZE = 128;
@@ -59,8 +58,7 @@ public class RtmpNegotiator {
     };
     private static final Logger logger = LoggerFactory.getLogger(RtmpNegotiator.class);
 
-    // ── Instance state ─────────────────────────────────────────────────────
-
+    // Instance state
     private final DataInputStream  in;
     private final DataOutputStream out;
     private final int              port;
@@ -77,8 +75,6 @@ public class RtmpNegotiator {
         this.out  = out;
         this.port = port;
     }
-
-    // ── Phase 1: Handshake ─────────────────────────────────────────────────
 
     /**
      * Performs the C0/C1/C2 ↔ S0/S1/S2 handshake (simple mode).
@@ -116,8 +112,6 @@ public class RtmpNegotiator {
         // C2: echo of S1 — read and discard (no validation for simple mode)
         in.readFully(new byte[HANDSHAKE_SIZE]);
     }
-
-    // ── Phase 2: AMF0 Negotiation ──────────────────────────────────────────
 
     /**
      * Sends server control messages then loops over incoming RTMP chunks,
@@ -231,8 +225,6 @@ public class RtmpNegotiator {
                 streamKey);
     }
 
-    // ── Phase 3: FLV pump ──────────────────────────────────────────────────
-
     /**
      * Starts a virtual thread that reads RTMP chunks and writes FLV-framed
      * bytes into a pipe.  The returned {@link InputStream} is consumed by
@@ -286,8 +278,9 @@ public class RtmpNegotiator {
         }
     }
 
-    // ── FLV tag emission ───────────────────────────────────────────────────
-
+    /**
+     * Writes a media tag encapsulated in the FLV format to the specified output stream.
+     */
     private void writeFlvMediaTag(OutputStream out, RtmpMessage msg) throws IOException {
         writeFlvTag(out, msg.type(), msg.data(), (int) msg.timestamp());
     }
@@ -324,8 +317,6 @@ public class RtmpNegotiator {
         out.write(payload);
         writeUInt32(out, tagTotal);           // PreviousTagSize
     }
-
-    // ── Chunk reassembly ───────────────────────────────────────────────────
 
     /**
      * Reads and reassembles RTMP chunks until a complete RTMP message is ready.
@@ -420,7 +411,6 @@ public class RtmpNegotiator {
         }
     }
 
-    // ── Server → Client: protocol control ─────────────────────────────────
 
     private void sendWindowAckSize(int size) throws IOException {
         sendMessage(CS_PROTOCOL, MSG_WINDOW_ACK_SIZE, 0, 0, encodeUInt32(size));
@@ -456,7 +446,7 @@ public class RtmpNegotiator {
         sendMessage(CS_PROTOCOL, MSG_USER_CONTROL, 0, 0, payload);
     }
 
-    // ── Server → Client: AMF0 command responses ────────────────────────────
+
 
     private void sendConnectResult(double txId) throws IOException {
         ByteArrayOutputStream buf = new ByteArrayOutputStream(256);
@@ -534,8 +524,6 @@ public class RtmpNegotiator {
         sendMessage(CS_STREAM, MSG_COMMAND_AMF0, streamId, 0, buf.toByteArray());
     }
 
-    // ── Low-level RTMP message write ───────────────────────────────────────
-
     /**
      * Serialises one RTMP message.  Uses fmt=0 for the first chunk (full
      * header) and fmt=3 (no header) for any continuation chunks.
@@ -571,8 +559,14 @@ public class RtmpNegotiator {
         out.flush();
     }
 
-    // ── User control ───────────────────────────────────────────────────────
-
+    /**
+     * Handles user control messages by analyzing the provided byte array.
+     * If the data represents a ping request and contains a valid token,
+     * a ping response is sent back.
+     *
+     * @param data the byte array containing the user control message data
+     * @throws IOException if an error occurs during the processing of the message
+     */
     private void handleUserControl(byte[] data) throws IOException {
         if (data.length < 2) return;
         int eventType = ((data[0] & 0xFF) << 8) | (data[1] & 0xFF);
@@ -585,8 +579,15 @@ public class RtmpNegotiator {
         }
     }
 
-    // ── Acknowledgement ────────────────────────────────────────────────────
-
+    /**
+     * Conditionally sends an acknowledgment message based on the number of bytes
+     * received and the configured acknowledgment window size.
+     * <p>
+     * When the difference between the total bytes received and the bytes
+     * already acknowledged reaches or exceeds the window acknowledgment size,
+     * this method sends an acknowledgment for the total number of bytes received
+     * so far.
+     */
     private void maybeAck() throws IOException {
         if (windowAckSize > 0 && (bytesReceived - bytesAcked) >= windowAckSize) {
             bytesAcked = bytesReceived;
@@ -594,8 +595,17 @@ public class RtmpNegotiator {
         }
     }
 
-    // ── AMF0 read ──────────────────────────────────────────────────────────
-
+    /**
+     * Reads and decodes an AMF0 (Action Message Format 0) value from the provided input stream.
+     * The AMF0 format is a binary serialization format used in Adobe Flash and other related technologies.
+     * The method interprets a type byte to identify the kind of data being read and processes it accordingly.
+     *
+     * @param src the input stream from which the AMF0 value is read.
+     *            It must be properly positioned to read the type and value bytes.
+     * @return the deserialized object corresponding to the AMF0 type.
+     *         May return {@code null} for certain AMF0 types such as null, undefined, object end, or date (skipped).
+     * @throws IOException if an I/O error occurs while reading from the input stream or if an unknown type is encountered.
+     */
     private Object readAmf0Value(DataInputStream src) throws IOException {
         int type = src.readUnsignedByte();
         return switch (type) {
@@ -656,8 +666,6 @@ public class RtmpNegotiator {
         return v instanceof String s ? s : "";
     }
 
-    // ── AMF0 write ─────────────────────────────────────────────────────────
-
     private static void writeAmf0Str(DataOutputStream d, String s) throws IOException {
         byte[] b = s.getBytes(StandardCharsets.UTF_8);
         d.writeByte(2); d.writeShort(b.length); d.write(b);
@@ -704,8 +712,6 @@ public class RtmpNegotiator {
         }
     }
 
-    // ── Primitive I/O ──────────────────────────────────────────────────────
-
     /** Reads one byte and increments the ACK counter. */
     private int readByte() throws IOException {
         bytesReceived++;
@@ -744,8 +750,6 @@ public class RtmpNegotiator {
     private static byte[] encodeUInt32(int v) {
         return new byte[]{ (byte)(v >> 24), (byte)(v >> 16), (byte)(v >> 8), (byte) v };
     }
-
-    // ── Utilities ──────────────────────────────────────────────────────────
 
     private static DataInputStream wrapBytes(byte[] data) {
         return new DataInputStream(new ByteArrayInputStream(data));
@@ -795,8 +799,6 @@ public class RtmpNegotiator {
             return new String[]{null, null};
         }
     }
-
-    // ── Inner types ────────────────────────────────────────────────────────
 
     /** Per-chunk-stream reassembly state, persisted across chunk reads. */
     private static final class ChunkStream {

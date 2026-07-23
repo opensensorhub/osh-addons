@@ -33,42 +33,24 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static org.bytedeco.ffmpeg.global.avutil.av_log_set_callback;
 
+
 /**
- * OpenSensorHub sensor module that listens for and processes RTMP streams.
- * <p>
- * The driver creates an FFmpeg-backed MPEG-TS processor configured as an RTMP
- * listener. Once a publisher connects, the driver detects available audio and
- * video streams, creates matching OpenSensorHub outputs, and forwards stream
- * data through those outputs.
- * </p>
- * <p>
- * Only one RTMP driver instance may use a given port at a time. Port ownership
- * is tracked through a shared {@link RtmpListenerManager}.
- * </p>
+ * RtmpDriver is a class that provides the implementation for managing an RTMP stream as part of
+ * a sensor module. This class initiates, monitors, and handles connections to RTMP streams. It also
+ * handles video and audio stream processing based on the RTMP protocol.
  */
 public class RtmpDriver extends AbstractSensorModule<RtmpConfig> implements RtmpListener {
-    private static final String COMMAND_LINE_ARGS = "-timeout 0 -listen 1 -username test -password test";
-    private static final int EXECUTOR_JOIN_TIMEOUT = 10;
-    private static final TimeUnit EXECUTOR_JOIN_TIME_UNIT = TimeUnit.SECONDS;
-    private static final int HEARTBEAT_INTERVAL = 5;
-    private static final TimeUnit HEARTBEAT_TIME_UNIT = TimeUnit.SECONDS;
-    private static final int MAX_STARTUP_WAIT_TIME_MS = 5000;
 
     private volatile boolean doStreamProcessing = false;
-    private final AtomicReference<MpegTsProcessor> mpegTsProcessor = new AtomicReference<>();
     private final RtmpListenerManager rtmpListenerManager = RtmpListenerManager.getInstance();
-    private ExecutorService executorService;
     private ExecutorService videoExecutorService = Executors.newSingleThreadExecutor();
     private ExecutorService audioExecutorService = Executors.newSingleThreadExecutor();
-    private ScheduledExecutorService heartbeatExecutorService;
 
     // TODO: Create a DataOutput
     final AtomicReference<VideoOutput<RtmpDriver>> videoOutput = new AtomicReference<>();
     final AtomicReference<AudioOutput<RtmpDriver>> audioOutput = new AtomicReference<>();
 
-    int connectionPort = -1;
     String connectionUrl = "";
-    //String path = "";
 
     /**
      * Indicates whether the driver has successfully connected to an RTMP stream at least once since starting.
@@ -110,6 +92,7 @@ public class RtmpDriver extends AbstractSensorModule<RtmpConfig> implements Rtmp
     @Override
     protected void doStart() throws SensorHubException {
         super.doStart();
+        reportStatus("RTMP: Listening for connection");
         rtmpListenerManager.addListener(this);
         doStreamProcessing = true;
     }
@@ -158,6 +141,15 @@ public class RtmpDriver extends AbstractSensorModule<RtmpConfig> implements Rtmp
         reportStatus("Connected to: " + connectionUrl);
     }
 
+    /**
+     * Handles the event triggered when an RTMP stream is connected.
+     * This method initializes both video and audio output streams based on the given stream information
+     * contained in the event payload. If the stream payload is null, a warning will be logged, and no further
+     * action will be taken.
+     *
+     * @param event the event containing the payload with stream information, including video and audio codec
+     *              details and video dimensions or audio sample rate information required to initialize the outputs.
+     */
     @Override
     public void onStreamConnected(RtmpStreamEvent event) {
         var streamInfo = event.getPayload();
@@ -181,17 +173,18 @@ public class RtmpDriver extends AbstractSensorModule<RtmpConfig> implements Rtmp
             audioOutput.get().doInit();
             addOutput(audioOutput.get(), false);
         }
+        reportStatus("RTMP: Connected");
     }
 
     @Override
     public void onDisconnected(RtmpDisconnectEvent event) {
         removeAllOutputs();
-        reportStatus("Disconnected from: " + connectionUrl);
+        reportStatus("RTMP: Disconnected");
     }
 
     @Override
     public void onReconnected(RtmpReconnectEvent event) {
-
+        reportStatus("RTMP: Connected");
     }
 
     @Override

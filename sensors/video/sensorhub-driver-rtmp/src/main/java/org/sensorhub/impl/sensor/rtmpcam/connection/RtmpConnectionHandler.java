@@ -35,7 +35,7 @@ import static org.bytedeco.ffmpeg.global.avutil.*;
  *   2. AMF0 negotiation → {@link RtmpConnectionContext}
  *   3. Route to a matching {@link RtmpListener}
  *   4. RTMP chunks → FLV pipe → FFmpeg custom AVIO
- *   5. Deliver encoded packets via {@link RtmpListener#publish}
+ *   5. Deliver encoded packets
  */
 class RtmpConnectionHandler {
 
@@ -72,7 +72,7 @@ class RtmpConnectionHandler {
             Optional<RtmpListener> match = manager.route(ctx);
             if (match.isEmpty()) {
                 // No listener registered for this combination — drop silently
-                System.out.printf("[RTMP:%d] No listener for path='%s' key='%s'%n",
+                logger.warn("[RTMP:{}] No listener for path={} key={}",
                         port, ctx.path(), ctx.streamKey());
                 return;
             }
@@ -92,8 +92,19 @@ class RtmpConnectionHandler {
         }
     }
 
-    // ── FFmpeg pipeline ────────────────────────────────────────────────────
 
+    /**
+     * Creates a pipeline to feed FLV data from the given input stream to FFmpeg for processing.
+     * This method sets up an in-memory AVIOContext for FFmpeg to read the stream, initializes
+     * the FFmpeg format context, and manages the processing of the incoming stream data
+     * through registered {@link RtmpListener} callbacks. The pipeline processes the stream
+     * until the end of the input or an error occurs.
+     *
+     * @param flvStream The input stream containing the FLV data to be processed. This must
+     *                  remain open and readable for the duration of the pipeline's lifetime.
+     * @param listener  An implementation of {@link RtmpListener} that will handle stream
+     *                  connection events, data processing, and stream disconnection events.
+     */
     private void pipeToFfmpeg(InputStream flvStream, RtmpListener listener) {
 
         // Both must stay reachable for the pipeline's lifetime:
@@ -207,18 +218,6 @@ class RtmpConnectionHandler {
             videoStreamContext.setDataBufferListener(listener.getVideoOutput());
         if (listener.getAudioOutput() != null)
             audioStreamContext.setDataBufferListener(listener.getAudioOutput());
-    }
-
-    public void setVideoBufferListener(@Nonnull DataBufferListener videoDataBufferListener) {
-        videoStreamContext.setDataBufferListener(videoDataBufferListener);
-    }
-
-    public void setAudioBufferListener(@Nonnull DataBufferListener audioDataBufferListener) {
-        audioStreamContext.setDataBufferListener(audioDataBufferListener);
-    }
-
-    public void setDataBufferListener(@Nonnull DataBufferListener dataBufferListener) {
-        dataStreamContext.setDataBufferListener(dataBufferListener);
     }
 
     private void packetLoop(AVFormatContext fmtCtx, RtmpListener listener) {

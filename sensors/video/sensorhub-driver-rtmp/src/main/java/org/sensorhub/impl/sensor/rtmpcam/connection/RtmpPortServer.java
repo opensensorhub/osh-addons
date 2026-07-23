@@ -7,6 +7,23 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 
+/**
+ * Handles RTMP (Real-Time Messaging Protocol) connections on a specific port.
+ * <p>
+ * This class provides functionality to listen for and manage incoming client connections
+ * on a specified port. Once started, it creates a server socket to accept connections
+ * and delegates each connection to a separate thread for handling.
+ * <p>
+ * The class is designed to operate as a lightweight and efficient RTMP connection server,
+ * capable of handling multiple connections concurrently using a cached thread pool.
+ * <p>
+ * Lifecycle:
+ * 1. The server is initialized with a port and a reference to an RtmpListenerManager.
+ * 2. Once started, it begins listening for incoming connections on the specified port.
+ * 3. Each accepted client connection is processed using an RtmpConnectionHandler.
+ * 4. The server can be gracefully stopped, releasing resources like the server socket
+ *    and shutting down the thread pool.
+ */
 class RtmpPortServer {
 
     private final int                 port;
