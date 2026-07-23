@@ -122,7 +122,7 @@ public class TtmlTrackImpl extends AbstractTrack {
 
             String internalName = internalNames2Original.get(uri);
             if (internalName == null) {
-                internalName = "urn:osh:sensor:georobotix:mp4parser:" + p++ + ext;
+                internalName = "urn:mp4parser:" + p++ + ext;
                 internalNames2Original.put(internalName, uri);
             }
             bgImageNode.setNodeValue(internalName);
