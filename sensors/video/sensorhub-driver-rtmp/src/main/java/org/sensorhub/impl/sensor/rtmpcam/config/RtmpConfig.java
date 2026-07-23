@@ -10,7 +10,7 @@
  Copyright (C) 2026 GeoRobotix Innovative Research, Inc. All Rights Reserved.
  ******************************* END LICENSE BLOCK ***************************/
 
-package org.sensorhub.impl.sensor.rtmp.config;
+package org.sensorhub.impl.sensor.rtmpcam.config;
 
 import org.sensorhub.api.config.DisplayInfo;
 import org.sensorhub.api.sensor.PositionConfig;

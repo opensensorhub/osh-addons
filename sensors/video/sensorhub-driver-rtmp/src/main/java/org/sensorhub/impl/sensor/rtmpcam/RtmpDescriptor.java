@@ -10,13 +10,13 @@
  Copyright (C) 2026 GeoRobotix Innovative Research, Inc. All Rights Reserved.
  ******************************* END LICENSE BLOCK ***************************/
 
-package org.sensorhub.impl.sensor.rtmp;
+package org.sensorhub.impl.sensor.rtmpcam;
 
 import org.sensorhub.api.module.IModule;
 import org.sensorhub.api.module.IModuleProvider;
 import org.sensorhub.api.module.ModuleConfig;
 import org.sensorhub.impl.module.JarModuleProvider;
-import org.sensorhub.impl.sensor.rtmp.config.RtmpConfig;
+import org.sensorhub.impl.sensor.rtmpcam.config.RtmpConfig;
 
 
 public class RtmpDescriptor extends JarModuleProvider implements IModuleProvider
