@@ -137,7 +137,9 @@ public class StreamContext {
         // Best guess at useful BSFs. If a video format does not work, may
         // need to add a corresponding BSF here.
         return switch (codecId) {
+            // filter_units=pass_types=1|5: Allow IDR and non-IDR slices to pass. All other units are removed. Parameter sets are added in-stream with dump_extra.
             case avcodec.AV_CODEC_ID_H264 -> "h264_mp4toannexb,filter_units=pass_types=1|5,dump_extra";
+            // filter_units=pass_types=0-31: Allow slices to pass. All other units are removed. Parameter sets are added in-stream with dump_extra.
             case avcodec.AV_CODEC_ID_HEVC -> "hevc_mp4toannexb,filter_units=pass_types=0-31,dump_extra";
             case avcodec.AV_CODEC_ID_VVC -> "vvc_mp4toannexb,dump_extra";
             case avcodec.AV_CODEC_ID_EVC -> "evc_mp4toannexb,dump_extra";
@@ -211,27 +213,6 @@ public class StreamContext {
                         throw new IllegalStateException("Failed to initialize BSF: " + bsfNames);
                     }
                 }
-                /*
-                if (bsfNames != null) {
-                    AVBitStreamFilter filter = avcodec.av_bsf_get_by_name(bsfNames);
-                    if (filter == null) {
-                        throw new IllegalStateException("BSF not found: " + bsfNames);
-                    }
-                    PointerPointer<AVBSFContext> bsfPtr = new PointerPointer<>(1);
-                    avcodec.av_bsf_alloc(filter, bsfPtr);
-                    bsfContext = bsfPtr.get(AVBSFContext.class);
-                    avcodec.avcodec_parameters_copy(bsfContext.par_in(), params);
-                    bsfContext.time_base_in(avFormatContext.streams(getStreamId()).time_base());
-                    if (avcodec.av_bsf_init(bsfContext) < 0) {
-                        throw new IllegalStateException("Failed to initialize BSF: " + bsfNames);
-                    }
-                    logger.debug("Using BSF {} for codec {} (format: {})",
-                            bsfNames, codecName, avFormatContext.iformat().name().getString());
-                } else {
-                    logger.debug("No BSF needed for codec {}", codecName);
-                }
-
-                 */
             }
             isOpen = true;
         }
