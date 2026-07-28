@@ -14,16 +14,15 @@ Copyright (C) 2025 Sensia Software LLC. All Rights Reserved.
 
 package org.sensorhub.utils.aero;
 
+import java.time.LocalDate;
+import java.util.Collection;
+import java.util.List;
+import java.util.concurrent.TimeoutException;
 import org.locationtech.jts.geom.Polygon;
 import org.sensorhub.api.ISensorHub;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.impl.module.ModuleRegistry;
 import org.sensorhub.utils.Async;
-
-import java.time.LocalDate;
-import java.util.Collection;
-import java.util.List;
-import java.util.concurrent.TimeoutException;
 
 
 /**
@@ -48,12 +47,14 @@ public interface INavDatabase
     {
         public String getName();
     }
+ 
 
     public interface INavDbShape
     {
         public String getName();
         public Polygon getGeom();
     }
+ 
 
     public interface INavDbRoute
     {
@@ -66,6 +67,7 @@ public interface INavDatabase
     
 
     public String getDbPath();
+ 
 
     /**
      * @return The AIRAC date of the loaded database or null if unknown
