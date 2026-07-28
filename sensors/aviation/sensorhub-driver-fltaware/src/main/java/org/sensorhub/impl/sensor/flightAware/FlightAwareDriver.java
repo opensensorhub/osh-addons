@@ -67,8 +67,8 @@ public class FlightAwareDriver extends AbstractSensorModule<FlightAwareConfig>
     GMLFactory gmlFac = new GMLFactory(true);
 
     // Dynamically created FOIs
-    static final String SENSOR_UID_PREFIX = "urn:osh:sensor:aviation:";
-    static final String FLIGHT_UID_PREFIX = "urn:osh:aviation:flight:";
+    static final String SENSOR_UID_PREFIX = "urn:osh:sensor:georobotix:aviation:";
+    static final String FLIGHT_UID_PREFIX = "urn:osh:sensor:georobotix:aviation:flight:";
 
     IFlightObjectFilter flightFilter;
     IFlightRouteDecoder flightRouteDecoder;

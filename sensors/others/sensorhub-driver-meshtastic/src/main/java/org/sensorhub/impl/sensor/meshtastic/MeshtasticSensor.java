@@ -34,7 +34,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * and performing initialization and shutdown for the driver and its outputs.
  */
 public class MeshtasticSensor extends AbstractSensorModule<Config> {
-    static final String UID_PREFIX = "urn:osh:sensor:meshtastic:";
+    static final String UID_PREFIX = "urn:osh:sensor:georobotix:meshtastic:";
     static final String XML_PREFIX = "meshtastic";
 
     String localMeshNodeId = null; // discovered from radio during startup via myInfo

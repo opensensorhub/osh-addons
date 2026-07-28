@@ -22,7 +22,7 @@ public class SensorTest extends TestBase {
         assertTrue(sensor.isStarted());
         assertTrue(sensor.isConnected());
 
-        assertEquals(notecardGPSSensor.UID_PREFIX + "123456789", sensor.getUniqueIdentifier());
+        assertEquals(NotecardGPSSensor.UID_PREFIX + "123456789", sensor.getUniqueIdentifier());
         assertEquals("Sensor Template", sensor.getName());
         assertEquals("Description of the sensor", sensor.getDescription());
     }

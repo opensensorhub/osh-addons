@@ -43,7 +43,7 @@ public class NldnSensor extends AbstractSensorModule<NldnConfig>
 	{
 		super.doInit();
 
-		this.uniqueID = "urn:osh:sensor:mrms:nldn";
+		this.uniqueID = "urn:osh:sensor:georobotix:mrms:nldn";
 		this.xmlID = "MRMS_NLDN";
 
 		// initialize outputs

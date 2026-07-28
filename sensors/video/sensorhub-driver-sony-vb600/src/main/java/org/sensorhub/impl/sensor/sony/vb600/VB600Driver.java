@@ -40,7 +40,7 @@ public class VB600Driver extends AbstractSensorModule<VB600Config> {
     protected void doInit() throws SensorHubException {
         super.doInit();
 
-        generateUniqueID("urn:osh:sensor:sony:vb600:", config.serialNumber);
+        generateUniqueID("urn:osh:sensor:georobotix:sony:vb600:", config.serialNumber);
         generateXmlID("SONY_VB600_", config.serialNumber);
 
         if (visualMpegTsProcessor != null)

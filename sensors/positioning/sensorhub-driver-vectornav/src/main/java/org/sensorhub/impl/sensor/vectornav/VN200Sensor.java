@@ -68,7 +68,7 @@ public class VN200Sensor extends AbstractSensorModule<VN200Config>
         super.doInit();
         
         // generate IDs
-        generateUniqueID("urn:vectornav:imu:", null);
+        generateUniqueID("urn:osh:sensor:georobotix:vectornav:imu:", null);
         generateXmlID("VNAV_INS_", null);
         
         // create data interfaces

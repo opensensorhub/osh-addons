@@ -92,7 +92,7 @@ public class AngelSensor extends AbstractSensorModule<AngelSensorConfig>
         super.doInit();
         
         // generate IDs
-        generateUniqueID("urn:osh:angelsensor:", config.btAddress);
+        generateUniqueID("urn:osh:sensor:georobotix:angelsensor:", config.btAddress);
         generateXmlID("ANGEL_SENSOR_", config.btAddress);
 
         // create output interfaces

@@ -1,6 +1,6 @@
 description = 'Twitter Sensor'
 ext.details = 'Twitter Sensor via Twitter\'s API'
-version = '0.0.1'
+version = '0.0.2'
 
 dependencies {
   implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion

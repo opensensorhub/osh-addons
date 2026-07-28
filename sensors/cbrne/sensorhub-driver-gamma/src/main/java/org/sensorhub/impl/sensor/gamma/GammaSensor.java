@@ -62,7 +62,7 @@ public class GammaSensor extends AbstractSensorModule<GammaConfig>
         
         
         // add unique ID based on serial number
-        this.uniqueID = "urn:gamma:" + config.modelNumber + ":" + config.serialNumber;
+        this.uniqueID = "urn:osh:sensor:georobotix:gamma:" + config.modelNumber + ":" + config.serialNumber;
         this.xmlID = "GAMMA_" + config.modelNumber + "_" + config.serialNumber.toUpperCase();
         
         // create data interfaces

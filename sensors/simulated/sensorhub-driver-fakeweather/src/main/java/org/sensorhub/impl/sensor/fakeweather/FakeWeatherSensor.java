@@ -43,7 +43,7 @@ public class FakeWeatherSensor extends AbstractSensorModule<FakeWeatherConfig>
         super.doInit();
         
         // generate identifiers
-        generateUniqueID("urn:osh:sensor:simweather:", config.serialNumber);
+        generateUniqueID("urn:osh:sensor:georobotix:simweather:", config.serialNumber);
         generateXmlID("WEATHER_STATION_", config.serialNumber);
         
         // init main data interface

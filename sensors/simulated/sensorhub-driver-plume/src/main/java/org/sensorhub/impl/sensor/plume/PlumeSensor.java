@@ -41,7 +41,7 @@ public class PlumeSensor extends AbstractSensorModule<PlumeConfig>
         super.doInit();
         
         // generate IDs
-        generateUniqueID("urn:osh:model:plume:", null);
+        generateUniqueID("urn:osh:sensor:georobotix:model:plume:", null);
         generateXmlID("PLUME_MODEL_", null);
 
         this.dataInterface = new PlumeOutput(this);
