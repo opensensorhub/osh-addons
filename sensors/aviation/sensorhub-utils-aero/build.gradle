@@ -3,6 +3,7 @@ ext.details = 'Common classes for use in aviation applications (e.g. aircraft st
 version = '1.0.0'
 
 dependencies {
+  implementation 'org.locationtech.jts:jts-core:1.19.0'
   implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
   implementation project(':sensorhub-process-geoloc')
 }

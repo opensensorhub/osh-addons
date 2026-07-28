@@ -14,14 +14,16 @@ Copyright (C) 2025 Sensia Software LLC. All Rights Reserved.
 
 package org.sensorhub.utils.aero;
 
-import java.time.LocalDate;
-import java.util.Collection;
-import java.util.List;
-import java.util.concurrent.TimeoutException;
+import org.locationtech.jts.geom.Polygon;
 import org.sensorhub.api.ISensorHub;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.impl.module.ModuleRegistry;
 import org.sensorhub.utils.Async;
+
+import java.time.LocalDate;
+import java.util.Collection;
+import java.util.List;
+import java.util.concurrent.TimeoutException;
 
 
 /**
@@ -46,11 +48,25 @@ public interface INavDatabase
     {
         public String getName();
     }
-    
-    
+
+    public interface INavDbShape
+    {
+        public String getName();
+        public Polygon getGeom();
+    }
+
+    public interface INavDbRoute
+    {
+        public String getName();
+        public List<String> getFixes();
+    }
+
+
     public boolean isReady();
     
-    
+
+    public String getDbPath();
+
     /**
      * @return The AIRAC date of the loaded database or null if unknown
      */
@@ -64,8 +80,23 @@ public interface INavDatabase
     
     
     public Collection<? extends INavDbWaypoint> getAllWaypoints();
+
+
+    public Collection<? extends INavDbRoute> getAllAirways();
+
+
+    public Collection<? extends INavDbRoute> getAllSids();
+
+
+    public Collection<? extends INavDbRoute> getAllStars();
+
+
+    public Collection<? extends INavDbShape> getAllSuas();
+
+
+    public Collection<? extends INavDbShape> getAllFirs();
     
-    
+
     public IDecodedRoute decodeRoute(String codedRouteString);
 
 
