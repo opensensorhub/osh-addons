@@ -121,4 +121,18 @@ public interface WaypointRecord extends IDataAccessor, IWaypoint
     @SweMapping(path="info")
     void setInfo(String val);
     
+    
+    /**
+     * Adds a tag to the info field if it's not already present
+     */
+    public default void addTag(String tag)
+    {
+        var info = getInfo();
+        if (info == null) {
+            setInfo(tag);
+        } else if (!info.contains(tag)) {
+            setInfo(info + "," + tag);
+        }
+    }
+    
 }

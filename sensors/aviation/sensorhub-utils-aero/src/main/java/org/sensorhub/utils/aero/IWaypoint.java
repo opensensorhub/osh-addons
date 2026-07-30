@@ -23,9 +23,26 @@ public interface IWaypoint
         WAYPOINT
     }
     
+    // list of info tags
+    // A TAG STRING MUST NOT BE A SUBSTRING OF ANOTHER TAG
+    /**
+     * Redispatch waypoint = required to pass through it for fuel check
+     */
     public static final String REDISPATCH_TAG = "REDISPATCH";
+    
+    /**
+     * Enter ETOPS part of flight plan
+     */
     public static final String ETOPS_ENTRY_TAG = "ETOPS_ENTRY";
+    
+    /**
+     * Exit ETOPS part of flight plan
+     */
     public static final String ETOPS_EXIT_TAG = "ETOPS_EXIT";
+    
+    /**
+     * New waypoint that is not part of the current active route
+     */
     public static final String ALTERNATE_TAG = "ALTERNATE";
     
     /**
@@ -71,10 +88,19 @@ public interface IWaypoint
     }
     
     /**
-     * @return Waypoint info (null if none provided)
+     * @return Waypoint info (comma separated list of tags, null if none provided)
      */
     default String getInfo()
     {
         return null;
+    }
+    
+    /**
+     * @return true if tag is part of the tag list included in the info field, false otherwise
+     */
+    public default boolean hasTag(String tag)
+    {
+        var info = getInfo();
+        return info != null && info.contains(tag);
     }
 }
