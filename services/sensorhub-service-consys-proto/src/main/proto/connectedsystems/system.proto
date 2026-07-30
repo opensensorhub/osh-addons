@@ -1,0 +1,115 @@
+// OGC Connected Systems API — System resource (Part 1, clause 8)
+//
+// Models the `System` resource type from the OGC CS API Standard, Part 1:
+// Feature Resources. A `System` represents a sensor, platform, human
+// observer, simulation, or other smart-system instance, mapping to the
+// `ssn:System` concept in SOSA/SSN.
+//
+// Encoding role: this proto representation is a third encoding alongside
+// the GeoJSON and SensorML-JSON encodings defined in the standard. It
+// captures the spec's abstract attributes and associations (clause 8.2)
+// as structured fields, plus two typed encoding-form payloads in the
+// 30-range: a SensorML `AnyProcess` (the primary form for OSH use
+// cases) and a GeoJSON `Feature` (the alternative form for receivers
+// that consume the GeoJSON encoding).
+//
+// Subsystem: per spec, a `Subsystem` IS a `System` (the parent-child
+// relationship is the new concept, not the shape). The relationship
+// rides through the `links` array with `rel = "ogc-rel:subsystem"`.
+//
+// ── Field-number layout ─────────────────────────────────────────────
+//
+//   1 – 9    Identity & basic descriptive attributes
+//   10 – 19  Type, lifecycle, location
+//   20 – 29  Links / associations
+//   30 – 49  Typed encoding-form payloads:
+//              30  georobotix.sensorml.AnyProcess  (SensorML, primary)
+//              31  georobotix.geojson.Feature      (GeoJSON, alternative)
+//   50 – 99  Reserved for future canonical attributes from the spec
+//
+// Field numbers are wire format: never renumber, never reuse. Deprecated
+// fields use the `reserved` keyword.
+
+syntax = "proto3";
+
+package georobotix.csapi;
+
+option java_package = "com.georobotix.csapi";
+option java_outer_classname = "SystemProto";
+option go_package = "github.com/georobotix/csapi";
+
+import "connectedsystems/cs_common.proto";
+import "swecommon/geometry.proto";
+import "sml/sml.proto";
+import "geojson/geojson.proto";
+
+// System resource — sensor, platform, observer, or other smart-system
+// instance. Maps to `ssn:System`.
+message System {
+
+  // ─── Identity & basic descriptive attributes (1–9) ────────────────
+  string id          = 1;  // local feature ID, server-assigned; ignored
+                           // on create or update
+  string unique_id   = 2;  // globally unique URI (required per spec —
+                           // `uniqueIdentifier` in the abstract attrs)
+  string name        = 3;  // human-readable name (required per spec)
+  optional string description = 4;  // human-readable description
+
+  reserved 5 to 9;
+
+  // ─── Type, lifecycle, location (10–19) ────────────────────────────
+  string system_type     = 10;  // URI/CURIE, required per spec; standard
+                                // values include sosa:Sensor,
+                                // sosa:Actuator, sosa:Sampler,
+                                // sosa:Platform, sosa:System
+  AssetType asset_type   = 11;  // optional; UNSPECIFIED if absent
+  TimePeriod valid_time  = 12;  // validity period of this description
+  georobotix.swecommon.GeoJsonGeometry location = 13;  // latest-known location
+                                                // (typically a Point)
+
+  reserved 14 to 19;
+
+  // ─── Links / associations (20–29) ─────────────────────────────────
+  //
+  // All resource-to-resource associations from the spec (systemKind,
+  // subsystems, samplingFeatures, deployments, procedures, datastreams,
+  // controlstreams) flow through this `links` array, with the
+  // corresponding `ogc-rel:*` relation type in each Link's `rel`. For
+  // local references, set `href` (or `uid`) to the target's `unique_id`.
+  repeated Link links = 20;
+
+  reserved 21 to 29;
+
+  // ─── Typed encoding-form payloads (30–49) ─────────────────────────
+  //
+  // Two parallel typed forms — choose based on which CS API encoding
+  // your producer/consumer is built around. They are NOT modeled as a
+  // proto `oneof` so a producer can populate either or both (e.g., to
+  // serve clients of both encodings without re-serializing), though
+  // in practice exactly one is set per message:
+  //
+  //   * `sensorml` — primary form for OSH use cases. Maps to the
+  //     SensorML-JSON encoding defined in OGC 23-001 clause 8.
+  //   * `feature` — alternative form for receivers consuming the
+  //     GeoJSON encoding. The Feature's `geometry` mirrors `location`
+  //     above; its `properties` carries the spec attributes
+  //     (featureType, uid, name, …) in GeoJSON-Feature shape.
+  georobotix.sensorml.AnyProcess sensorml = 30;
+  georobotix.geojson.Feature     feature  = 31;
+
+  reserved 32 to 49;  // future typed encoding payloads
+  reserved 50 to 99;  // future canonical attributes from the spec
+}
+
+// Asset types per the spec (clause 8.2, "Asset Types" table). Tags the
+// kind of asset embodying a `System` — orthogonal to `system_type`.
+enum AssetType {
+  ASSET_TYPE_UNSPECIFIED  = 0;
+  ASSET_TYPE_EQUIPMENT    = 1;
+  ASSET_TYPE_HUMAN        = 2;
+  ASSET_TYPE_LIVING_THING = 3;
+  ASSET_TYPE_SIMULATION   = 4;
+  ASSET_TYPE_PROCESS      = 5;
+  ASSET_TYPE_GROUP        = 6;
+  ASSET_TYPE_OTHER        = 7;
+}

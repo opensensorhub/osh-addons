@@ -1,0 +1,64 @@
+plugins {
+  id 'java'
+  id 'com.google.protobuf' version '0.9.4'
+}
+
+description = 'Connected Systems API Protobuf Extension'
+ext.details = 'Bidirectional Protobuf (swe+proto) adapter for OGC API Connected Systems — dynamic schema generation and ingestion for systems, datastreams, control streams, observations, commands and status.'
+
+
+dependencies {
+  implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
+  implementation 'org.sensorhub:sensorhub-service-consys:' + oshCoreVersion
+
+  // Protobuf Java runtime — used directly for DynamicMessage / FileDescriptor
+  // work and required at runtime by the generated classes. embeddedImpl bundles
+  // it into the OSGi jar (same convention as sensorhub-driver-meshtastic).
+  embeddedImpl 'com.google.protobuf:protobuf-java:4.28.2'
+
+  testImplementation 'junit:junit:4.13.1'
+}
+
+// ─── Generated-classes wiring ───────────────────────────────────────────────
+//
+// The CS API / SWE Common .proto IDL is vendored under src/main/proto/ (a
+// snapshot mirror of the sibling BinaryEncodings repo's protobuf/ tree — see
+// docs/working-module-plan.md for why a vendored copy rather than a submodule).
+// The Gradle protobuf plugin runs protoc against it and emits Java classes
+// into this module's classpath under packages com.georobotix.csapi /
+// com.georobotix.swecommon / com.georobotix.sensorml / com.georobotix.geojson.
+// Google well-known types (timestamp/any/duration/struct/descriptor.proto)
+// ship with protoc and resolve automatically.
+protobuf {
+  protoc {
+    artifact = 'com.google.protobuf:protoc:4.28.2'
+  }
+  generateProtoTasks {
+    all().each { task ->
+      task.builtins {
+        java {}
+      }
+    }
+  }
+}
+
+sourceSets {
+  main {
+    java { srcDir "$buildDir/generated/source/proto/main/java" }
+    proto { srcDirs = ['src/main/proto'] }
+  }
+}
+
+compileJava.dependsOn('generateProto')
+
+test {
+  useJUnit()
+}
+
+// add info to OSGI manifest
+osgi {
+  manifest {
+    attributes('Bundle-Vendor': 'GeoRobotix Innovative Research')
+    attributes('Bundle-Activator': 'org.sensorhub.impl.service.consys.proto.Activator')
+  }
+}

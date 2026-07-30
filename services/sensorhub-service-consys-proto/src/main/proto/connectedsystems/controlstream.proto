@@ -1,0 +1,87 @@
+// OGC Connected Systems API — ControlStream resource (Part 2, clause 9)
+//
+// Models the `ControlStream` resource — the actuator-side mirror of
+// `DataStream`. Describes a channel that receives commands for a
+// `System`: what controllable properties it accepts, what schema
+// commands must conform to, and timing characteristics.
+//
+// Wire-size optimizations carry over from DataStream:
+//   * Shared cross-resource refs (procedure / deployment / FoI /
+//     sampling feature) — populated only when constant across all
+//     commands in the stream.
+//   * `schema` carries the per-ControlStream command FileDescriptorProto.
+//
+// Field-number layout mirrors `datastream.proto`.
+
+syntax = "proto3";
+
+package georobotix.csapi;
+
+option java_package = "com.georobotix.csapi";
+option java_outer_classname = "ControlStreamProto";
+option go_package = "github.com/georobotix/csapi";
+
+import "google/protobuf/duration.proto";
+import "connectedsystems/cs_common.proto";
+import "connectedsystems/datastream.proto";  // for ObservedProperty (reused)
+
+// ControlStream resource — channel receiving commands for a System.
+message ControlStream {
+
+  // ─── Identity (1–9) ───────────────────────────────────────────────
+  string          id          = 1;
+  string          name        = 2;  // required
+  optional string description = 3;
+  TimePeriod      valid_time  = 4;
+  repeated string formats     = 5;  // content types this ControlStream's
+                                    // commands can be encoded in
+
+  reserved 6 to 9;
+
+  // ─── Receiving system & input (10–19) ─────────────────────────────
+  Link   system     = 10;  // required link to the receiving System
+  string input_name = 11;  // name of the System input fed by this stream
+
+  reserved 12 to 19;
+
+  // ─── Shared cross-resource references (20–29) ─────────────────────
+  Link procedure           = 20;
+  Link deployment          = 21;
+  Link feature_of_interest = 22;
+  Link sampling_feature    = 23;
+
+  reserved 24 to 29;
+
+  // ─── Time (30–39) ─────────────────────────────────────────────────
+  TimePeriod               issue_time     = 30;  // extent over all issue times
+  TimePeriod               execution_time = 31;  // extent over all execution times
+  google.protobuf.Duration issue_interval = 32;  // command issue cadence
+
+  reserved 33 to 39;
+
+  // ─── Properties & flags (40–49) ───────────────────────────────────
+  //
+  // `controlled_properties` reuses DataStream's `ObservedProperty`
+  // since the CS API JSON schema uses identical per-item shape
+  // (`{definition, label, description}`).
+  repeated ObservedProperty controlled_properties = 40;
+  optional bool             live                  = 41;  // null|bool per spec
+  bool                      async                 = 42;  // required per spec
+
+  reserved 43 to 49;
+
+  // ─── Per-ControlStream command schema (50–59) ─────────────────────
+  //
+  // Same `ProtoMessageSchema` mechanism used by DataStream. The
+  // descriptor bytes describe a per-ControlStream `Command_<csId>`
+  // type whose result fields match the `controlled_properties`.
+  ProtoMessageSchema schema = 50;
+
+  reserved 51 to 59;
+
+  // ─── Additional links (60–69) ─────────────────────────────────────
+  repeated Link links = 60;
+
+  reserved 61 to 69;
+  reserved 70 to 99;
+}

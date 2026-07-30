@@ -1,0 +1,58 @@
+// OGC Connected Systems API — CommandStatus resource (Part 2, clause 9)
+//
+// A status update report for a Command. Carries the current lifecycle
+// position (PENDING / ACCEPTED / EXECUTING / COMPLETED / FAILED / …),
+// optional progress, optional human-readable message, and execution
+// time period.
+//
+// Same proto shape is reused for slot 109 (CommandStatus) and slot
+// 112 (FeasibilityStatus) — feasibility status reports use this exact
+// type per the spec (clause 10).
+
+syntax = "proto3";
+
+package georobotix.csapi;
+
+option java_package = "com.georobotix.csapi";
+option java_outer_classname = "CommandStatusProto";
+option go_package = "github.com/georobotix/csapi";
+
+import "connectedsystems/cs_common.proto";
+import "connectedsystems/command.proto";  // for CommandStatusCode enum
+
+// CommandStatus — a single status report for a Command (or Feasibility).
+message CommandStatus {
+  // ─── Identity (1–9) ───────────────────────────────────────────────
+  string id         = 1;  // required per spec (read-only)
+  string command_id = 2;  // required per spec
+                          // (JSON: `command@id`)
+
+  reserved 3 to 9;
+
+  // ─── Time & status (10–19) ────────────────────────────────────────
+  TimeInstant       report_time     = 10;  // required per spec; server-set
+                                           // if omitted
+  CommandStatusCode status_code     = 11;  // required per spec
+  optional double   percent_completion = 12;  // 0–100
+  TimePeriod        execution_time  = 13;  // when execution occurred /
+                                           // scheduled
+
+  reserved 14 to 19;
+
+  // ─── Message (20–29) ──────────────────────────────────────────────
+  string message = 20;  // human-readable progress / failure message
+
+  reserved 21 to 29;
+
+  // ─── Partial results (30–39) ──────────────────────────────────────
+  //
+  // The spec allows partial results to ride on a status update.
+  // Modeled as repeated CommandResult; see command_result.proto.
+  // Currently a placeholder slot — populated when CommandResult
+  // is imported by integrators.
+  //
+  // 30 reserved for repeated CommandResult
+
+  reserved 30 to 39;
+  reserved 40 to 99;
+}
