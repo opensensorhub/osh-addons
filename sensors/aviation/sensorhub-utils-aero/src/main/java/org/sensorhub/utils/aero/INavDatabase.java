@@ -52,6 +52,10 @@ public interface INavDatabase
     public interface INavDbShape
     {
         public String getName();
+        
+        /**
+         * @return the shape geometry (coordinates are x=lon, y=lat)
+         */
         public Polygon getGeom();
     }
  
@@ -59,6 +63,10 @@ public interface INavDatabase
     public interface INavDbRoute
     {
         public String getName();
+        
+        /**
+         * @return the list of fix codes
+         */
         public List<String> getFixes();
     }
 
