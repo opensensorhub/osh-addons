@@ -132,7 +132,16 @@ public class NavUtils
     }
     
     
-    public static double distanceToPolyline(LineString polyline, double posLon, double posLat, double maxDist)
+    /**
+     * Compute distance to a polyline composed of great circle segments.
+     * This method uses great circle distance metric with a spherical approximation.
+     * @param polyline linestring with lat/lon coordinates (x=lon, y=lat, in deg)
+     * @param lon Longitude of point to compute distance from (in deg)
+     * @param lat Latitude of point to compute distance from (in deg)
+     * @param maxDist if given max distance (in kilometers) is reached, the distance is not computed
+     * @return The minimum orthogonal distance to the polyline in kilometers, or NaN if too far or outside polyline
+     */
+    public static double distanceToPolyline(LineString polyline, double lon, double lat, double maxDist)
     {
         var minDist = Double.POSITIVE_INFINITY;
         
@@ -140,7 +149,7 @@ public class NavUtils
         {
             var p1 = polyline.getCoordinateN(i);
             var p2 = polyline.getCoordinateN(i+1);
-            var dist = distanceToSegment(p1, p2, posLon, posLat, maxDist);
+            var dist = distanceToSegment(p1, p2, lon, lat, maxDist);
             if (!Double.isNaN(dist) && dist < minDist)
                 minDist = dist;
         }
@@ -150,14 +159,16 @@ public class NavUtils
     
     
     /**
-     * Compute distance to a great circle
+     * Compute distance to a great circle.
+     * This method uses great circle distance metric with a spherical approximation.
      * @param p1 Coordinate of 1st segment end (x=lon, y=lat, in deg)
      * @param p2 Coordinate of 2nd segment end (x=lon, y=lat, in deg)
-     * @param lat Latitude of point to compute distance from (in deg)
      * @param lon Longitude of point to compute distance from (in deg)
-     * @return The distance to the great circle in kilometers
+     * @param lat Latitude of point to compute distance from (in deg)
+     * @param maxDist if given max distance (in kilometers) is reached, the distance is not computed
+     * @return The minimum orthogonal distance to the great circle in kilometers
      */
-    public static double distanceToGreatCircle(Coordinate p1, Coordinate p2, double posLon, double posLat, double maxDist)
+    public static double distanceToGreatCircle(Coordinate p1, Coordinate p2, double lon, double lat, double maxDist)
     {
         GeoTransforms transforms = new GeoTransforms(Ellipsoid.SPHERICAL);
         
@@ -167,7 +178,7 @@ public class NavUtils
         var p2Vec = new Vect3d(Math.toRadians(p2.x), Math.toRadians(p2.y), 0.0);
         transforms.LLAtoECEF(p2Vec, p2Vec);
         
-        var posVec = new Vect3d(Math.toRadians(posLon), Math.toRadians(posLat), 0.0);
+        var posVec = new Vect3d(Math.toRadians(lon), Math.toRadians(lat), 0.0);
         transforms.LLAtoECEF(posVec, posVec);
         
         return nearestPointOnGreatCircle(p1Vec, p2Vec, posVec, posVec, maxDist);
@@ -175,14 +186,16 @@ public class NavUtils
     
     
     /**
-     * Compute distance to a great circle segment
+     * Compute distance to a great circle segment.
+     * This method uses great circle distance metric with a spherical approximation.
      * @param p1 Coordinate of 1st segment end (x=lon, y=lat, in deg)
      * @param p2 Coordinate of 2nd segment end (x=lon, y=lat, in deg)
-     * @param lat Latitude of point to compute distance from (in deg)
      * @param lon Longitude of point to compute distance from (in deg)
-     * @return The distance to the great circle in kilometers
+     * @param lat Latitude of point to compute distance from (in deg)
+     * @param maxDist if given max distance (in kilometers) is reached, the distance is not computed
+     * @return The minimum orthogonal distance to the great circle segment in kilometers, or NaN if too far or outside segment
      */
-    public static double distanceToSegment(Coordinate p1, Coordinate p2, double posLon, double posLat, double maxDist)
+    public static double distanceToSegment(Coordinate p1, Coordinate p2, double lon, double lat, double maxDist)
     {
         GeoTransforms transforms = new GeoTransforms(Ellipsoid.SPHERICAL);
         
@@ -192,7 +205,7 @@ public class NavUtils
         var p2Vec = new Vect3d(Math.toRadians(p2.x), Math.toRadians(p2.y), 0.0);
         transforms.LLAtoECEF(p2Vec, p2Vec);
         
-        var posVec = new Vect3d(Math.toRadians(posLon), Math.toRadians(posLat), 0.0);
+        var posVec = new Vect3d(Math.toRadians(lon), Math.toRadians(lat), 0.0);
         transforms.LLAtoECEF(posVec, posVec);
         
         return nearestPointOnSegment(p1Vec, p2Vec, posVec, posVec, maxDist);
@@ -207,7 +220,7 @@ public class NavUtils
      * @param p2 second point of great circle segment, in ECEF coordinates
      * @param pos ECEF position to compute distance to
      * @param nearest vector that will receive computed nearest point, in ECEF coordinates
-     * @param maxDist if given max distance (in nautical miles) is reached, the nearest point is not computed
+     * @param maxDist if given max distance (in kilometers) is reached, the nearest point is not computed
      * @return distance to nearest point in kilometers, or NaN if too far or outside segment
      **/
     public static double nearestPointOnSegment(Vect3d p1, Vect3d p2, Vect3d pos, Vect3d nearest, double maxDist)
@@ -222,6 +235,16 @@ public class NavUtils
     }
     
     
+    /**
+     * Finds the point on the great circle passing by p1 and p2 that is closest to pos.
+     * This method uses great circle distance metric with a spherical approximation.
+     * @param p1 first point of great circle, in ECEF coordinates
+     * @param p2 second point of great circle, in ECEF coordinates
+     * @param pos ECEF position to compute distance to
+     * @param nearest vector that will receive computed nearest point, in ECEF coordinates
+     * @param maxDist if given max distance (in kilometers) is reached, the nearest point is not computed
+     * @return distance to nearest point in kilometers
+     **/
     public static double nearestPointOnGreatCircle(Vect3d p1, Vect3d p2, Vect3d pos, Vect3d nearest, double maxDist)
     {
         var n = new Vect3d();
@@ -284,7 +307,7 @@ public class NavUtils
     /**
      * Iterate through successive positions on the polyline (polyline vertices are always included)
      * @param polyline polyline to walk through
-     * @param maxStep max distance between two successive points in nautical miles
+     * @param maxStep max distance between two successive points in kilometers
      * @return the point iterator (lat/lon coordinates in degrees, with x=lon, y=lat)
      */
     public static Iterable<Coordinate> walkPolyline(LineString polyline, double maxStep)
