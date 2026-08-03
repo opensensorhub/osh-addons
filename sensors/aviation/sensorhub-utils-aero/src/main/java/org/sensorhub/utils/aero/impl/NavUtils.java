@@ -133,6 +133,21 @@ public class NavUtils
     
     
     /**
+     * Wrap any angle to -180/180
+     * @param angle
+     * @return The angle wrapped to the [-180, 180] range
+     */
+    public static double wrapTo180(double angle)
+    {
+        angle = (angle + 180) % 360;
+        if (angle < 0) {
+            angle += 360;
+        }
+        return angle - 180;
+    }
+    
+    
+    /**
      * Compute distance to a polyline composed of great circle segments.
      * This method uses great circle distance metric with a spherical approximation.
      * @param polyline linestring with lat/lon coordinates (x=lon, y=lat, in deg)

@@ -25,6 +25,22 @@ public interface IWaypoint
     
     // list of info tags
     // A TAG STRING MUST NOT BE A SUBSTRING OF ANOTHER TAG
+    
+    /**
+     * Part of a SID (SID procedure code provided after ':')
+     */
+    public static final String SID_TAG = "SID:";
+    
+    /**
+     * Part of a STAR (STAR procedure code provided after ':')
+     */
+    public static final String STAR_TAG = "STAR:";
+    
+    /**
+     * Part of a Airway (Airway code provided after ':')
+     */
+    public static final String AIRWAY_TAG = "AWY:";
+    
     /**
      * Redispatch waypoint = required to pass through it for fuel check
      */
