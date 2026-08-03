@@ -1,6 +1,6 @@
 description = 'Aeronautics Utilities'
 ext.details = 'Common classes for use in aviation applications (e.g. aircraft state, flight plans, etc.)'
-version = '1.0.0'
+version = '1.0.1'
 
 dependencies {
   implementation 'org.locationtech.jts:jts-core:1.19.0'
