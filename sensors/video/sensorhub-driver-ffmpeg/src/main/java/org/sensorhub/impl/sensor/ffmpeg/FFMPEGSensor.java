@@ -211,6 +211,7 @@ public class FFMPEGSensor extends AbstractSensorModule<FFMPEGConfig> {
                 mpegTsProcessor = new MpegTsProcessor(config.connection.connectionString, config.connection.commandLineArgs);
             }
             mpegTsProcessor.setInjectVideoExtradata(config.connection.injectExtradata);
+            mpegTsProcessor.registerDevices(config.connection.registerDevices);
         }
 
         if (mpegTsProcessor.isStreamOpened()) {
