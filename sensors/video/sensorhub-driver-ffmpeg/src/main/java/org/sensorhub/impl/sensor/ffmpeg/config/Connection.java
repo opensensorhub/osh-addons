@@ -45,5 +45,5 @@ public class Connection {
     public boolean injectExtradata = true;
 
     @DisplayInfo(label = "Register Devices", desc = "Registers devices for the video stream. Set true if input is not from a network stream or file (e.g. dshow).")
-    public boolean registerDevices = true;
+    public boolean registerDevices = false;
 }
