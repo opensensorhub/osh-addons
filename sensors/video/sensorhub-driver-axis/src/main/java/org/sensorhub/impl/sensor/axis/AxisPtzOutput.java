@@ -165,6 +165,13 @@ public class AxisPtzOutput extends AbstractSensorOutput<AxisCameraDriver>
 
                         String line;
 
+                        // track parsed pan/tilt so we can push them to the driver
+                        // for dynamic orientation updates
+                        float currentPan = 0f;
+                        float currentTilt = 0f;
+                        boolean gotPan = false;
+                        boolean gotTilt = false;
+
                         short lines = 0;
                         final byte totalReads = 3;
 
@@ -174,12 +181,17 @@ public class AxisPtzOutput extends AbstractSensorOutput<AxisCameraDriver>
                             String[] tokens = line.split("=");
                             if (tokens[0].trim().equalsIgnoreCase("pan"))
                             {
-                                dataStruct.getComponent("pan").getData().setFloatValue(Float.parseFloat(tokens[1]));
+                                currentPan = Float.parseFloat(tokens[1]);
+                                dataStruct.getComponent("pan").getData().setFloatValue(currentPan);
+                                gotPan = true;
                                 lines++;
+
                             }
                             else if (tokens[0].trim().equalsIgnoreCase("tilt"))
                             {
-                                dataStruct.getComponent("tilt").getData().setFloatValue(Float.parseFloat(tokens[1]));
+                                currentTilt = Float.parseFloat(tokens[1]);
+                                dataStruct.getComponent("tilt").getData().setFloatValue(currentTilt);
+                                gotTilt = true;
                                 lines++;
                             }
                             else if (tokens[0].trim().equalsIgnoreCase("zoom"))
@@ -194,6 +206,10 @@ public class AxisPtzOutput extends AbstractSensorOutput<AxisCameraDriver>
                             latestRecord = dataStruct.getData();
                             latestRecordTime = System.currentTimeMillis();
                             eventHandler.publish(new DataEvent(latestRecordTime, AxisPtzOutput.this, latestRecord));
+
+                            if(gotPan && gotTilt) {
+                                parentSensor.updateOrientationFromPtz(currentPan, currentTilt);
+                            }
                         } else {
                             throw new SensorException("Invalid sensor data from AXIS camera. AXIS url: " + ptzURL.toString());
                         }
