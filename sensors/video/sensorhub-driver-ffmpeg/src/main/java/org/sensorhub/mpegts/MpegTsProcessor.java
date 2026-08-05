@@ -94,6 +94,8 @@ public class MpegTsProcessor extends Thread {
 
     private String formatString;
 
+    private boolean registerDevices = false;
+
     /**
      * Context used by underlying FFmpeg library to decode stream.
      */
@@ -193,6 +195,10 @@ public class MpegTsProcessor extends Thread {
 
         avformat.avformat_network_init();
 
+        if (registerDevices) {
+            avdevice_register_all();
+        }
+
         // Create a new AV Format Context for I/O
         avFormatContext = avformat_alloc_context();
 
@@ -210,14 +216,11 @@ public class MpegTsProcessor extends Thread {
 
         // Set timeout
         var options = new AVDictionary(null);
-        avdevice_register_all();
         String cmdFormat;
         cmdFormat = populateOptions(options, optionsString);
         if (cmdFormat != null && !cmdFormat.isBlank()) {
             inputFormat = av_find_input_format(cmdFormat);
         }
-
-        //avutil.av_dict_set(options, "timeout", "3000000", 0);
 
         int returnCode = avformat.avformat_open_input(avFormatContext, streamSource, inputFormat, options);
         logger.debug("returnCode: {}", returnCode);
@@ -413,6 +416,10 @@ public class MpegTsProcessor extends Thread {
 
     public void setInjectVideoExtradata(boolean injectVideoExtradata) {
         videoStreamContext.setInjectingExtradata(injectVideoExtradata);
+    }
+
+    public void registerDevices(boolean registerDevices) {
+        this.registerDevices = registerDevices;
     }
 
     /**

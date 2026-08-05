@@ -3,8 +3,6 @@ package org.sensorhub.mpegts;
 import org.bytedeco.ffmpeg.avcodec.*;
 import org.bytedeco.ffmpeg.avformat.AVFormatContext;
 import org.bytedeco.ffmpeg.global.avcodec;
-import org.bytedeco.javacpp.BytePointer;
-import org.bytedeco.javacpp.PointerPointer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -164,16 +162,9 @@ public class StreamContext {
 
             AVCodecParameters params = avFormatContext.streams(getStreamId()).codecpar();
 
-            // Get the associated codec from the ID stored in the context
-            AVCodec codec = avcodec.avcodec_find_decoder(params.codec_id());
-
-            if (codec == null) {
-                throw new IllegalStateException("Unsupported codec");
-            }
-
             // Store the codec name
-            setCodecName(codec.name().getString());
-            setCodecId(codec.id());
+            setCodecName(avcodec.avcodec_get_name(params.codec_id()).getString());
+            setCodecId(params.codec_id());
 
             if (isInjectingExtradata) {
                 String bsfNames = selectBsfName(codecId, avFormatContext);
