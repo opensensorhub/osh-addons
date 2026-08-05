@@ -2,6 +2,20 @@ description = 'ONVIF Video Camera'
 ext.details = 'Driver for IP video cameras using the ONVIF standard'
 version = '1.1.2'
 
+// Do not embed a copy of the SLF4J API -- osh-core exports org.slf4j 2.0.x
+// already, and CXF/MINA drag in 1.7.36 transitively, which would put a second,
+// older copy of the API inside the bundle.
+//
+// This excludes from "embedded" (what gets copied into lib/ in the bundle)
+// rather than "embeddedImpl", because implementation extends embeddedImpl and
+// the driver's own sources import org.slf4j -- excluding there would take it
+// off the compile classpath as well. Left on compileClasspath but out of
+// embedded, the manifest gets a normal Import-Package for org.slf4j, which
+// core satisfies.
+configurations.embedded {
+  exclude group: 'org.slf4j', module: 'slf4j-api'
+}
+
 dependencies {
   implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
   implementation project(':sensorhub-driver-ffmpeg')
@@ -9,9 +23,24 @@ dependencies {
 
   embeddedImpl 'org.apache.cxf.services.ws-discovery:cxf-services-ws-discovery-api:4.1.3'
   embeddedImpl 'org.apache.cxf.services.ws-discovery:cxf-services-ws-discovery-service:4.1.3'
-  embeddedImpl ('org.apache.cxf:cxf-rt-transports-http-jetty:4.1.3') {
-    exclude group: 'org.eclipse.jetty'
-  }
+  // cxf-rt-transports-http-jetty is deliberately not embedded. It only serves
+  // to host CXF endpoints on Jetty, which this driver never does -- it is an
+  // ONVIF client, its SOAP calls go through cxf-rt-transports-http and its
+  // discovery through cxf-rt-transports-udp, both below.
+  //
+  // It was previously embedded with "exclude group: 'org.eclipse.jetty'" to keep
+  // Jetty itself out, since osh-core already exports it at 9.4.x. That exclude
+  // never fully worked: CXF 4.1.3 builds against Jetty 12, which publishes its
+  // EE modules under a separate group, so org.eclipse.jetty.ee10:jetty-ee10-servlet
+  // stayed embedded and the manifest ended up importing Jetty 12 packages
+  // (org.eclipse.jetty.{http,io}.content, .ee10.servlet, .alpn.server,
+  // .http2.server) that do not exist in 9.4 and nothing here exports -- so the
+  // bundle never resolved and the driver never appeared in the module registry.
+  //
+  // cxf-rt-transports-http is what the driver actually uses (OnvifCameraDriver
+  // imports org.apache.cxf.transport.http). It used to arrive transitively via
+  // the Jetty transport, so it has to be declared directly now.
+  embeddedImpl 'org.apache.cxf:cxf-rt-transports-http:4.1.3'
   embeddedImpl 'org.apache.cxf:cxf-rt-bindings-soap:4.1.3'
   embeddedImpl 'jakarta.xml.soap:jakarta.xml.soap-api:2.0.1'
   embeddedImpl 'com.sun.activation:jakarta.activation:2.0.1'
@@ -60,6 +89,25 @@ osgi {
   manifest {
     attributes('Bundle-Vendor': 'Botts Innovative Research, Inc.')
     attributes('Bundle-Activator': 'org.sensorhub.impl.sensor.onvif.Activator')
+
+    // Same Import-Package list common.gradle would compute -- the packages of
+    // every compile dependency that is not embedded -- but with org.slf4j.impl
+    // suppressed up front.
+    //
+    // cxf-core is an OSGi bundle in its own right and its manifest declares
+    // "org.slf4j.impl;resolution:=optional", the package SLF4J 2.x dropped and
+    // that it still names only to detect a stale 1.x binding. bnd merges the
+    // headers of the bundles on Bundle-ClassPath into this manifest and loses
+    // the optional directive on the way, so the import arrives here mandatory
+    // and unversioned. Nothing exports it, and the bundle then never resolves.
+    // A leading "!" is the only thing that keeps it out; setting the header
+    // here also means common.gradle leaves it alone, as it only fills in an
+    // Import-Package that is not already set.
+    def importedPackages = [] as Set
+    project.configurations.compileClasspath
+        .minus(project.configurations.embedded)
+        .each { osgi.getPackagesFromJar(it, importedPackages) }
+    attributes('Import-Package': '!org.slf4j.impl,' + importedPackages.join(','))
   }
 }
 
