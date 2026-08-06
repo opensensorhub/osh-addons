@@ -1,0 +1,39 @@
+description = 'Node Federation Broker'
+ext.details = 'Implementation of Python Federated Broker'
+version = '0.1.0'
+
+
+dependencies {
+  implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
+  implementation project(':sensorhub-comm-mqtt')
+  // paho MQTT client: the Java equivalent of the paho client oshconnect's
+  // MQTTCommClient wraps; used to subscribe to remote nodes' brokers.
+  embeddedImpl 'org.eclipse.paho:org.eclipse.paho.client.mqttv3:1.2.5'
+  embeddedImpl 'org.eclipse.jetty:jetty-util:9.4.19.v20190610'
+  embeddedImpl('com.hivemq:hivemq-community-edition-embedded:2023.8') {
+    exclude group: 'com.google.guava', module: 'guava'
+    exclude group: 'ch.qos.logback', module: 'logback-classic'
+    exclude group: 'org.slf4j', module: 'slf4j-api'
+  }
+}
+
+// add info to OSGi manifest
+osgi {
+  manifest {
+    attributes('Bundle-Vendor': 'Sensia Software LLC')
+    attributes('Bundle-Activator': 'org.sensorhub.impl.service.federation.Activator')
+  }
+}
+
+// add info to maven pom
+ext.pom >>= {
+  developers {
+    developer {
+      id 'rmw-workbotts'
+      name 'Robin White'
+      organization 'GeoRobotix US'
+      organizationUrl 'https://georobotix.us/'
+    }
+  }
+}
+

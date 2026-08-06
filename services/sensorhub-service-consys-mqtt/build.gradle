@@ -7,6 +7,7 @@ dependencies {
   implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
   implementation 'org.sensorhub:sensorhub-service-consys:' + oshCoreVersion
   implementation project(':sensorhub-comm-mqtt')
+  implementation project(':sensorhub-service-video')
 }
 
 // add info to OSGI manifest

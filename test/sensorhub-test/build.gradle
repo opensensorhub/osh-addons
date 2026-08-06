@@ -24,6 +24,7 @@ dependencies {
   implementation project(':sensorhub-driver-fakegps')
   implementation project(':sensorhub-driver-fakeweather')
   implementation project(':sensorhub-driver-simweatherstation')
+  implementation project ('sensorhub-driver-counter')
 //  implementation project(':sensorhub-driver-isa')
 //  implementation project(':sensorhub-driver-misb-uas')
   //implementation project(':sensorhub-driver-ahrs')
