@@ -25,4 +25,9 @@ public class FederatedBrokerConfig extends ServiceConfig
             + "application/swe+binary (e.g. video) as an opaque swe+binary passthrough. "
             + "When off, such datastreams are skipped and JSON datastreams are unaffected.")
     public boolean enableBinaryDatastreams = false;
+
+    @DisplayInfo(label = "Status Report Interval (s)", desc = "How often the service publishes a "
+            + "federation status summary (nodes, mirrored datastreams/control streams, active threads). "
+            + "Set to 0 to disable status reporting.")
+    public int statusReportIntervalSeconds = 30;
 }

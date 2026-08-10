@@ -9,7 +9,7 @@ import org.slf4j.LoggerFactory;
  */
 public final class BrokerLogging
 {
-    public static final Logger log = LoggerFactory.getLogger("broker");
+    public static final Logger log = LoggerFactory.getLogger(BrokerLogging.class);
 
     public static final boolean DEBUG_VERBOSE = false;
 
