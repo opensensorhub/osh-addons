@@ -1,8 +1,10 @@
 package org.sensorhub.impl.service.federation;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.sensorhub.impl.service.federation.oshconnect.ControlStream;
 import org.sensorhub.impl.service.federation.oshconnect.ControlStreamResource;
@@ -65,7 +67,9 @@ public interface MirroringMixin extends CommandRoutingMixin
                     controlstreamSchemaSig(remoteCs));
             if (existing != null)
             {
-                getCsMap().put(existing.getId(), Map.entry(remoteSys, remoteCs));
+                if (getCsMap().put(existing.getId(), Map.entry(remoteSys, remoteCs)) != null)
+                    log.error("Commander control stream {} is already the mirror for another remote "
+                            + "stream; adopting it for {} merges two distinct inputs", existing.getId(), csName);
                 mirroredCount++;
                 log.info("Adopted existing commander control stream for {} -> {}", csName, existing.getId());
                 subscribeToCommanderControlstream(existing, remoteSys, remoteCs);
@@ -78,7 +82,10 @@ public interface MirroringMixin extends CommandRoutingMixin
             {
                 ControlStream newCs = cmdSys.addInsertControlstream(csResource);
                 String commanderCsId = newCs.getId() != null ? newCs.getId() : "unknown";
-                getCsMap().put(commanderCsId, Map.entry(remoteSys, remoteCs));
+                if (getCsMap().put(commanderCsId, Map.entry(remoteSys, remoteCs)) != null)
+                    log.error("Commander returned control stream {} for {}, but another mirror already "
+                            + "claimed it — two distinct inputs were merged into one control stream",
+                            commanderCsId, csName);
                 mirroredCount++;
                 log.info("Mirrored control stream: {} -> {}", csName, commanderCsId);
                 subscribeToCommanderControlstream(newCs, remoteSys, remoteCs);
@@ -161,6 +168,7 @@ public interface MirroringMixin extends CommandRoutingMixin
     {
         Map<String, System> urnToCmdSys = buildCommanderSystemIndex(commander);
         Map<System, Map<String, Datastream>> cmdDsIndexes = new HashMap<>();
+        Set<String> claimedCmdDsIds = new HashSet<>();
         int mirroredCount = 0;
 
         for (Map.Entry<System, Datastream> entry : remoteDsInfo)
@@ -211,7 +219,7 @@ public interface MirroringMixin extends CommandRoutingMixin
                     datastreamSchemaSig(remoteDs));
             if (existing != null)
             {
-                getDsMap().put(remoteDs.getRemoteKey(), existing);
+                recordDatastreamMirror(remoteDs, existing, dsName, claimedCmdDsIds);
                 mirroredCount++;
                 log.info("Adopted existing commander datastream for {} -> {}", dsName, existing.getId());
                 continue;
@@ -222,7 +230,7 @@ public interface MirroringMixin extends CommandRoutingMixin
             try
             {
                 Datastream newDs = cmdSys.addInsertDatastream(dsResource);
-                getDsMap().put(remoteDs.getRemoteKey(), newDs); // node-qualified key (bare ids collide across nodes)
+                recordDatastreamMirror(remoteDs, newDs, dsName, claimedCmdDsIds);
                 mirroredCount++;
                 log.debug("Mirrored datastream: {}", dsName);
             }
@@ -233,6 +241,41 @@ public interface MirroringMixin extends CommandRoutingMixin
         }
 
         log.info("Mirrored {} datastream(s)", mirroredCount);
+    }
+
+    /**
+     * Record a remote datastream's commander mirror in ds_map, reporting the two
+     * ways distinct streams can silently end up sharing one mirror:
+     *
+     * <ul>
+     * <li>the routing key was already mapped — two remote datastreams resolved to
+     *     the same node-qualified key, so one pump's observations would be lost;</li>
+     * <li>the commander returned a datastream id another mirror already claimed
+     *     this run — the commander merged two outputs, which it does whenever two
+     *     streams share a (system UID, outputName) pair.</li>
+     * </ul>
+     *
+     * Both are reported rather than rejected: the mirror is still recorded so the
+     * federation keeps running, but the condition is no longer invisible.
+     */
+    default void recordDatastreamMirror(Datastream remoteDs, Datastream cmdDs, String dsName,
+                                        Set<String> claimedCmdDsIds)
+    {
+        String cmdDsId = cmdDs.getId();
+        if (cmdDsId != null && !claimedCmdDsIds.add(cmdDsId))
+        {
+            log.error("Commander datastream {} is already the mirror for another remote stream; "
+                    + "mirroring {} onto it merges two distinct outputs into one datastream "
+                    + "(they likely share an outputName under the same system)", cmdDsId, dsName);
+        }
+
+        Datastream prev = getDsMap().put(remoteDs.getRemoteKey(), cmdDs);
+        if (prev != null)
+        {
+            log.error("Routing key {} was already mapped to commander datastream {}; "
+                    + "overwriting with {} — observations from one remote stream will be lost",
+                    remoteDs.getRemoteKey(), prev.getId(), cmdDsId);
+        }
     }
 
     /**
