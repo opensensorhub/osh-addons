@@ -14,7 +14,6 @@ import org.sensorhub.impl.service.federation.oshconnect.SystemResource;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonNull;
-import com.google.gson.JsonPrimitive;
 
 import static org.sensorhub.impl.service.federation.BrokerLogging.log;
 
@@ -73,16 +72,7 @@ public interface MirroringMixin extends CommandRoutingMixin
                 continue;
             }
 
-            // Clear remote-specific identifiers/links: cs_id, procedure_link,
-            // deployment_link, feature_of_interest_link, sampling_feature_link, links.
-            Map<String, JsonElement> update = new HashMap<>();
-            update.put("id", JsonNull.INSTANCE);
-            update.put("procedureLink@link", JsonNull.INSTANCE);
-            update.put("deploymentLink@link", JsonNull.INSTANCE);
-            update.put("featureOfInterest@link", JsonNull.INSTANCE);
-            update.put("samplingFeature@link", JsonNull.INSTANCE);
-            update.put("links", JsonNull.INSTANCE);
-            ControlStreamResource csResource = csRes.modelCopy(update);
+            ControlStreamResource csResource = csRes.modelCopy(remoteResourceStripKeys());
 
             try
             {
@@ -227,17 +217,7 @@ public interface MirroringMixin extends CommandRoutingMixin
                 continue;
             }
 
-            // Deep-copy and clear remote-specific links; ds_id is set to "default"
-            // (the commander assigns its own from the Location header).
-            Map<String, JsonElement> update = new HashMap<>();
-            update.put("id", new JsonPrimitive("default"));
-            update.put("system@id", JsonNull.INSTANCE); // clear remote system id; commander assigns its own parent
-            update.put("procedureLink@link", JsonNull.INSTANCE);
-            update.put("deploymentLink@link", JsonNull.INSTANCE);
-            update.put("featureOfInterest@link", JsonNull.INSTANCE);
-            update.put("samplingFeature@link", JsonNull.INSTANCE);
-            update.put("links", JsonNull.INSTANCE);
-            DatastreamResource dsResource = dsRes.modelCopy(update);
+            DatastreamResource dsResource = dsRes.modelCopy(remoteResourceStripKeys());
 
             try
             {
@@ -253,6 +233,31 @@ public interface MirroringMixin extends CommandRoutingMixin
         }
 
         log.info("Mirrored {} datastream(s)", mirroredCount);
+    }
+
+    /**
+     * Fields to clear from a resource copied off a remote node before POSTing it
+     * to the commander: the remote's own id, its parent-system references, and
+     * its links to remote procedure/deployment/feature resources. The commander
+     * assigns its own id (read back from the Location header) and its own parent
+     * system (taken from the POST URL).
+     *
+     * These names must match the CS API wire properties exactly — the earlier
+     * "procedureLink@link"/"deploymentLink@link" spellings matched nothing, so
+     * the real procedure@link/deployment@link values were carried over intact.
+     */
+    default Map<String, JsonElement> remoteResourceStripKeys()
+    {
+        Map<String, JsonElement> update = new HashMap<>();
+        update.put("id", JsonNull.INSTANCE);
+        update.put("system@id", JsonNull.INSTANCE);
+        update.put("system@link", JsonNull.INSTANCE);
+        update.put("procedure@link", JsonNull.INSTANCE);
+        update.put("deployment@link", JsonNull.INSTANCE);
+        update.put("featureOfInterest@link", JsonNull.INSTANCE);
+        update.put("samplingFeature@link", JsonNull.INSTANCE);
+        update.put("links", JsonNull.INSTANCE);
+        return update;
     }
 
     // ---- restart/collision dedup helpers ------------------------------------
