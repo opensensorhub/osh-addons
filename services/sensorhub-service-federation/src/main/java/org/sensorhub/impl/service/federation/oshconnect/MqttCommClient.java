@@ -111,7 +111,13 @@ public class MqttCommClient
         {
             client.subscribe(topic, qos);
             if (msgCallback != null)
-                callbacks.put(topic, msgCallback);
+            {
+                // One callback per topic: a second subscriber to the same topic
+                // replaces the first, which then silently stops receiving.
+                if (callbacks.put(topic, msgCallback) != null)
+                    logger.warn("MQTT topic {} already had a subscriber; it has been replaced "
+                            + "and will no longer receive messages", topic);
+            }
             logger.debug("MQTT subscribed to topic: {} (qos={})", topic, qos);
         }
         catch (MqttException e)
