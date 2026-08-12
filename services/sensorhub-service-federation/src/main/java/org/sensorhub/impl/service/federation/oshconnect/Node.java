@@ -93,6 +93,12 @@ public class Node
         {
             List<System> newSystems = new ArrayList<>();
             JsonArray systemObjs = result.json().getAsJsonObject().getAsJsonArray("items");
+
+            // Replace rather than append: discoverSystems() is called several times
+            // per run, and appending left the list holding a stale duplicate of every
+            // system for each earlier call. Cleared only once the fetch has succeeded.
+            this.systems.clear();
+
             for (JsonElement systemJson : systemObjs)
             {
                 SystemResource system = new SystemResource(systemJson.getAsJsonObject());
