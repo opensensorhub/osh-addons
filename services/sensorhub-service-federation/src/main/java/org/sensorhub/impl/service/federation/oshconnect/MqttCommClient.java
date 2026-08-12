@@ -87,20 +87,56 @@ public class MqttCommClient
 
     private final MqttConnectOptions connectOptions;
 
+    /** Attempts for the initial connect, and the delay between them. */
+    private static final int CONNECT_ATTEMPTS = 15;
+    private static final long CONNECT_RETRY_MS = 1000;
+
+    /**
+     * Connect, retrying on failure.
+     *
+     * The retry is not optional: on the commander this races that node's own
+     * in-process MQTT server, which finishes starting a fraction of a second
+     * later. {@code setAutomaticReconnect(true)} does not cover it — paho only
+     * applies automatic reconnect after one successful connect, so a broker
+     * that loses this race never connects at all.
+     */
     public void connect()
     {
         logger.info("MQTT connecting to {}:{}", url, port);
-        try
+
+        MqttException lastError = null;
+        for (int attempt = 1; attempt <= CONNECT_ATTEMPTS; attempt++)
         {
-            client.connect(connectOptions);
-            isConnected = true;
-            logger.info("MQTT connected to {}:{}", url, port);
+            try
+            {
+                client.connect(connectOptions);
+                isConnected = true;
+                logger.info("MQTT connected to {}:{}", url, port);
+                return;
+            }
+            catch (MqttException e)
+            {
+                lastError = e;
+                logger.debug("MQTT connect attempt {}/{} to {}:{} failed: {}",
+                        attempt, CONNECT_ATTEMPTS, url, port, e.getMessage());
+                if (attempt < CONNECT_ATTEMPTS)
+                {
+                    try
+                    {
+                        Thread.sleep(CONNECT_RETRY_MS);
+                    }
+                    catch (InterruptedException ie)
+                    {
+                        Thread.currentThread().interrupt();
+                        throw new RuntimeException("Interrupted while connecting to MQTT", ie);
+                    }
+                }
+            }
         }
-        catch (MqttException e)
-        {
-            logger.error("MQTT connect failed: {}", e.getMessage());
-            throw new RuntimeException(e);
-        }
+
+        logger.error("MQTT connect to {}:{} failed after {} attempts: {}",
+                url, port, CONNECT_ATTEMPTS, lastError == null ? "unknown" : lastError.getMessage());
+        throw new RuntimeException(lastError);
     }
 
     public void subscribe(String topic, int qos, MsgCallback msgCallback)
