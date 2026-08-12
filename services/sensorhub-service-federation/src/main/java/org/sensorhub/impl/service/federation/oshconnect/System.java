@@ -89,6 +89,9 @@ public class System
         ApiResponse res = api.getResource(APIResourceTypes.SYSTEM, resourceId, APIResourceTypes.DATASTREAM, null);
         List<Datastream> result = new ArrayList<>();
 
+        // Replace rather than append; see Node.discoverSystems().
+        datastreams.clear();
+
         for (JsonElement ds : res.json().getAsJsonObject().getAsJsonArray("items"))
         {
             DatastreamResource datastreamObjs = new DatastreamResource(ds.getAsJsonObject());
@@ -135,6 +138,9 @@ public class System
         APIHelper api = parentNode.getApiHelper();
         ApiResponse res = api.getResource(APIResourceTypes.SYSTEM, resourceId, APIResourceTypes.CONTROL_CHANNEL, null);
         List<ControlStream> result = new ArrayList<>();
+
+        // Replace rather than append; see Node.discoverSystems().
+        controlChannels.clear();
 
         for (JsonElement csJson : res.json().getAsJsonObject().getAsJsonArray("items"))
         {

@@ -2,11 +2,11 @@
 <hivemq xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
     <listeners>
         <tcp-listener>
-            <port>1884</port>
+            <port>1883</port>
             <bind-address>0.0.0.0</bind-address>
         </tcp-listener>
         <websocket-listener>
-	          <port>8084</port>
+	          <port>8083</port>
 	          <bind-address>0.0.0.0</bind-address>
 	          <path>/mqtt</path>
 	          <subprotocols>

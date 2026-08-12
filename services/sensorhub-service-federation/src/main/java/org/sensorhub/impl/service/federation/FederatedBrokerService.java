@@ -28,12 +28,29 @@ public class FederatedBrokerService extends AbstractModule<FederatedBrokerConfig
         broker = new OSHDataBroker();
 
         // main.py: broker.load_env_file(...); broker.discover_all(); then idle.
+        // The work is wrapped: an exception here (most often the initial MQTT
+        // connect) would otherwise kill the thread silently while the module
+        // still reported "started", leaving a broker that discovers nothing
+        // with no indication of why.
         workerThread = new Thread(() ->
         {
-            broker.loadFromConfig(config);
-            broker.discoverAll();
+            try
+            {
+                broker.loadFromConfig(config);
+                broker.discoverAll();
+            }
+            catch (Throwable e)
+            {
+                getLogger().error("Federation broker startup failed", e);
+                reportError("Federation broker startup failed: " + e, e);
+            }
         }, "federation-broker");
         workerThread.setDaemon(true);
+        workerThread.setUncaughtExceptionHandler((t, e) ->
+        {
+            getLogger().error("Uncaught error in {}", t.getName(), e);
+            reportError("Federation broker thread died: " + e, e);
+        });
         workerThread.start();
 
         // Dedicated status thread: periodically publishes a federation summary

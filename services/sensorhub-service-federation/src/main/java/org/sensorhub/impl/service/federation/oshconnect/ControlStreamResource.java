@@ -43,6 +43,17 @@ public class ControlStreamResource
         return json.has("name") && !json.get("name").isJsonNull() ? json.get("name").getAsString() : null;
     }
 
+    /**
+     * The control stream's {@code inputName}. This — not the display {@code name} —
+     * is what the CS API keys a control stream on within its parent system, so it
+     * is the only safe identity to match a mirror against.
+     */
+    public String getInputName()
+    {
+        return json.has("inputName") && !json.get("inputName").isJsonNull()
+                ? json.get("inputName").getAsString() : null;
+    }
+
     /** Mirror of {@code cs_res.command_schema} (None when absent). */
     public JsonElement getCommandSchema()
     {

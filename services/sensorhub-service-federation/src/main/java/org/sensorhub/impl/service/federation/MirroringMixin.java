@@ -1,8 +1,10 @@
 package org.sensorhub.impl.service.federation;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.sensorhub.impl.service.federation.oshconnect.ControlStream;
 import org.sensorhub.impl.service.federation.oshconnect.ControlStreamResource;
@@ -14,7 +16,6 @@ import org.sensorhub.impl.service.federation.oshconnect.SystemResource;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonNull;
-import com.google.gson.JsonPrimitive;
 
 import static org.sensorhub.impl.service.federation.BrokerLogging.log;
 
@@ -26,12 +27,19 @@ public interface MirroringMixin extends CommandRoutingMixin
     default void mirrorControlstreamsToCommander(Node commander, List<Map.Entry<System, ControlStream>> remoteCsInfo)
     {
         Map<String, System> urnToCmdSys = buildCommanderSystemIndex(commander);
+        Map<System, Map<String, ControlStream>> cmdCsIndexes = new HashMap<>();
         int mirroredCount = 0;
 
         for (Map.Entry<System, ControlStream> entry : remoteCsInfo)
         {
             System remoteSys = entry.getKey();
             ControlStream remoteCs = entry.getValue();
+
+            if (remoteSys.getUrn() == null)
+            {
+                log.warn("Remote system has no UID; skipping its control streams");
+                continue;
+            }
 
             System cmdSys = urnToCmdSys.get(remoteSys.getUrn());
             if (cmdSys == null)
@@ -43,19 +51,6 @@ public interface MirroringMixin extends CommandRoutingMixin
             ControlStreamResource csRes = remoteCs.getUnderlyingResource();
             String csName = csRes.getName() != null ? csRes.getName() : "unknown";
 
-            // Restart/collision dedup: adopt an existing commander control stream
-            // with the same name AND matching schema instead of creating a
-            // duplicate; a name match with a differing schema is NOT adopted.
-            ControlStream existing = findExistingMirrorControlstream(cmdSys, csName, controlstreamSchemaSig(remoteCs));
-            if (existing != null)
-            {
-                getCsMap().put(existing.getId(), Map.entry(remoteSys, remoteCs));
-                mirroredCount++;
-                log.info("Adopted existing commander control stream for {} -> {}", csName, existing.getId());
-                subscribeToCommanderControlstream(existing, remoteSys, remoteCs);
-                continue;
-            }
-
             if (csRes.getCommandSchema() == null)
             {
                 log.warn("Skipping control stream {}: source has no command_schema "
@@ -63,22 +58,34 @@ public interface MirroringMixin extends CommandRoutingMixin
                 continue;
             }
 
-            // Clear remote-specific identifiers/links: cs_id, procedure_link,
-            // deployment_link, feature_of_interest_link, sampling_feature_link, links.
-            Map<String, JsonElement> update = new HashMap<>();
-            update.put("id", JsonNull.INSTANCE);
-            update.put("procedureLink@link", JsonNull.INSTANCE);
-            update.put("deploymentLink@link", JsonNull.INSTANCE);
-            update.put("featureOfInterest@link", JsonNull.INSTANCE);
-            update.put("samplingFeature@link", JsonNull.INSTANCE);
-            update.put("links", JsonNull.INSTANCE);
-            ControlStreamResource csResource = csRes.modelCopy(update);
+            // Restart dedup: adopt an existing commander control stream only when
+            // its inputName AND schema both match. Matching the display name alone
+            // would merge two distinct streams onto one mirror.
+            Map<String, ControlStream> cmdCsIndex =
+                    cmdCsIndexes.computeIfAbsent(cmdSys, this::indexCommanderControlstreams);
+            ControlStream existing = findExistingMirrorControlstream(cmdCsIndex, csRes.getInputName(),
+                    controlstreamSchemaSig(remoteCs));
+            if (existing != null)
+            {
+                if (getCsMap().put(existing.getId(), Map.entry(remoteSys, remoteCs)) != null)
+                    log.error("Commander control stream {} is already the mirror for another remote "
+                            + "stream; adopting it for {} merges two distinct inputs", existing.getId(), csName);
+                mirroredCount++;
+                log.info("Adopted existing commander control stream for {} -> {}", csName, existing.getId());
+                subscribeToCommanderControlstream(existing, remoteSys, remoteCs);
+                continue;
+            }
+
+            ControlStreamResource csResource = csRes.modelCopy(remoteResourceStripKeys());
 
             try
             {
                 ControlStream newCs = cmdSys.addInsertControlstream(csResource);
                 String commanderCsId = newCs.getId() != null ? newCs.getId() : "unknown";
-                getCsMap().put(commanderCsId, Map.entry(remoteSys, remoteCs));
+                if (getCsMap().put(commanderCsId, Map.entry(remoteSys, remoteCs)) != null)
+                    log.error("Commander returned control stream {} for {}, but another mirror already "
+                            + "claimed it — two distinct inputs were merged into one control stream",
+                            commanderCsId, csName);
                 mirroredCount++;
                 log.info("Mirrored control stream: {} -> {}", csName, commanderCsId);
                 subscribeToCommanderControlstream(newCs, remoteSys, remoteCs);
@@ -143,19 +150,37 @@ public interface MirroringMixin extends CommandRoutingMixin
         Map<String, System> urnToSys = new HashMap<>();
         commander.discoverSystems(); // ensure its systems list is up-to-date
         for (System sys : commander.systems())
+        {
+            // A null UID must never become a map key: HashMap accepts it, so every
+            // system that fails to expose one would collapse onto a single entry
+            // and their streams would all be mirrored into one commander system.
+            if (sys.getUrn() == null)
+            {
+                log.warn("Commander system has no UID; excluding it from the mirror index");
+                continue;
+            }
             urnToSys.put(sys.getUrn(), sys);
+        }
         return urnToSys;
     }
 
     default void mirrorDatastreamsToCommander(Node commander, List<Map.Entry<System, Datastream>> remoteDsInfo)
     {
         Map<String, System> urnToCmdSys = buildCommanderSystemIndex(commander);
+        Map<System, Map<String, Datastream>> cmdDsIndexes = new HashMap<>();
+        Set<String> claimedCmdDsIds = new HashSet<>();
         int mirroredCount = 0;
 
         for (Map.Entry<System, Datastream> entry : remoteDsInfo)
         {
             System remoteSys = entry.getKey();
             Datastream remoteDs = entry.getValue();
+
+            if (remoteSys.getUrn() == null)
+            {
+                log.warn("Remote system has no UID; skipping its datastreams");
+                continue;
+            }
 
             System cmdSys = urnToCmdSys.get(remoteSys.getUrn());
             if (cmdSys == null)
@@ -177,18 +202,6 @@ public interface MirroringMixin extends CommandRoutingMixin
                 continue;
             }
 
-            // Restart/collision dedup: adopt an existing commander datastream with
-            // the same name AND matching schema instead of creating a duplicate;
-            // a name match with a differing schema is NOT adopted.
-            Datastream existing = findExistingMirrorDatastream(cmdSys, dsName, datastreamSchemaSig(remoteDs));
-            if (existing != null)
-            {
-                getDsMap().put(remoteDs.getRemoteKey(), existing);
-                mirroredCount++;
-                log.info("Adopted existing commander datastream for {} -> {}", dsName, existing.getId());
-                continue;
-            }
-
             if (dsRes.getRecordSchema() == null)
             {
                 log.warn("Skipping datastream {}: source has no record_schema "
@@ -196,22 +209,28 @@ public interface MirroringMixin extends CommandRoutingMixin
                 continue;
             }
 
-            // Deep-copy and clear remote-specific links; ds_id is set to "default"
-            // (the commander assigns its own from the Location header).
-            Map<String, JsonElement> update = new HashMap<>();
-            update.put("id", new JsonPrimitive("default"));
-            update.put("system@id", JsonNull.INSTANCE); // clear remote system id; commander assigns its own parent
-            update.put("procedureLink@link", JsonNull.INSTANCE);
-            update.put("deploymentLink@link", JsonNull.INSTANCE);
-            update.put("featureOfInterest@link", JsonNull.INSTANCE);
-            update.put("samplingFeature@link", JsonNull.INSTANCE);
-            update.put("links", JsonNull.INSTANCE);
-            DatastreamResource dsResource = dsRes.modelCopy(update);
+            // Restart dedup: adopt an existing commander datastream only when its
+            // outputName AND schema both match. Matching the display name alone
+            // would merge two distinct streams onto one mirror — which is exactly
+            // how binary video frames end up in another output's datastream.
+            Map<String, Datastream> cmdDsIndex =
+                    cmdDsIndexes.computeIfAbsent(cmdSys, this::indexCommanderDatastreams);
+            Datastream existing = findExistingMirrorDatastream(cmdDsIndex, dsRes.getOutputName(),
+                    datastreamSchemaSig(remoteDs));
+            if (existing != null)
+            {
+                recordDatastreamMirror(remoteDs, existing, dsName, claimedCmdDsIds);
+                mirroredCount++;
+                log.info("Adopted existing commander datastream for {} -> {}", dsName, existing.getId());
+                continue;
+            }
+
+            DatastreamResource dsResource = dsRes.modelCopy(remoteResourceStripKeys());
 
             try
             {
                 Datastream newDs = cmdSys.addInsertDatastream(dsResource);
-                getDsMap().put(remoteDs.getRemoteKey(), newDs); // node-qualified key (bare ids collide across nodes)
+                recordDatastreamMirror(remoteDs, newDs, dsName, claimedCmdDsIds);
                 mirroredCount++;
                 log.debug("Mirrored datastream: {}", dsName);
             }
@@ -222,6 +241,66 @@ public interface MirroringMixin extends CommandRoutingMixin
         }
 
         log.info("Mirrored {} datastream(s)", mirroredCount);
+    }
+
+    /**
+     * Record a remote datastream's commander mirror in ds_map, reporting the two
+     * ways distinct streams can silently end up sharing one mirror:
+     *
+     * <ul>
+     * <li>the routing key was already mapped — two remote datastreams resolved to
+     *     the same node-qualified key, so one pump's observations would be lost;</li>
+     * <li>the commander returned a datastream id another mirror already claimed
+     *     this run — the commander merged two outputs, which it does whenever two
+     *     streams share a (system UID, outputName) pair.</li>
+     * </ul>
+     *
+     * Both are reported rather than rejected: the mirror is still recorded so the
+     * federation keeps running, but the condition is no longer invisible.
+     */
+    default void recordDatastreamMirror(Datastream remoteDs, Datastream cmdDs, String dsName,
+                                        Set<String> claimedCmdDsIds)
+    {
+        String cmdDsId = cmdDs.getId();
+        if (cmdDsId != null && !claimedCmdDsIds.add(cmdDsId))
+        {
+            log.error("Commander datastream {} is already the mirror for another remote stream; "
+                    + "mirroring {} onto it merges two distinct outputs into one datastream "
+                    + "(they likely share an outputName under the same system)", cmdDsId, dsName);
+        }
+
+        Datastream prev = getDsMap().put(remoteDs.getRemoteKey(), cmdDs);
+        if (prev != null)
+        {
+            log.error("Routing key {} was already mapped to commander datastream {}; "
+                    + "overwriting with {} — observations from one remote stream will be lost",
+                    remoteDs.getRemoteKey(), prev.getId(), cmdDsId);
+        }
+    }
+
+    /**
+     * Fields to clear from a resource copied off a remote node before POSTing it
+     * to the commander: the remote's own id, its parent-system references, and
+     * its links to remote procedure/deployment/feature resources. The commander
+     * assigns its own id (read back from the Location header) and its own parent
+     * system (taken from the POST URL).
+     *
+     * These names must match the CS API wire properties exactly — the earlier
+     * "procedureLink@link"/"deploymentLink@link" spellings matched nothing, so
+     * the real procedure@link/deployment@link values were carried over intact.
+     */
+    default Map<String, JsonElement> remoteResourceStripKeys()
+    {
+        Map<String, JsonElement> update = new HashMap<>();
+        update.put("id", JsonNull.INSTANCE);
+        update.put("system@id", JsonNull.INSTANCE);
+        update.put("system@link", JsonNull.INSTANCE);
+        update.put("procedure@link", JsonNull.INSTANCE);
+        update.put("deployment@link", JsonNull.INSTANCE);
+        update.put("featureOfInterest@link", JsonNull.INSTANCE);
+        update.put("samplingFeature@link", JsonNull.INSTANCE);
+        update.put("links", JsonNull.INSTANCE);
+        return update;
     }
 
     // ---- restart/collision dedup helpers ------------------------------------
@@ -241,87 +320,117 @@ public interface MirroringMixin extends CommandRoutingMixin
     }
 
     /**
-     * Reuse an existing commander datastream with the same name and a matching
-     * schema signature instead of inserting a duplicate mirror. A name match with
-     * a differing schema is NOT adopted — that would merge two distinct streams
-     * (e.g. a binary video stream onto a text mirror) and break inserts.
+     * Reuse an existing commander datastream that has the same {@code outputName}
+     * and a positively matching schema signature, instead of inserting a duplicate
+     * mirror.
+     *
+     * Adoption requires BOTH signatures to be present and equal. An absent
+     * signature on either side is not evidence of a match, and adopting on the
+     * name alone would merge two distinct streams (e.g. a binary video stream onto
+     * a text mirror) into one datastream. Failing to adopt is always safe — it
+     * just creates a fresh mirror.
      */
-    default Datastream findExistingMirrorDatastream(System cmdSys, String name, String remoteSig)
+    default Datastream findExistingMirrorDatastream(Map<String, Datastream> cmdIndex, String outputName, String remoteSig)
     {
-        if (name == null || name.equals("unknown"))
+        if (outputName == null || remoteSig == null)
             return null;
-        List<Datastream> candidates;
+
+        Datastream candidate = cmdIndex.get(outputName);
+        if (candidate == null)
+            return null;
+
+        String candSig;
         try
         {
-            candidates = cmdSys.discoverDatastreams();
+            candSig = datastreamSchemaSig(candidate);
+        }
+        catch (Exception e)
+        {
+            log.debug("Skipping commander datastream candidate for {}: {}", outputName, e.toString());
+            return null;
+        }
+
+        if (!remoteSig.equals(candSig))
+        {
+            log.warn("Commander datastream {} exists but its schema does not match; "
+                    + "creating a new mirror instead of adopting it", outputName);
+            return null;
+        }
+        return candidate;
+    }
+
+    /**
+     * List a commander system's datastreams once and index them by
+     * {@code outputName}. Built per commander system rather than per remote
+     * datastream: the listing costs one request plus one schema fetch per
+     * datastream, so doing it inside the mirror loop is quadratic.
+     */
+    default Map<String, Datastream> indexCommanderDatastreams(System cmdSys)
+    {
+        Map<String, Datastream> byOutputName = new HashMap<>();
+        try
+        {
+            for (Datastream ds : cmdSys.discoverDatastreams())
+            {
+                String outputName = ds.getResource().getOutputName();
+                if (outputName != null)
+                    byOutputName.putIfAbsent(outputName, ds);
+            }
         }
         catch (Exception e)
         {
             log.debug("Could not list commander datastreams for dedup: {}", e.toString());
-            return null;
         }
-        for (Datastream ds : candidates)
-        {
-            String candSig;
-            try
-            {
-                if (!name.equals(ds.getResource().getName()))
-                    continue;
-                candSig = datastreamSchemaSig(ds);
-            }
-            catch (Exception e)
-            {
-                log.debug("Skipping commander datastream candidate for {}: {}", name, e.toString());
-                continue;
-            }
-            if (remoteSig != null && candSig != null && !candSig.equals(remoteSig))
-            {
-                log.warn("Commander datastream {} exists but its schema differs; "
-                        + "creating a new mirror instead of adopting it", name);
-                continue;
-            }
-            return ds;
-        }
-        return null;
+        return byOutputName;
     }
 
-    /** Control-stream twin of {@link #findExistingMirrorDatastream}. */
-    default ControlStream findExistingMirrorControlstream(System cmdSys, String name, String remoteSig)
+    /** Control-stream twin of {@link #findExistingMirrorDatastream}, keyed on {@code inputName}. */
+    default ControlStream findExistingMirrorControlstream(Map<String, ControlStream> cmdIndex, String inputName, String remoteSig)
     {
-        if (name == null || name.equals("unknown"))
+        if (inputName == null || remoteSig == null)
             return null;
-        List<ControlStream> candidates;
+
+        ControlStream candidate = cmdIndex.get(inputName);
+        if (candidate == null)
+            return null;
+
+        String candSig;
         try
         {
-            candidates = cmdSys.discoverControlstreams();
+            candSig = controlstreamSchemaSig(candidate);
+        }
+        catch (Exception e)
+        {
+            log.debug("Skipping commander control stream candidate for {}: {}", inputName, e.toString());
+            return null;
+        }
+
+        if (!remoteSig.equals(candSig))
+        {
+            log.warn("Commander control stream {} exists but its schema does not match; "
+                    + "creating a new mirror instead of adopting it", inputName);
+            return null;
+        }
+        return candidate;
+    }
+
+    /** Control-stream twin of {@link #indexCommanderDatastreams}, keyed on {@code inputName}. */
+    default Map<String, ControlStream> indexCommanderControlstreams(System cmdSys)
+    {
+        Map<String, ControlStream> byInputName = new HashMap<>();
+        try
+        {
+            for (ControlStream cs : cmdSys.discoverControlstreams())
+            {
+                String inputName = cs.getUnderlyingResource().getInputName();
+                if (inputName != null)
+                    byInputName.putIfAbsent(inputName, cs);
+            }
         }
         catch (Exception e)
         {
             log.debug("Could not list commander control streams for dedup: {}", e.toString());
-            return null;
         }
-        for (ControlStream cs : candidates)
-        {
-            String candSig;
-            try
-            {
-                if (!name.equals(cs.getUnderlyingResource().getName()))
-                    continue;
-                candSig = controlstreamSchemaSig(cs);
-            }
-            catch (Exception e)
-            {
-                log.debug("Skipping commander control stream candidate for {}: {}", name, e.toString());
-                continue;
-            }
-            if (remoteSig != null && candSig != null && !candSig.equals(remoteSig))
-            {
-                log.warn("Commander control stream {} exists but its schema differs; "
-                        + "creating a new mirror instead of adopting it", name);
-                continue;
-            }
-            return cs;
-        }
-        return null;
+        return byInputName;
     }
 }
