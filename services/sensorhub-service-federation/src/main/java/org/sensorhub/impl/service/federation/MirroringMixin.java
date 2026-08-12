@@ -34,6 +34,12 @@ public interface MirroringMixin extends CommandRoutingMixin
             System remoteSys = entry.getKey();
             ControlStream remoteCs = entry.getValue();
 
+            if (remoteSys.getUrn() == null)
+            {
+                log.warn("Remote system has no UID; skipping its control streams");
+                continue;
+            }
+
             System cmdSys = urnToCmdSys.get(remoteSys.getUrn());
             if (cmdSys == null)
             {
@@ -147,7 +153,17 @@ public interface MirroringMixin extends CommandRoutingMixin
         Map<String, System> urnToSys = new HashMap<>();
         commander.discoverSystems(); // ensure its systems list is up-to-date
         for (System sys : commander.systems())
+        {
+            // A null UID must never become a map key: HashMap accepts it, so every
+            // system that fails to expose one would collapse onto a single entry
+            // and their streams would all be mirrored into one commander system.
+            if (sys.getUrn() == null)
+            {
+                log.warn("Commander system has no UID; excluding it from the mirror index");
+                continue;
+            }
             urnToSys.put(sys.getUrn(), sys);
+        }
         return urnToSys;
     }
 
@@ -161,6 +177,12 @@ public interface MirroringMixin extends CommandRoutingMixin
         {
             System remoteSys = entry.getKey();
             Datastream remoteDs = entry.getValue();
+
+            if (remoteSys.getUrn() == null)
+            {
+                log.warn("Remote system has no UID; skipping its datastreams");
+                continue;
+            }
 
             System cmdSys = urnToCmdSys.get(remoteSys.getUrn());
             if (cmdSys == null)
