@@ -110,7 +110,8 @@ public class OSHDataBroker implements DiscoveryMixin, MirroringMixin, Observatio
                     node.auth.username,
                     node.auth.password,
                     true,                       // Enable MQTT - required for discover_systems()
-                    mqttPort);                  // MQTT port
+                    mqttPort,                   // MQTT port
+                    node.mqttNodeId);           // MQTT topic root (this node's consys-mqtt nodeId)
 
             String role = node.isCommander ? "COMMANDER" : "REMOTE";
 

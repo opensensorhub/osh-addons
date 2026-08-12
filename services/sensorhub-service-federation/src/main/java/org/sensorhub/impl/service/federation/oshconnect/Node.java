@@ -29,6 +29,18 @@ public class Node
     public Node(String protocol, String address, int port, String username, String password,
                 boolean enableMqtt, int mqttPort)
     {
+        this(protocol, address, port, username, password, enableMqtt, mqttPort, null);
+    }
+
+    /**
+     * @param mqttNodeId root segment of this node's MQTT topics, matching the
+     *        nodeId of its Connected Systems API MQTT service. Null falls back to
+     *        the API root ("api"), which is what that service uses when no nodeId
+     *        is configured.
+     */
+    public Node(String protocol, String address, int port, String username, String password,
+                boolean enableMqtt, int mqttPort, String mqttNodeId)
+    {
         this.id = "node-" + UUID.randomUUID();
         this.protocol = protocol;
         this.address = address;
@@ -36,7 +48,9 @@ public class Node
         this.isSecure = username != null && password != null;
 
         // Node uses the library defaults server_root='sensorhub', api_root='api'.
-        this.apiHelper = new APIHelper(address, protocol, port, serverRoot, "api", null, username, password);
+        this.apiHelper = new APIHelper(address, protocol, port, serverRoot, "api",
+                mqttNodeId != null && !mqttNodeId.isBlank() ? mqttNodeId : null,
+                username, password);
         if (isSecure)
             apiHelper.setUserAuth(true);
 

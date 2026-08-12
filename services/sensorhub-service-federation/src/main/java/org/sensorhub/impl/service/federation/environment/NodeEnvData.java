@@ -34,4 +34,11 @@ public class NodeEnvData
 
     @DisplayInfo(label = "MQTT Port", desc = "MQTT port of the node")
     public int mqttPort = 1883;
+
+    @DisplayInfo(label = "MQTT Node ID", desc = "The nodeId configured on this node's Connected Systems "
+            + "API MQTT service. It is the root segment of every MQTT topic that node publishes "
+            + "(e.g. a nodeId of 'rmt-axis' gives 'rmt-axis/datastreams/{id}/observations:data'), so it "
+            + "must match that service's nodeId exactly or no observations or commands will arrive. "
+            + "Nodes sharing one broker must each use a distinct value.")
+    public String mqttNodeId = "api";
 }
