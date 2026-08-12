@@ -36,6 +36,18 @@ public class Datastream
         return underlyingResource.getDsId();
     }
 
+    /**
+     * Node-qualified routing key for ds_map. Datastream ids are only unique per
+     * node — each OSH node numbers ids from the same sequence, so the same id
+     * can name different datastreams on different nodes. Qualifying with the
+     * owning node's address:port keeps them distinct so two nodes' streams are
+     * never merged onto one commander mirror.
+     */
+    public String getRemoteKey()
+    {
+        return parentNode.getAddress() + ":" + parentNode.getPort() + "/" + getId();
+    }
+
     public DatastreamResource getResource()
     {
         return underlyingResource;

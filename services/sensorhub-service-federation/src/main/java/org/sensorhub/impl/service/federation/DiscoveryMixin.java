@@ -241,10 +241,13 @@ public interface DiscoveryMixin extends MirroringMixin, ObservationMixin, Schema
                 if (!inbound.isEmpty())
                 {
                     byte[] obs = inbound.pollFirst();
+                    // Route by the node-qualified key so streams from different
+                    // nodes that share a bare id never collide in ds_map.
+                    String routeKey = datastream.getRemoteKey();
                     if (datastream.getEncodingMode() == EncodingMode.BINARY)
                     {
                         // Opaque passthrough: relay the raw swe+binary frame unchanged.
-                        routeBinaryObservationToCommanderDatastream(dsId, obs);
+                        routeBinaryObservationToCommanderDatastream(routeKey, obs);
                     }
                     else
                     {
@@ -252,7 +255,7 @@ public interface DiscoveryMixin extends MirroringMixin, ObservationMixin, Schema
                         if (obsData != null)
                         {
                             for (JsonObject item : obsData)
-                                routeObservationToCommanderDatastream(dsId, item);
+                                routeObservationToCommanderDatastream(routeKey, item);
                         }
                     }
                 }
