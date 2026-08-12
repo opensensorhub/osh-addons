@@ -18,7 +18,7 @@ public class Node
     private final String protocol;
     private final String address;
     private final int port;
-    private final String serverRoot = "sensorhub";
+    private final String serverRoot;
     private final boolean isSecure;
     private int mqttPort = 1883;
 
@@ -33,24 +33,41 @@ public class Node
     }
 
     /**
-     * @param mqttNodeId root segment of this node's MQTT topics, matching the
-     *        nodeId of its Connected Systems API MQTT service. Null falls back to
-     *        the API root ("api"), which is what that service uses when no nodeId
-     *        is configured.
+     * @param mqttTopicRoot root prefix of this node's MQTT topics. Free-form: a
+     *        single segment (its Connected Systems API MQTT service nodeId),
+     *        several segments, or an endpoint-prefixed root with a leading slash
+     *        for a node publishing without a nodeId. Null or blank falls back to
+     *        the API root ("api").
      */
     public Node(String protocol, String address, int port, String username, String password,
-                boolean enableMqtt, int mqttPort, String mqttNodeId)
+                boolean enableMqtt, int mqttPort, String mqttTopicRoot)
+    {
+        this(protocol, address, port, username, password, enableMqtt, mqttPort, mqttTopicRoot, null, null);
+    }
+
+    /**
+     * @param mqttTopicRoot root prefix of this node's MQTT topics (see above).
+     * @param sensorhubRoot first path segment of the node's HTTP URLs, default
+     *        "sensorhub". Independent of {@code mqttTopicRoot}.
+     * @param apiRoot path of the Connected Systems API below {@code sensorhubRoot},
+     *        default "api". Independent of {@code mqttTopicRoot}: a node's MQTT
+     *        topics are rooted at its MQTT service nodeId, not at where the API is
+     *        served over HTTP.
+     */
+    public Node(String protocol, String address, int port, String username, String password,
+                boolean enableMqtt, int mqttPort, String mqttTopicRoot,
+                String sensorhubRoot, String apiRoot)
     {
         this.id = "node-" + UUID.randomUUID();
         this.protocol = protocol;
         this.address = address;
         this.port = port;
         this.isSecure = username != null && password != null;
+        this.serverRoot = APIHelper.normalizePathSegment(sensorhubRoot, "sensorhub");
 
-        // Node uses the library defaults server_root='sensorhub', api_root='api'.
-        this.apiHelper = new APIHelper(address, protocol, port, serverRoot, "api",
-                mqttNodeId != null && !mqttNodeId.isBlank() ? mqttNodeId : null,
-                username, password);
+        this.apiHelper = new APIHelper(address, protocol, port, this.serverRoot,
+                APIHelper.normalizeApiRoot(apiRoot, this.serverRoot),
+                mqttTopicRoot, username, password);
         if (isSecure)
             apiHelper.setUserAuth(true);
 

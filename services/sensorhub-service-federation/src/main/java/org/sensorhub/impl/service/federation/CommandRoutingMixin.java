@@ -32,15 +32,10 @@ public interface CommandRoutingMixin extends BrokerContext
             commanderCs.setConnectionMode(org.sensorhub.impl.service.federation.oshconnect.StreamableModes.PULL);
             commanderCs.initialize();
 
-            String topic = commanderCs.getTopic();
-            if (topic != null && topic.startsWith("/"))
-            {
-                String stripped = topic;
-                while (stripped.startsWith("/"))
-                    stripped = stripped.substring(1);
-                commanderCs.setTopic(stripped);
-                log.debug("[CONTROLSTREAM] fixed topic from {} to {}", topic, stripped);
-            }
+            // The topic root is configured per node, so whatever shape it produces —
+            // including a deliberate leading slash for an endpoint-prefixed node — is
+            // authoritative and must not be rewritten here.
+            log.debug("[CONTROLSTREAM] subscribing to command topic {}", commanderCs.getTopic());
 
             commanderCs.start();
 
