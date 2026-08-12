@@ -43,23 +43,24 @@ public interface MirroringMixin extends CommandRoutingMixin
             ControlStreamResource csRes = remoteCs.getUnderlyingResource();
             String csName = csRes.getName() != null ? csRes.getName() : "unknown";
 
-            // Restart/collision dedup: adopt an existing commander control stream
-            // with the same name AND matching schema instead of creating a
-            // duplicate; a name match with a differing schema is NOT adopted.
-            ControlStream existing = findExistingMirrorControlstream(cmdSys, csName, controlstreamSchemaSig(remoteCs));
+            if (csRes.getCommandSchema() == null)
+            {
+                log.warn("Skipping control stream {}: source has no command_schema "
+                        + "(oshconnect discovery did not populate it)", csName);
+                continue;
+            }
+
+            // Restart dedup: adopt an existing commander control stream only when
+            // its inputName AND schema both match. Matching the display name alone
+            // would merge two distinct streams onto one mirror.
+            ControlStream existing = findExistingMirrorControlstream(cmdSys, csRes.getInputName(),
+                    controlstreamSchemaSig(remoteCs));
             if (existing != null)
             {
                 getCsMap().put(existing.getId(), Map.entry(remoteSys, remoteCs));
                 mirroredCount++;
                 log.info("Adopted existing commander control stream for {} -> {}", csName, existing.getId());
                 subscribeToCommanderControlstream(existing, remoteSys, remoteCs);
-                continue;
-            }
-
-            if (csRes.getCommandSchema() == null)
-            {
-                log.warn("Skipping control stream {}: source has no command_schema "
-                        + "(oshconnect discovery did not populate it)", csName);
                 continue;
             }
 
@@ -177,22 +178,24 @@ public interface MirroringMixin extends CommandRoutingMixin
                 continue;
             }
 
-            // Restart/collision dedup: adopt an existing commander datastream with
-            // the same name AND matching schema instead of creating a duplicate;
-            // a name match with a differing schema is NOT adopted.
-            Datastream existing = findExistingMirrorDatastream(cmdSys, dsName, datastreamSchemaSig(remoteDs));
+            if (dsRes.getRecordSchema() == null)
+            {
+                log.warn("Skipping datastream {}: source has no record_schema "
+                        + "(oshconnect discovery did not populate it)", dsName);
+                continue;
+            }
+
+            // Restart dedup: adopt an existing commander datastream only when its
+            // outputName AND schema both match. Matching the display name alone
+            // would merge two distinct streams onto one mirror — which is exactly
+            // how binary video frames end up in another output's datastream.
+            Datastream existing = findExistingMirrorDatastream(cmdSys, dsRes.getOutputName(),
+                    datastreamSchemaSig(remoteDs));
             if (existing != null)
             {
                 getDsMap().put(remoteDs.getRemoteKey(), existing);
                 mirroredCount++;
                 log.info("Adopted existing commander datastream for {} -> {}", dsName, existing.getId());
-                continue;
-            }
-
-            if (dsRes.getRecordSchema() == null)
-            {
-                log.warn("Skipping datastream {}: source has no record_schema "
-                        + "(oshconnect discovery did not populate it)", dsName);
                 continue;
             }
 
@@ -241,14 +244,19 @@ public interface MirroringMixin extends CommandRoutingMixin
     }
 
     /**
-     * Reuse an existing commander datastream with the same name and a matching
-     * schema signature instead of inserting a duplicate mirror. A name match with
-     * a differing schema is NOT adopted — that would merge two distinct streams
-     * (e.g. a binary video stream onto a text mirror) and break inserts.
+     * Reuse an existing commander datastream that has the same {@code outputName}
+     * and a positively matching schema signature, instead of inserting a duplicate
+     * mirror.
+     *
+     * Adoption requires BOTH signatures to be present and equal. An absent
+     * signature on either side is not evidence of a match, and adopting on the
+     * name alone would merge two distinct streams (e.g. a binary video stream onto
+     * a text mirror) into one datastream. Failing to adopt is always safe — it
+     * just creates a fresh mirror.
      */
-    default Datastream findExistingMirrorDatastream(System cmdSys, String name, String remoteSig)
+    default Datastream findExistingMirrorDatastream(System cmdSys, String outputName, String remoteSig)
     {
-        if (name == null || name.equals("unknown"))
+        if (outputName == null || remoteSig == null)
             return null;
         List<Datastream> candidates;
         try
@@ -265,19 +273,19 @@ public interface MirroringMixin extends CommandRoutingMixin
             String candSig;
             try
             {
-                if (!name.equals(ds.getResource().getName()))
+                if (!outputName.equals(ds.getResource().getOutputName()))
                     continue;
                 candSig = datastreamSchemaSig(ds);
             }
             catch (Exception e)
             {
-                log.debug("Skipping commander datastream candidate for {}: {}", name, e.toString());
+                log.debug("Skipping commander datastream candidate for {}: {}", outputName, e.toString());
                 continue;
             }
-            if (remoteSig != null && candSig != null && !candSig.equals(remoteSig))
+            if (!remoteSig.equals(candSig))
             {
-                log.warn("Commander datastream {} exists but its schema differs; "
-                        + "creating a new mirror instead of adopting it", name);
+                log.warn("Commander datastream {} exists but its schema does not match; "
+                        + "creating a new mirror instead of adopting it", outputName);
                 continue;
             }
             return ds;
@@ -285,10 +293,10 @@ public interface MirroringMixin extends CommandRoutingMixin
         return null;
     }
 
-    /** Control-stream twin of {@link #findExistingMirrorDatastream}. */
-    default ControlStream findExistingMirrorControlstream(System cmdSys, String name, String remoteSig)
+    /** Control-stream twin of {@link #findExistingMirrorDatastream}, keyed on {@code inputName}. */
+    default ControlStream findExistingMirrorControlstream(System cmdSys, String inputName, String remoteSig)
     {
-        if (name == null || name.equals("unknown"))
+        if (inputName == null || remoteSig == null)
             return null;
         List<ControlStream> candidates;
         try
@@ -305,19 +313,19 @@ public interface MirroringMixin extends CommandRoutingMixin
             String candSig;
             try
             {
-                if (!name.equals(cs.getUnderlyingResource().getName()))
+                if (!inputName.equals(cs.getUnderlyingResource().getInputName()))
                     continue;
                 candSig = controlstreamSchemaSig(cs);
             }
             catch (Exception e)
             {
-                log.debug("Skipping commander control stream candidate for {}: {}", name, e.toString());
+                log.debug("Skipping commander control stream candidate for {}: {}", inputName, e.toString());
                 continue;
             }
-            if (remoteSig != null && candSig != null && !candSig.equals(remoteSig))
+            if (!remoteSig.equals(candSig))
             {
-                log.warn("Commander control stream {} exists but its schema differs; "
-                        + "creating a new mirror instead of adopting it", name);
+                log.warn("Commander control stream {} exists but its schema does not match; "
+                        + "creating a new mirror instead of adopting it", inputName);
                 continue;
             }
             return cs;
