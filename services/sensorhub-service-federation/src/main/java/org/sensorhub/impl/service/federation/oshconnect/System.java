@@ -96,6 +96,7 @@ public class System
         {
             DatastreamResource datastreamObjs = new DatastreamResource(ds.getAsJsonObject());
             Datastream newDs = new Datastream(parentNode, datastreamObjs);
+            newDs.setSystemUid(urn);
 
             // Only treat a datastream as opaque binary passthrough (e.g. video) when
             // it advertises swe+binary AND cannot be represented as SWE text: a genuine
@@ -185,6 +186,7 @@ public class System
 
         Datastream newDs = new Datastream(parentNode, datastreamSchema);
         newDs.setParentResourceId(underlyingResource.getSystemId());
+        newDs.setSystemUid(urn);
         datastreams.add(newDs);
         return newDs;
     }

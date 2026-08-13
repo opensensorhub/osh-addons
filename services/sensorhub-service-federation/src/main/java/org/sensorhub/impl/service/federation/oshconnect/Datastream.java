@@ -16,6 +16,7 @@ public class Datastream
     private DatastreamResource underlyingResource;
     private final String resourceId;
     private String parentResourceId;
+    private String systemUid;
 
     private final Deque<byte[]> inboundDeque = new ConcurrentLinkedDeque<>();
     private final MqttCommClient mqttClient;
@@ -34,6 +35,22 @@ public class Datastream
     public String getId()
     {
         return underlyingResource.getDsId();
+    }
+
+    /**
+     * UID of the system this datastream belongs to. Carried alongside the
+     * datastream because the observation pump holds only a Datastream, while
+     * identifying an observation fleet-wide needs the system UID — datastream
+     * ids are assigned per node and so cannot identify one across nodes.
+     */
+    public String getSystemUid()
+    {
+        return systemUid;
+    }
+
+    public void setSystemUid(String systemUid)
+    {
+        this.systemUid = systemUid;
     }
 
     /**
