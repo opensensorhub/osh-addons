@@ -15,6 +15,12 @@ dependencies {
     exclude group: 'ch.qos.logback', module: 'logback-classic'
     exclude group: 'org.slf4j', module: 'slf4j-api'
   }
+
+  testImplementation 'junit:junit:4.13.1'
+}
+
+test {
+  useJUnit()
 }
 
 // add info to OSGi manifest

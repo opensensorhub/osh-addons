@@ -21,7 +21,7 @@ public class NodeEnvData
     public int port;
 
     @DisplayInfo(label = "Is Commander", desc = "True if this node is the central commander node")
-    public boolean isCommander = false;
+public boolean isCommander = false;
 
     @DisplayInfo(label = "SensorHub Root", desc = "Root path segment of the node (e.g. sensorhub)")
     public String sensorhubRoot = "sensorhub";
