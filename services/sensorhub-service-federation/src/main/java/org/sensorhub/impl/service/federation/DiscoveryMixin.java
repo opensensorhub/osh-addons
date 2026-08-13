@@ -10,6 +10,7 @@ import org.sensorhub.impl.service.federation.nodes.RemoteNode;
 import org.sensorhub.impl.service.federation.oshconnect.ControlStream;
 import org.sensorhub.impl.service.federation.oshconnect.Datastream;
 import org.sensorhub.impl.service.federation.oshconnect.EncodingMode;
+import org.sensorhub.impl.service.federation.oshconnect.Node;
 import org.sensorhub.impl.service.federation.oshconnect.StreamableModes;
 import org.sensorhub.impl.service.federation.oshconnect.System;
 
@@ -166,14 +167,38 @@ public interface DiscoveryMixin extends MirroringMixin, ObservationMixin, Schema
      */
     default void subscribeToRemoteObservations(List<Map.Entry<System, Datastream>> remoteDsInfo)
     {
+        int subscribed = 0;
         for (Map.Entry<System, Datastream> entry : remoteDsInfo)
         {
             Datastream dsObj = entry.getValue();
+            if (isSelfSourced(dsObj))
+                continue;
             dsObj.setConnectionMode(StreamableModes.PULL);
             dsObj.initMqtt();
             dsObj.start(); // PULL mode -> subscribes to the OBSERVATION topic
+            subscribed++;
         }
-        log.info("Subscribed to observations for {} datastream(s)", remoteDsInfo.size());
+        log.info("Subscribed to observations for {} datastream(s)", subscribed);
+    }
+
+    /**
+     * True when this datastream lives on the commander itself.
+     *
+     * Listing the commander among the nodes is legal and useful — a commander
+     * that carries its own sensors then appears in the federated set like any
+     * other node. Its observations must not be forwarded, though: they are
+     * already stored where they would be sent, so relaying them writes a second
+     * copy, which the destination republishes, which comes back. Skipping the
+     * subscription makes that configuration inert rather than a loop.
+     *
+     * Dedupe alone cannot cover this: the echo cache only knows what was already
+     * forwarded, so the first copy of every observation would still be written.
+     */
+    default boolean isSelfSourced(Datastream ds)
+    {
+        if (ds == null || getCommandNodes().isEmpty())
+            return false;
+        return Node.sameEndpoint(ds.getParentNode(), getCommandNodes().get(0).getNode());
     }
 
     /**
@@ -182,15 +207,29 @@ public interface DiscoveryMixin extends MirroringMixin, ObservationMixin, Schema
      */
     default void startObservationPumps(List<Map.Entry<System, Datastream>> remoteDsInfo)
     {
+        int started = 0;
+        int selfSourced = 0;
         for (Map.Entry<System, Datastream> entry : remoteDsInfo)
         {
             Datastream dsObj = entry.getValue();
+            if (isSelfSourced(dsObj))
+            {
+                selfSourced++;
+                continue;
+            }
             Thread obsThread = new Thread(() -> testObsRetrieval(dsObj));
             obsThread.setDaemon(true);
             getWorkerThreads().add(obsThread);
             obsThread.start();
+            started++;
         }
-        log.info("Started observation pumps for {} datastream(s)", remoteDsInfo.size());
+        if (selfSourced > 0)
+        {
+            log.info("Self-federation: {} datastream(s) live on the commander itself; "
+                    + "they stay mirrored but their observations are already local and are not forwarded",
+                    selfSourced);
+        }
+        log.info("Started observation pumps for {} datastream(s)", started);
     }
 
     /**

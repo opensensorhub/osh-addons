@@ -138,6 +138,24 @@ public class OSHDataBroker implements DiscoveryMixin, MirroringMixin, Observatio
 
         this.commandNodes = cmdNodes;
         this.remoteNodes = rmtNodes;
+
+        // Legal, and worth saying out loud: a commander listed among the remotes
+        // appears in the federated set like any other node, but its observations
+        // and commands are already local and are deliberately not relayed back.
+        if (!cmdNodes.isEmpty())
+        {
+            Node commander = cmdNodes.get(0).getNode();
+            for (RemoteNode rmt : rmtNodes)
+            {
+                if (Node.sameEndpoint(rmt.getNode(), commander))
+                {
+                    log.info("Self-federation: remote {}:{} is the commander; its systems will be "
+                            + "mirrored but its observations and commands are not forwarded",
+                            rmt.getNode().getAddress(), rmt.getNode().getPort());
+                }
+            }
+        }
+
         log.info("Loaded {} commander(s), {} remote node(s)", cmdNodes.size(), rmtNodes.size());
     }
 

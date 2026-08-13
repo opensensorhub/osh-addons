@@ -51,6 +51,16 @@ public interface MirroringMixin extends CommandRoutingMixin
             ControlStreamResource csRes = remoteCs.getUnderlyingResource();
             String csName = csRes.getName() != null ? csRes.getName() : "unknown";
 
+            // Self-federation: relaying a command from the commander back to the
+            // commander re-raises it as a new command, which is relayed again.
+            // The mirror is a harmless no-op; the forwarding is what must not run.
+            boolean selfSourced = Node.sameEndpoint(remoteCs.getParentNode(), commander);
+            if (selfSourced)
+            {
+                log.info("Self-federation: control stream {} lives on the commander; "
+                        + "mirrored but not forwarded", csName);
+            }
+
             if (csRes.getCommandSchema() == null)
             {
                 log.warn("Skipping control stream {}: source has no command_schema "
@@ -72,7 +82,8 @@ public interface MirroringMixin extends CommandRoutingMixin
                             + "stream; adopting it for {} merges two distinct inputs", existing.getId(), csName);
                 mirroredCount++;
                 log.info("Adopted existing commander control stream for {} -> {}", csName, existing.getId());
-                subscribeToCommanderControlstream(existing, remoteSys, remoteCs);
+                if (!selfSourced)
+                    subscribeToCommanderControlstream(existing, remoteSys, remoteCs);
                 continue;
             }
 
@@ -88,7 +99,8 @@ public interface MirroringMixin extends CommandRoutingMixin
                             commanderCsId, csName);
                 mirroredCount++;
                 log.info("Mirrored control stream: {} -> {}", csName, commanderCsId);
-                subscribeToCommanderControlstream(newCs, remoteSys, remoteCs);
+                if (!selfSourced)
+                    subscribeToCommanderControlstream(newCs, remoteSys, remoteCs);
             }
             catch (Exception e)
             {

@@ -86,6 +86,42 @@ public class Node
         return id;
     }
 
+    /**
+     * True when both handles address the same node.
+     *
+     * Compares the port plus the <em>resolved</em> address, because the same
+     * node is routinely spelled several ways across a config — an IP, a
+     * hostname, {@code localhost} — and a string comparison would call those
+     * different nodes. Resolution failure falls back to a case-insensitive
+     * string compare rather than throwing: a wrong "not the same" answer only
+     * loses an optimization, whereas failing here would break discovery.
+     */
+    public static boolean sameEndpoint(Node a, Node b)
+    {
+        if (a == null || b == null)
+            return false;
+        if (a == b)
+            return true;
+        if (a.getPort() != b.getPort())
+            return false;
+
+        String addrA = a.getAddress();
+        String addrB = b.getAddress();
+        if (addrA == null || addrB == null)
+            return false;
+        if (addrA.equalsIgnoreCase(addrB))
+            return true;
+
+        try
+        {
+            return java.net.InetAddress.getByName(addrA).equals(java.net.InetAddress.getByName(addrB));
+        }
+        catch (java.net.UnknownHostException e)
+        {
+            return false;
+        }
+    }
+
     public String getAddress()
     {
         return address;

@@ -70,6 +70,11 @@ public class Datastream
         return underlyingResource;
     }
 
+    public Node getParentNode()
+    {
+        return parentNode;
+    }
+
     public void setConnectionMode(StreamableModes connectionMode)
     {
         this.connectionMode = connectionMode;
