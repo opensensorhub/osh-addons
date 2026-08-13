@@ -45,4 +45,7 @@ public interface BrokerContext
 
     /** Whether binary (e.g. video) datastreams are federated via swe+binary passthrough. */
     boolean isBinaryDatastreamsEnabled();
+
+    /** Fingerprints of already-forwarded observations, so a re-delivery is relayed once. */
+    ObsEcho getObsEcho();
 }

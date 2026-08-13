@@ -286,7 +286,7 @@ public interface DiscoveryMixin extends MirroringMixin, ObservationMixin, Schema
                     if (datastream.getEncodingMode() == EncodingMode.BINARY)
                     {
                         // Opaque passthrough: relay the raw swe+binary frame unchanged.
-                        routeBinaryObservationToCommanderDatastream(routeKey, obs);
+                        routeBinaryObservationToCommanderDatastream(routeKey, obs, datastream);
                     }
                     else
                     {
@@ -294,7 +294,7 @@ public interface DiscoveryMixin extends MirroringMixin, ObservationMixin, Schema
                         if (obsData != null)
                         {
                             for (JsonObject item : obsData)
-                                routeObservationToCommanderDatastream(routeKey, item);
+                                routeObservationToCommanderDatastream(routeKey, item, datastream);
                         }
                     }
                 }

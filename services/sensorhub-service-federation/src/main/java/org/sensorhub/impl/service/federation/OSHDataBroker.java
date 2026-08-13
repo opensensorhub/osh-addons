@@ -43,6 +43,7 @@ public class OSHDataBroker implements DiscoveryMixin, MirroringMixin, Observatio
     private final Map<String, Datastream> dsMap = new ConcurrentHashMap<>();
     private final Map<String, Map.Entry<System, ControlStream>> csMap = new ConcurrentHashMap<>();
     private final List<Thread> workerThreads = new CopyOnWriteArrayList<>();
+    private final ObsEcho obsEcho = new ObsEcho();
     private boolean binaryDatastreamsEnabled = false;
 
     public OSHDataBroker()
@@ -242,5 +243,11 @@ public class OSHDataBroker implements DiscoveryMixin, MirroringMixin, Observatio
     public boolean isBinaryDatastreamsEnabled()
     {
         return binaryDatastreamsEnabled;
+    }
+
+    @Override
+    public ObsEcho getObsEcho()
+    {
+        return obsEcho;
     }
 }

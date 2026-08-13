@@ -69,7 +69,7 @@ public class BrokeredDatastream extends Datastream
             JsonObject item = itemEl.getAsJsonObject();
             String remoteDsId = item.has("datastream@id") && !item.get("datastream@id").isJsonNull()
                     ? item.get("datastream@id").getAsString() : getId();
-            broker.routeObservationToCommanderDatastream(remoteDsId, item);
+            broker.routeObservationToCommanderDatastream(remoteDsId, item, this);
         }
     }
 }
