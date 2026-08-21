@@ -140,6 +140,12 @@ public class Datastream
         return inboundDeque;
     }
 
+    /** Shared per-node MQTT client (used by reconcile to unsubscribe a retired topic). */
+    public MqttCommClient getMqttClient()
+    {
+        return mqttClient;
+    }
+
     /**
      * POST an observation to {@code /datastreams/{id}/observations}.
      *

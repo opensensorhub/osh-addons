@@ -40,56 +40,71 @@ public interface MirroringMixin extends CommandRoutingMixin
                 continue;
             }
 
-            ControlStreamResource csRes = remoteCs.getUnderlyingResource();
-            String csName = csRes.getName() != null ? csRes.getName() : "unknown";
-
-            // Restart/collision dedup: adopt an existing commander control stream
-            // with the same name AND matching schema instead of creating a
-            // duplicate; a name match with a differing schema is NOT adopted.
-            ControlStream existing = findExistingMirrorControlstream(cmdSys, csName, controlstreamSchemaSig(remoteCs));
-            if (existing != null)
-            {
-                getCsMap().put(existing.getId(), Map.entry(remoteSys, remoteCs));
-                mirroredCount++;
-                log.info("Adopted existing commander control stream for {} -> {}", csName, existing.getId());
-                subscribeToCommanderControlstream(existing, remoteSys, remoteCs);
+            ControlStream newCs = mirrorOneControlstream(cmdSys, remoteSys, remoteCs);
+            if (newCs == null)
                 continue;
-            }
-
-            if (csRes.getCommandSchema() == null)
-            {
-                log.warn("Skipping control stream {}: source has no command_schema "
-                        + "(oshconnect discovery did not populate it)", csName);
-                continue;
-            }
-
-            // Clear remote-specific identifiers/links: cs_id, procedure_link,
-            // deployment_link, feature_of_interest_link, sampling_feature_link, links.
-            Map<String, JsonElement> update = new HashMap<>();
-            update.put("id", JsonNull.INSTANCE);
-            update.put("procedureLink@link", JsonNull.INSTANCE);
-            update.put("deploymentLink@link", JsonNull.INSTANCE);
-            update.put("featureOfInterest@link", JsonNull.INSTANCE);
-            update.put("samplingFeature@link", JsonNull.INSTANCE);
-            update.put("links", JsonNull.INSTANCE);
-            ControlStreamResource csResource = csRes.modelCopy(update);
-
-            try
-            {
-                ControlStream newCs = cmdSys.addInsertControlstream(csResource);
-                String commanderCsId = newCs.getId() != null ? newCs.getId() : "unknown";
-                getCsMap().put(commanderCsId, Map.entry(remoteSys, remoteCs));
-                mirroredCount++;
-                log.info("Mirrored control stream: {} -> {}", csName, commanderCsId);
-                subscribeToCommanderControlstream(newCs, remoteSys, remoteCs);
-            }
-            catch (Exception e)
-            {
-                log.error("Failed to mirror control stream {}: {}", csName, e.toString());
-            }
+            mirroredCount++;
+            subscribeToCommanderControlstream(newCs, remoteSys, remoteCs);
         }
 
         log.info("Mirrored {} control stream(s)", mirroredCount);
+    }
+
+    /**
+     * Mirror one remote control stream onto its commander system (adopt-or-create)
+     * and record it in cs_map. Does NOT subscribe/forward — the caller starts the
+     * forwarder. Returns the commander {@link ControlStream}, or {@code null} when
+     * the stream is skipped (no command schema) or the create failed. Split out of
+     * {@link #mirrorControlstreamsToCommander} so the reconcile loop can activate a
+     * single newly-discovered control stream.
+     */
+    default ControlStream mirrorOneControlstream(System cmdSys, System remoteSys, ControlStream remoteCs)
+    {
+        ControlStreamResource csRes = remoteCs.getUnderlyingResource();
+        String csName = csRes.getName() != null ? csRes.getName() : "unknown";
+
+        // Restart/collision dedup: adopt an existing commander control stream
+        // with the same name AND matching schema instead of creating a
+        // duplicate; a name match with a differing schema is NOT adopted.
+        ControlStream existing = findExistingMirrorControlstream(cmdSys, csName, controlstreamSchemaSig(remoteCs));
+        if (existing != null)
+        {
+            getCsMap().put(existing.getId(), Map.entry(remoteSys, remoteCs));
+            log.info("Adopted existing commander control stream for {} -> {}", csName, existing.getId());
+            return existing;
+        }
+
+        if (csRes.getCommandSchema() == null)
+        {
+            log.warn("Skipping control stream {}: source has no command_schema "
+                    + "(oshconnect discovery did not populate it)", csName);
+            return null;
+        }
+
+        // Clear remote-specific identifiers/links: cs_id, procedure_link,
+        // deployment_link, feature_of_interest_link, sampling_feature_link, links.
+        Map<String, JsonElement> update = new HashMap<>();
+        update.put("id", JsonNull.INSTANCE);
+        update.put("procedureLink@link", JsonNull.INSTANCE);
+        update.put("deploymentLink@link", JsonNull.INSTANCE);
+        update.put("featureOfInterest@link", JsonNull.INSTANCE);
+        update.put("samplingFeature@link", JsonNull.INSTANCE);
+        update.put("links", JsonNull.INSTANCE);
+        ControlStreamResource csResource = csRes.modelCopy(update);
+
+        try
+        {
+            ControlStream newCs = cmdSys.addInsertControlstream(csResource);
+            String commanderCsId = newCs.getId() != null ? newCs.getId() : "unknown";
+            getCsMap().put(commanderCsId, Map.entry(remoteSys, remoteCs));
+            log.info("Mirrored control stream: {} -> {}", csName, commanderCsId);
+            return newCs;
+        }
+        catch (Exception e)
+        {
+            log.error("Failed to mirror control stream {}: {}", csName, e.toString());
+            return null;
+        }
     }
 
     default void mirrorSystemsToCommander(Node commander, List<System> systems)
@@ -164,64 +179,78 @@ public interface MirroringMixin extends CommandRoutingMixin
                 continue;
             }
 
-            DatastreamResource dsRes;
-            String dsName;
-            try
-            {
-                dsRes = remoteDs.getResource();
-                dsName = dsRes.getName() != null ? dsRes.getName() : "unknown";
-            }
-            catch (Exception e)
-            {
-                log.debug("Failed to get DatastreamResource: {}", e.toString());
-                continue;
-            }
-
-            // Restart/collision dedup: adopt an existing commander datastream with
-            // the same name AND matching schema instead of creating a duplicate;
-            // a name match with a differing schema is NOT adopted.
-            Datastream existing = findExistingMirrorDatastream(cmdSys, dsName, datastreamSchemaSig(remoteDs));
-            if (existing != null)
-            {
-                getDsMap().put(remoteDs.getRemoteKey(), existing);
+            if (mirrorOneDatastream(cmdSys, remoteSys, remoteDs) != null)
                 mirroredCount++;
-                log.info("Adopted existing commander datastream for {} -> {}", dsName, existing.getId());
-                continue;
-            }
-
-            if (dsRes.getRecordSchema() == null)
-            {
-                log.warn("Skipping datastream {}: source has no record_schema "
-                        + "(oshconnect discovery did not populate it)", dsName);
-                continue;
-            }
-
-            // Deep-copy and clear remote-specific links; ds_id is set to "default"
-            // (the commander assigns its own from the Location header).
-            Map<String, JsonElement> update = new HashMap<>();
-            update.put("id", new JsonPrimitive("default"));
-            update.put("system@id", JsonNull.INSTANCE); // clear remote system id; commander assigns its own parent
-            update.put("procedureLink@link", JsonNull.INSTANCE);
-            update.put("deploymentLink@link", JsonNull.INSTANCE);
-            update.put("featureOfInterest@link", JsonNull.INSTANCE);
-            update.put("samplingFeature@link", JsonNull.INSTANCE);
-            update.put("links", JsonNull.INSTANCE);
-            DatastreamResource dsResource = dsRes.modelCopy(update);
-
-            try
-            {
-                Datastream newDs = cmdSys.addInsertDatastream(dsResource);
-                getDsMap().put(remoteDs.getRemoteKey(), newDs); // node-qualified key (bare ids collide across nodes)
-                mirroredCount++;
-                log.debug("Mirrored datastream: {}", dsName);
-            }
-            catch (Exception e)
-            {
-                log.error("Failed to create datastream {} on commander: {}", dsName, e.toString());
-            }
         }
 
         log.info("Mirrored {} datastream(s)", mirroredCount);
+    }
+
+    /**
+     * Mirror one remote datastream onto its commander system (adopt-or-create) and
+     * record it in ds_map under the node-qualified remote key. Returns the commander
+     * {@link Datastream}, or {@code null} when the stream is skipped (no record
+     * schema) or the create failed. Split out of
+     * {@link #mirrorDatastreamsToCommander} so the reconcile loop can activate a
+     * single newly-discovered datastream.
+     */
+    default Datastream mirrorOneDatastream(System cmdSys, System remoteSys, Datastream remoteDs)
+    {
+        DatastreamResource dsRes;
+        String dsName;
+        try
+        {
+            dsRes = remoteDs.getResource();
+            dsName = dsRes.getName() != null ? dsRes.getName() : "unknown";
+        }
+        catch (Exception e)
+        {
+            log.debug("Failed to get DatastreamResource: {}", e.toString());
+            return null;
+        }
+
+        // Restart/collision dedup: adopt an existing commander datastream with
+        // the same name AND matching schema instead of creating a duplicate;
+        // a name match with a differing schema is NOT adopted.
+        Datastream existing = findExistingMirrorDatastream(cmdSys, dsName, datastreamSchemaSig(remoteDs));
+        if (existing != null)
+        {
+            getDsMap().put(remoteDs.getRemoteKey(), existing);
+            log.info("Adopted existing commander datastream for {} -> {}", dsName, existing.getId());
+            return existing;
+        }
+
+        if (dsRes.getRecordSchema() == null)
+        {
+            log.warn("Skipping datastream {}: source has no record_schema "
+                    + "(oshconnect discovery did not populate it)", dsName);
+            return null;
+        }
+
+        // Deep-copy and clear remote-specific links; ds_id is set to "default"
+        // (the commander assigns its own from the Location header).
+        Map<String, JsonElement> update = new HashMap<>();
+        update.put("id", new JsonPrimitive("default"));
+        update.put("system@id", JsonNull.INSTANCE); // clear remote system id; commander assigns its own parent
+        update.put("procedureLink@link", JsonNull.INSTANCE);
+        update.put("deploymentLink@link", JsonNull.INSTANCE);
+        update.put("featureOfInterest@link", JsonNull.INSTANCE);
+        update.put("samplingFeature@link", JsonNull.INSTANCE);
+        update.put("links", JsonNull.INSTANCE);
+        DatastreamResource dsResource = dsRes.modelCopy(update);
+
+        try
+        {
+            Datastream newDs = cmdSys.addInsertDatastream(dsResource);
+            getDsMap().put(remoteDs.getRemoteKey(), newDs); // node-qualified key (bare ids collide across nodes)
+            log.debug("Mirrored datastream: {}", dsName);
+            return newDs;
+        }
+        catch (Exception e)
+        {
+            log.error("Failed to create datastream {} on commander: {}", dsName, e.toString());
+            return null;
+        }
     }
 
     // ---- restart/collision dedup helpers ------------------------------------

@@ -20,7 +20,7 @@ import static org.sensorhub.impl.service.federation.BrokerLogging.log;
  */
 public interface CommandRoutingMixin extends BrokerContext
 {
-    default void subscribeToCommanderControlstream(ControlStream commanderCs, System remoteSys, ControlStream remoteCs)
+    default Thread subscribeToCommanderControlstream(ControlStream commanderCs, System remoteSys, ControlStream remoteCs)
     {
         String csId = commanderCs.getId() != null ? commanderCs.getId() : "unknown";
         String remoteCsId = remoteCs.getId() != null ? remoteCs.getId() : "unknown";
@@ -44,15 +44,16 @@ public interface CommandRoutingMixin extends BrokerContext
 
             commanderCs.start();
 
-            Thread cmdThread = new Thread(() -> commandForwardingLoop(commanderCs, remoteSys, remoteCs));
+            Thread cmdThread = new Thread(() -> commandForwardingLoop(commanderCs, remoteSys, remoteCs), "cmd-forward");
             cmdThread.setDaemon(true);
-            getWorkerThreads().add(cmdThread);
             cmdThread.start();
             log.debug("Started command forwarding: {} -> {}", csId, remoteCsId);
+            return cmdThread;
         }
         catch (Exception e)
         {
             log.error("[CONTROLSTREAM] failed to subscribe to commander control stream {}: {}", csId, e.toString());
+            return null;
         }
     }
 

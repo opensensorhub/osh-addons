@@ -193,6 +193,28 @@ public interface DiscoveryMixin extends MirroringMixin, ObservationMixin, Schema
         log.info("Started observation pumps for {} datastream(s)", remoteDsInfo.size());
     }
 
+    /** Subscribe one remote datastream (PULL) and return the topic it subscribed to. */
+    default String subscribeToRemoteObservationsOne(Datastream dsObj)
+    {
+        dsObj.setConnectionMode(StreamableModes.PULL);
+        dsObj.initMqtt();
+        dsObj.start(); // PULL -> subscribes to the OBSERVATION topic
+        return dsObj.getTopic();
+    }
+
+    /**
+     * Start one observation pump (daemon) and return the thread. Unlike the batch
+     * {@code startObservationPumps}, the reconcile loop tracks this thread in the
+     * stream registry (per-stream) so it can be individually interrupted on retire.
+     */
+    default Thread startObservationPump(Datastream dsObj)
+    {
+        Thread obsThread = new Thread(() -> testObsRetrieval(dsObj), "obs-pump");
+        obsThread.setDaemon(true);
+        obsThread.start();
+        return obsThread;
+    }
+
     /**
      * Orchestrator: discover -> subscribe to obs -> mirror to commander -> start
      * pumps. Subscription happens BEFORE mirroring so observations accumulate

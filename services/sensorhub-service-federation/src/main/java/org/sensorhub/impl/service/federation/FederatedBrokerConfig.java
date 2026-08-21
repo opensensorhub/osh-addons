@@ -30,4 +30,18 @@ public class FederatedBrokerConfig extends ServiceConfig
             + "federation status summary (nodes, mirrored datastreams/control streams, active threads). "
             + "Set to 0 to disable status reporting.")
     public int statusReportIntervalSeconds = 30;
+
+    @DisplayInfo(label = "Reconcile Interval (s)", desc = "How often the broker re-discovers remote "
+            + "topology to pick up datastreams/control streams that appeared and retire ones that "
+            + "vanished. Set to 0 to fix the topology at startup (discover on run-up only).")
+    public int reconcileIntervalSeconds = 30;
+
+    @DisplayInfo(label = "Removed After Cycles", desc = "Consecutive reconcile cycles a known stream "
+            + "must be absent from a REACHABLE remote before it is retired (its pump stopped and routing "
+            + "entry dropped). A node that is simply down does not count against this.")
+    public int removedAfterCycles = 3;
+
+    @DisplayInfo(label = "On Removed", desc = "What to do with a retired stream's commander-side mirror: "
+            + "'keep' leaves it in place (history preserved), 'delete' removes it from the commander.")
+    public String onRemoved = "keep";
 }

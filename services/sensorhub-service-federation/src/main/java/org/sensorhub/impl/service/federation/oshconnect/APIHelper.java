@@ -108,6 +108,15 @@ public class APIHelper
         return post(url, body, reqHeaders);
     }
 
+    /** DELETE a top-level resource by id (e.g. /datastreams/{id}, /controlstreams/{id}). */
+    public ApiResponse deleteResource(APIResourceTypes resType, String resId)
+    {
+        String url = getApiRootUrl() + "/" + resType.term() + "/" + resId;
+        HttpRequest.Builder builder = HttpRequest.newBuilder().uri(URI.create(url)).DELETE();
+        applyAuth(builder);
+        return execute(builder);
+    }
+
     /**
      * Mirror of {@code get_resource(resource_type, resource_id, subresource_type, params)}.
      */

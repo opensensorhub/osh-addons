@@ -45,4 +45,13 @@ public interface BrokerContext
 
     /** Whether binary (e.g. video) datastreams are federated via swe+binary passthrough. */
     boolean isBinaryDatastreamsEnabled();
+
+    /** Mirror of {@code self.stream_registry}: active pumps tracked by the reconcile loop. */
+    StreamRegistry getStreamRegistry();
+
+    /** Mirror of {@code self._env.removed_after_cycles}: absences before a stream is retired. */
+    int getRemovedAfterCycles();
+
+    /** Mirror of {@code on_removed == "delete"}: whether a retired stream's commander mirror is deleted. */
+    boolean isDeleteOnRemoved();
 }
