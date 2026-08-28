@@ -10,7 +10,7 @@
  Copyright (C) 2026 GeoRobotix Innovative Research, Inc. All Rights Reserved.
  ******************************* END LICENSE BLOCK ***************************/
 
-package org.sensorhub.impl.sensor.rtmp;
+package org.sensorhub.impl.sensor.rtmpcam;
 
 import org.osgi.framework.BundleActivator;
 import org.sensorhub.utils.OshBundleActivator;
