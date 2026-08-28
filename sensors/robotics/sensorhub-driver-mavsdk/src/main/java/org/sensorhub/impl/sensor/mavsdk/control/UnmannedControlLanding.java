@@ -100,6 +100,14 @@ public class UnmannedControlLanding extends AbstractSensorControl<UnmannedSystem
     @Override
     protected boolean execCommand(DataBlock command) throws CommandException {
 
+        // Air-only guard: landing is meaningless for ground/surface vehicles, and we
+        // refuse it when the connected vehicle is positively identified as non-airborne.
+        VehicleDomain domain = parentSensor.getVehicleDomain();
+        if ( !domain.permitsFlightCommand() ) {
+            throw new CommandException("Refusing land: connected vehicle is not airborne-capable ("
+                    + domain + ")");
+        }
+
         if ( null != locationRef) {
             locationRef.disable();
         }
@@ -146,27 +154,27 @@ public class UnmannedControlLanding extends AbstractSensorControl<UnmannedSystem
                         log.debug("Checking to see if disarm necessary..." );
 
                         system.getTelemetry().getArmed()
-                            .firstElement()
-                            .subscribe( armed -> {
-                               if ( armed ) {
+                                .firstElement()
+                                .subscribe( armed -> {
+                                    if ( armed ) {
 
-                                   log.debug("System already disarmed.");
-                               } else {
+                                        log.debug("System already disarmed.");
+                                    } else {
 
-                                   system.getAction().disarm()
-                                           .doOnComplete( () -> {
+                                        system.getAction().disarm()
+                                                .doOnComplete( () -> {
 
-                                               log.debug("Disarming...");
+                                                    log.debug("Disarming...");
 
-                                           })
-                                           .doOnError( throwable -> {
+                                                })
+                                                .doOnError( throwable -> {
 
-                                               log.debug("Failed to disarm: " + ((Action.ActionException) throwable).getCode());
+                                                    log.debug("Failed to disarm: " + ((Action.ActionException) throwable).getCode());
 
-                                           });
-                               }
+                                                });
+                                    }
 
-                            });
+                                });
 
 
                     }
@@ -177,4 +185,3 @@ public class UnmannedControlLanding extends AbstractSensorControl<UnmannedSystem
 
 
 }
-
