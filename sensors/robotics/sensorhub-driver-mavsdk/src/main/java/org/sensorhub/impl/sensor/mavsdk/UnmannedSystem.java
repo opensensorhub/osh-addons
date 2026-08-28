@@ -61,8 +61,10 @@ public class UnmannedSystem extends AbstractSensorModule<org.sensorhub.impl.sens
     UnmannedControlShell unmannedControlShell;
     UnmannedControlFlightMode unmannedControlFlightMode;
     UnmannedControlEnableLocation unmannedControlEnableLocation;
+    UnmannedControlArm unmannedControlArm;
     UnmannedControlPauseMission unmannedControlPauseMission;
     UnmannedControlRTL unmannedControlRTL;
+    UnmannedControlReboot unmannedControlReboot;
 
     MavSdkServerHandler mavsdkServer = new MavSdkServerHandler();
 
@@ -160,9 +162,17 @@ public class UnmannedSystem extends AbstractSensorModule<org.sensorhub.impl.sens
         addControlInput(this.unmannedControlEnableLocation);
         unmannedControlEnableLocation.init(this.unmannedControlLocation);
 
+        this.unmannedControlArm= new UnmannedControlArm(this);
+        addControlInput(this.unmannedControlArm);
+        unmannedControlArm.init();
+
         this.unmannedControlPauseMission = new UnmannedControlPauseMission(this);
         addControlInput(this.unmannedControlPauseMission);
         unmannedControlPauseMission.init();
+
+        this.unmannedControlReboot = new UnmannedControlReboot(this);
+        addControlInput(this.unmannedControlReboot);
+        unmannedControlReboot.init();
 
         videoOutput = new UnmannedVideoOutput(config.ffmpegConnection);
         if (null != config.ffmpegConnection.connectionString &&
@@ -255,7 +265,7 @@ public class UnmannedSystem extends AbstractSensorModule<org.sensorhub.impl.sens
                             0,
                             0,
                             0,
-                           ""
+                            ""
                     )).doOnError( t -> {
                         log.debug("Error sending heartbeat: " + t.getMessage());
                     });
@@ -269,6 +279,8 @@ public class UnmannedSystem extends AbstractSensorModule<org.sensorhub.impl.sens
                     unmannedControlShell.setSystem(drone);
                     unmannedControlFlightMode.setSystem(drone);
                     unmannedControlPauseMission.setSystem(drone);
+                    unmannedControlArm.setSystem(drone);
+                    unmannedControlReboot.setSystem(drone);
                     locationOutput.subscribe(drone);
                     homeOutput.subscribe(drone);
                     attitudeOutput.subscribe(drone);
