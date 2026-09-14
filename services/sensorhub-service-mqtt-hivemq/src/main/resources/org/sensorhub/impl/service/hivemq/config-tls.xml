@@ -2,11 +2,11 @@
 <hivemq xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
     <listeners>
         <tcp-listener>
-            <port>1884</port>
+            <port>1883</port>
             <bind-address>0.0.0.0</bind-address>
         </tcp-listener>
         <tls-tcp-listener>
-            <port>8884</port>
+            <port>8883</port>
             <bind-address>0.0.0.0</bind-address>
             <tls>
                 <keystore>

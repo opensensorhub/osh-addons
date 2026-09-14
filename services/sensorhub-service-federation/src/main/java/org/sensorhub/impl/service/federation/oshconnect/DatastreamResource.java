@@ -44,6 +44,17 @@ public class DatastreamResource
         return json.has("name") && !json.get("name").isJsonNull() ? json.get("name").getAsString() : null;
     }
 
+    /**
+     * The datastream's {@code outputName}. This — not the display {@code name} —
+     * is what the CS API keys a datastream on within its parent system, so it is
+     * the only safe identity to match a mirror against.
+     */
+    public String getOutputName()
+    {
+        return json.has("outputName") && !json.get("outputName").isJsonNull()
+                ? json.get("outputName").getAsString() : null;
+    }
+
     /** True if the datastream's advertised {@code formats} include the given media type. */
     public boolean advertisesFormat(String mimeType)
     {

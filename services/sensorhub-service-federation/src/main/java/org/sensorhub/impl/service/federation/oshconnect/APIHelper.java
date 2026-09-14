@@ -36,9 +36,62 @@ public class APIHelper
         this.port = port;
         this.serverRoot = serverRoot;
         this.apiRoot = apiRoot;
-        this.mqttTopicRoot = mqttTopicRoot;
+        this.mqttTopicRoot = normalizeMqttRoot(mqttTopicRoot);
         this.username = username;
         this.password = password;
+    }
+
+    /**
+     * Normalize a configured MQTT topic root so it can be concatenated directly
+     * with a resource path.
+     *
+     * The root is free-form: it may be a single segment ({@code "axis1"}), several
+     * ({@code "site1/osh"}), or endpoint-prefixed with a leading slash
+     * ({@code "/api"}) — which is the shape a node publishes on when its
+     * Connected Systems API MQTT service has no nodeId configured. A leading
+     * slash is significant and preserved; trailing slashes are not. Blank or null
+     * yields null, so the caller falls back to the API root.
+     */
+    static String normalizeMqttRoot(String root)
+    {
+        if (root == null)
+            return null;
+        String r = root.trim();
+        while (r.endsWith("/"))
+            r = r.substring(0, r.length() - 1);
+        return r.isEmpty() ? null : r;
+    }
+
+    /** Trim a path segment of surrounding slashes, falling back to {@code fallback} when blank. */
+    static String normalizePathSegment(String value, String fallback)
+    {
+        if (value == null)
+            return fallback;
+        String v = value.trim();
+        while (v.startsWith("/"))
+            v = v.substring(1);
+        while (v.endsWith("/"))
+            v = v.substring(0, v.length() - 1);
+        return v.isEmpty() ? fallback : v;
+    }
+
+    /**
+     * Normalize the configured API root to the path <em>below</em> {@code serverRoot}.
+     *
+     * The config field is documented as "sensorhub/api" while the URL is built as
+     * {@code /{serverRoot}/{apiRoot}}, so taking it literally would yield
+     * {@code /sensorhub/sensorhub/api}. A redundant leading server-root segment is
+     * therefore dropped, which makes both "api" and "sensorhub/api" mean the same thing.
+     */
+    static String normalizeApiRoot(String apiRoot, String serverRoot)
+    {
+        String a = normalizePathSegment(apiRoot, "api");
+        if (serverRoot != null && !serverRoot.isEmpty() && a.equals(serverRoot))
+            return "api";
+        String prefix = serverRoot + "/";
+        if (serverRoot != null && !serverRoot.isEmpty() && a.startsWith(prefix))
+            a = a.substring(prefix.length());
+        return a.isEmpty() ? "api" : a;
     }
 
     public void setUserAuth(boolean userAuth)
@@ -46,9 +99,21 @@ public class APIHelper
         this.userAuth = userAuth;
     }
 
+    /** Root used when a node does not configure one; matches the default nodeId of the CS API MQTT service. */
+    public static final String DEFAULT_MQTT_ROOT = "api";
+
+    /**
+     * The MQTT topic root, which is independent of the HTTP API root.
+     *
+     * A node's MQTT topics are rooted at its Connected Systems API MQTT service
+     * nodeId, and that nodeId has nothing to do with where the CS API is served
+     * over HTTP — only a node published without a nodeId falls back to its HTTP
+     * endpoint. The two default to the same string ("api"), which makes them look
+     * coupled; they are not, so this deliberately does not derive one from the other.
+     */
     public String getMqttRoot()
     {
-        return mqttTopicRoot != null ? mqttTopicRoot : apiRoot;
+        return mqttTopicRoot != null ? mqttTopicRoot : DEFAULT_MQTT_ROOT;
     }
 
     // ---- URL building -------------------------------------------------------
