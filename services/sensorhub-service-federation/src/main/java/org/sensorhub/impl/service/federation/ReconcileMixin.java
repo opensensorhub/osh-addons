@@ -106,6 +106,17 @@ public interface ReconcileMixin extends DiscoveryMixin
                 continue;
             }
             getStreamRegistry().markSeen(key, cycle);
+
+            // Opaque binary passthrough (e.g. video): frames are relayed verbatim
+            // and the record schema is never interpreted; the remote's swe+binary
+            // schema is also not guaranteed byte-stable across fetches. Re-mirroring
+            // such a stream on a schema-string diff would tear down and re-create
+            // the commander video mirror, orphaning any viewer watching the old one.
+            // So skip drift for binary — it is still activated when new and retired
+            // when it vanishes; only the needless churn of a live stream is avoided.
+            if (dsObj.getEncodingMode() == EncodingMode.BINARY)
+                continue;
+
             String newSig = datastreamSchemaSig(dsObj);
             if (entry.schemaSig != null && newSig != null && !newSig.equals(entry.schemaSig))
             {
@@ -198,8 +209,16 @@ public interface ReconcileMixin extends DiscoveryMixin
                         // Binary (e.g. video) datastreams are only federated when
                         // opted in; otherwise skip so JSON federation is unaffected.
                         // (Java-specific gate; the Python source has no such opt-in.)
+                        // Logged (not silent) so a video that vanishes because the
+                        // opt-in is off is diagnosable; only fires when a binary
+                        // stream actually exists AND the flag is off, so it does not
+                        // spam once the flag is enabled (the branch is then skipped).
                         if (dsObj.getEncodingMode() == EncodingMode.BINARY && !isBinaryDatastreamsEnabled())
+                        {
+                            log.info("[RECONCILE] skipping binary datastream {} (enableBinaryDatastreams is off)",
+                                    dsObj.getRemoteKey());
                             continue;
+                        }
                         dsObj.initialize();
                         currentDs.put(dsObj.getRemoteKey(), Map.entry(sysObj, dsObj));
                     }
