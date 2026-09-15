@@ -35,7 +35,7 @@ public class NmeaGpsSensor extends AbstractSensorModule<NmeaGpsConfig> {
         super.doInit();
 
         // Generate identifiers
-        generateUniqueID("ros-nmea-gps-", config.id);
+        generateUniqueID("urn:osh:sensor:georobotix:ros-nmea-gps:", config.id);
         generateXmlID("ros-nmea-gps-", config.id);
 
         // Create and initialize output

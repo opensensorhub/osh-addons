@@ -36,7 +36,7 @@ public class RemoteControlSensor extends AbstractSensorModule<RemoteControlConfi
         logger = LoggerFactory.getLogger(RemoteControlSensor.class);
 
         // Generate identifiers
-        generateUniqueID("ros-teleop-", config.id);
+        generateUniqueID("urn:osh:sensor:georobotix:ros-teleop:", config.id);
         generateXmlID("ros-teleop-", config.id);
 
         // Create and initialize output

@@ -1,6 +1,6 @@
 description = 'Kinect Driver'
 ext.details = 'An OpenSensorHub driver for the Microsoft Kinect using the OpenKinect freenect library and Java wrappers'
-version = '1.0.0'
+version = '1.0.1'
 
 dependencies {
   implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion

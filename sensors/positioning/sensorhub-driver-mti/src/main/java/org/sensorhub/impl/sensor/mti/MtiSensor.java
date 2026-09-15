@@ -55,7 +55,7 @@ public class MtiSensor extends AbstractSensorModule<MtiConfig>
         super.doInit();
         
         // generate IDs
-        generateUniqueID("urn:xsens:imu:mti:", null);
+        generateUniqueID("urn:osh:sensor:georobotix:xsens:imu:mti:", null);
         generateXmlID("XSENS_IMU_", null);
                 
         // create main data interface

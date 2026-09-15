@@ -5,7 +5,7 @@ import org.sensorhub.impl.sensor.AbstractSensorModule;
 
 
 public class MeteobridgeSensor extends AbstractSensorModule<MeteobridgeConfig>{
-	private static final String UID_PREFIX = "urn:envsys:sensors:meteobridge:";
+	private static final String UID_PREFIX = "urn:osh:sensor:georobotix:envsys:meteobridge:";
 	
 	private boolean connected;
 	private MeteobridgeOutput dataInterface;

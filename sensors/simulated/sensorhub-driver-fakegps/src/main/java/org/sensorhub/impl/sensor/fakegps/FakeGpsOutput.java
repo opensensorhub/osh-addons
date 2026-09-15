@@ -119,7 +119,7 @@ public class FakeGpsOutput extends AbstractSensorOutput<FakeGpsSensor>
         GeoPosHelper fac = new GeoPosHelper();
         var recBuilder = fac.createRecord()
             .name(getName())
-            .definition("urn:osh:sensor:simgps:gpsdata")
+            .definition("urn:osh:sensor:georobotix:simgps:gpsdata")
             .addField("time", fac.createTime()
                 .asSamplingTimeIsoGPS());
         

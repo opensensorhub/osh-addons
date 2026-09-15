@@ -37,7 +37,7 @@ import java.util.concurrent.FutureTask;
  * Extend this class for any process module with video input/output.
  */
 public abstract class FFmpegProcess extends AbstractProcessModule<FFmpegProcessConfig> {
-    final String ID_PREFIX = "urn:osh:process:ffmpeg:" + this.getClass().getSimpleName().toLowerCase() + ":";
+    final String ID_PREFIX = "urn:osh:process:georobotix:ffmpeg:" + this.getClass().getSimpleName().toLowerCase() + ":";
     SimpleProcessImpl process;
     IModule<?> sensorModule;
     protected IProcessExec executable;

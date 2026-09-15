@@ -95,7 +95,7 @@ public class IntelipodSensor extends AbstractSensorModule<IntelipodConfig>
         }
 
         // generate identifiers: use serial number from config or first characters of local ID
-        generateUniqueID("urn:osh:intelipod:", config.serialNumber);
+        generateUniqueID("urn:osh:sensor:georobotix:intelipod:", config.serialNumber);
         generateXmlID("INTELIPOD_", config.serialNumber);
         
         intelipodOut.init();

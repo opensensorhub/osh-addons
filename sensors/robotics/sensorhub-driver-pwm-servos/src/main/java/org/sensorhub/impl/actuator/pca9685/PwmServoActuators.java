@@ -49,7 +49,7 @@ public class PwmServoActuators extends AbstractSensorModule<PwmServosConfig>
         super.init(config);
         
         // generate IDs
-        generateUniqueID("urn:osh:actuator:servos:", null);
+        generateUniqueID("urn:osh:actuator:georobotix:servos:", null);
         generateXmlID("PWM_SERVOS_", null);      
         
         // create control inputs

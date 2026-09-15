@@ -1,6 +1,6 @@
 description = 'Intellisense Flood Sensor Driver'
 ext.details = 'Driver for pulling measurements from Intellisense Flood Sensor API and publishing in SWE format'
-version = '0.1.0'
+version = '0.1.1'
 
 dependencies {
   implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion

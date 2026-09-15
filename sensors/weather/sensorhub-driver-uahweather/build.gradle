@@ -1,6 +1,6 @@
 description = 'UAH Weather Station'
 ext.details = 'Driver for UAH home weather station'
-version = '0.1.0-SNAPSHOT'
+version = '0.1.1'
 
 dependencies {
   implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion

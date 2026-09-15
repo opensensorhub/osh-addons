@@ -54,7 +54,7 @@ public class FFMPEGSensor extends AbstractSensorModule<FFMPEGConfig> {
         clearStatus();
         logger.info("Initializing FFMPEG sensor for {}", getUniqueIdentifier());
 
-        generateUniqueID("urn:osh:sensor:ffmpeg:", config.serialNumber);
+        generateUniqueID("urn:osh:sensor:georobotix:ffmpeg:", config.serialNumber);
         generateXmlID("FFMPEG_", config.serialNumber);
 
         if (config.connection.fps < 0)

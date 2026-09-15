@@ -1,6 +1,6 @@
 description = 'Gridded Storm Weather Datasets'
 ext.details = 'Adaptor for gridded datasets of extreme weather events as lightning and hail'
-version = '0.5.0'
+version = '0.5.1'
 
 dependencies {
   implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion

@@ -90,7 +90,7 @@ public class RtmpDriver extends AbstractSensorModule<RtmpConfig> {
         super.doInit();
 
         if (getUniqueIdentifier() == null) {
-            generateUniqueID("urn:osh:sensor:rtmp:", config.serialNumber);
+            generateUniqueID("urn:osh:sensor:georobotix:rtmp:", config.serialNumber);
             generateXmlID("RTMP_", config.serialNumber);
         }
 

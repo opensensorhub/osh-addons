@@ -40,7 +40,7 @@ public class F20Driver extends AbstractSensorModule<F20Config> {
         super.doInit();
 
         // Generate identifiers
-        generateUniqueID("urn:osh:driver:f20:", config.serialNumber);
+        generateUniqueID("urn:osh:sensor:georobotix:f20:", config.serialNumber);
         generateXmlID("F20", config.serialNumber);
 
         // Create and initialize output

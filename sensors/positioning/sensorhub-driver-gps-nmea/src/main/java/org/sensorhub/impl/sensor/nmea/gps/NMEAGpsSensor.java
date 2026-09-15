@@ -63,7 +63,7 @@ public class NMEAGpsSensor extends AbstractSensorModule<NMEAGpsConfig>
         super.doInit();
         
         // generate identifiers: use serial number from config or first characters of local ID
-        generateUniqueID("urn:osh:sensor:nmea-gps:", config.serialNumber);
+        generateUniqueID("urn:osh:sensor:georobotix:nmea-gps:", config.serialNumber);
         generateXmlID("GPS_SENSOR_", config.serialNumber);
         
         // create outputs depending on selected sentences

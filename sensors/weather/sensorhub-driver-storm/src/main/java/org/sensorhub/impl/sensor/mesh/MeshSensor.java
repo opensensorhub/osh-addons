@@ -44,7 +44,7 @@ public class MeshSensor extends AbstractSensorModule<MeshConfig>
 		super.doInit();
 
 		// IDs
-		this.uniqueID = "urn:osh:sensor:mrms:mesh";
+		this.uniqueID = "urn:osh:sensor:georobotix:mrms:mesh";
 		this.xmlID = "MRMS_MESH";
 
 		// initialize outputs

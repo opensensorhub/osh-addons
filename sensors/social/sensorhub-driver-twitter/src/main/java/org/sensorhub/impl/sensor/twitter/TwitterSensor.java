@@ -14,7 +14,7 @@ import org.sensorhub.impl.sensor.AbstractSensorModule;
  */
 public class TwitterSensor extends AbstractSensorModule<TwitterConfig> 
 {
-	public final String urn = "urn:osh:sensor:twitter";
+	public final String urn = "urn:osh:sensor:georobotix:twitter";
 	public final String xmlID = "TWITTER_STREAM_";
 	
 	TwitterOutput dataInterface;

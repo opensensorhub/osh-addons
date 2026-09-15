@@ -1,6 +1,6 @@
 description = 'BNO055 Orientation Sensor'
 ext.details = 'Driver for BNO055 absolute orientation sensor built by Bosch'
-version = '1.0.0'
+version = '1.0.1'
 
 dependencies {
   implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion

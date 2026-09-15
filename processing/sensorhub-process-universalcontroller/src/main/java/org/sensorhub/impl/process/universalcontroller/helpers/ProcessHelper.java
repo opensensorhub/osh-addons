@@ -1,21 +1,17 @@
 package org.sensorhub.impl.process.universalcontroller.helpers;
 
 import net.opengis.gml.v32.impl.ReferenceImpl;
-import net.opengis.sensorml.v20.AbstractProcess;
 import net.opengis.sensorml.v20.IOPropertyList;
-import net.opengis.sensorml.v20.SimpleProcess;
 import net.opengis.sensorml.v20.impl.SettingsImpl;
 import net.opengis.swe.v20.AbstractSWEIdentifiable;
 import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.DataRecord;
 import org.vast.process.ExecutableProcessImpl;
-import org.vast.process.IProcessExec;
 import org.vast.process.ProcessException;
 import org.vast.sensorML.*;
 import org.vast.xml.XMLWriterException;
 
 import java.io.OutputStream;
-import java.util.ArrayList;
 
 public class ProcessHelper extends SMLUtils {
     AggregateProcessImpl aggregateProcess;
@@ -24,8 +20,8 @@ public class ProcessHelper extends SMLUtils {
     public ProcessHelper() {
         super(V2_0);
 
-        controlType = new ReferenceImpl("urn:osh:process:datasink:commandstream");
-        sourceType = new ReferenceImpl("urn:osh:process:datasource:stream");
+        controlType = new ReferenceImpl("urn:osh:process:georobotix:datasink:commandstream");
+        sourceType = new ReferenceImpl("urn:osh:process:georobotix:datasource:stream");
 
         aggregateProcess = new AggregateProcessImpl();
     }

@@ -13,7 +13,7 @@ import net.opengis.gml.v32.Point;
 import net.opengis.gml.v32.impl.GMLFactory;
 
 public class HttpWeatherSensor extends AbstractSensorModule<HttpWeatherConfig> {
-	private static final String UID_PREFIX = "urn:envsys:sensors:httpweather:";
+	private static final String UID_PREFIX = "urn:osh:sensor:georobotix:envsys:httpweather:";
 	private static final String SENSOR_DESCRIPTION = "Provides HTTP endpoint on which it can receive weather data";
 	private boolean serverRunning;
 	private HttpWeatherOutput dataInterface;

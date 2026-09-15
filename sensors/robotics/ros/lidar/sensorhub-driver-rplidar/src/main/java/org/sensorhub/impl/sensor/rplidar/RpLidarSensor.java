@@ -35,7 +35,7 @@ public class RpLidarSensor extends AbstractSensorModule<RpLidarConfig> {
         super.doInit();
 
         // Generate identifiers
-        generateUniqueID("ros-rplidar-", config.id);
+        generateUniqueID("urn:osh:sensor:georobotix:ros-rplidar:", config.id);
         generateXmlID("ros-rplidar-", config.id);
 
         // Create and initialize output

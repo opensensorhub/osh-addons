@@ -1,6 +1,6 @@
 description = 'RPLidar Sensor'
 ext.details = 'ROS interface for OpenSensorHub to receive RP-LIDAR measurements'
-version = '1.0.0'
+version = '1.0.1'
 
 repositories {
     mavenCentral()
