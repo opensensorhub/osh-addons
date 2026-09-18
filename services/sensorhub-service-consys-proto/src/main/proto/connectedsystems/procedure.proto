@@ -1,0 +1,54 @@
+// OGC Connected Systems API — Procedure resource (Part 1, clause 12)
+//
+// Models the `Procedure` resource type — a description of a procedure /
+// method / datasheet (e.g., a sensor model, an algorithm). Maps to
+// `sosa:Procedure`. Procedures act as type templates for `System`
+// instances that implement them.
+//
+// Per the spec, Procedure has no geometry (its `geometry` is `null` in
+// GeoJSON form); otherwise the shape mirrors `System` closely.
+//
+// Field-number layout mirrors `system.proto`.
+
+syntax = "proto3";
+
+package georobotix.csapi;
+
+option java_package = "com.georobotix.csapi";
+option java_outer_classname = "ProcedureProto";
+option go_package = "github.com/georobotix/csapi";
+
+import "connectedsystems/cs_common.proto";
+import "sml/sml.proto";
+import "geojson/geojson.proto";
+
+// Procedure resource — a procedure or methodology implementable by
+// System instances. Maps to `sosa:Procedure`.
+message Procedure {
+  // ─── Identity (1–9) ───────────────────────────────────────────────
+  string          id          = 1;
+  string          unique_id   = 2;  // globally unique URI (required)
+  string          name        = 3;  // required
+  optional string description = 4;
+
+  reserved 5 to 9;
+
+  // ─── Type, lifecycle (10–19) ──────────────────────────────────────
+  // No `location` — Procedure has null geometry per spec.
+  string     procedure_type = 10;  // URI / CURIE
+  TimePeriod valid_time     = 12;
+
+  reserved 11, 13 to 19;
+
+  // ─── Links (20–29) ────────────────────────────────────────────────
+  repeated Link links = 20;
+
+  reserved 21 to 29;
+
+  // ─── Typed encoding-form payloads (30–49) ─────────────────────────
+  georobotix.sensorml.AnyProcess sensorml = 30;
+  georobotix.geojson.Feature     feature  = 31;
+
+  reserved 32 to 49;
+  reserved 50 to 99;  // future canonical attributes
+}

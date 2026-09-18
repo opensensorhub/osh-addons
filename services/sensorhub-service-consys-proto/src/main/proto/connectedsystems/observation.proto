@@ -1,0 +1,106 @@
+// OGC Connected Systems API — Observation resource (Part 2, clause 8)
+//
+// Models the `Observation` resource type from the OGC CS API Standard,
+// Part 2: Dynamic Data Resources. An `Observation` is an estimate of one
+// or more observed property values, scoped to the `DataStream` it
+// belongs to. Maps to `sosa:Observation`.
+//
+// Encoding role: this proto representation is an alternative encoding
+// alongside the JSON encoding defined in the standard. The intent is a
+// **simplified binary encoding** — fixed-shape observation metadata
+// (identity, time, cross-resource references) as structured fields, and
+// a `result` payload carried as SWE Common `EncodedValues`. No
+// per-observation schema metadata travels with each message; values are
+// encoded once per the DataStream's registered SWE Common encoding
+// (TextEncoding, BinaryEncoding, JSONEncoding, …).
+//
+// `EncodedValues` is the SWE Common type whose own oneof already
+// expresses the spec's inline-or-external exclusivity for `result` —
+// the CS API JSON `result` and `result@link` forms map onto its
+// `inline_data` and `ref` variants respectively. The `parameters`
+// payload, whose schema is also defined per-DataStream, is carried as
+// opaque bytes (matching the spec's bare "Any" type for that field —
+// the CS API JSON has no `parameters@link` equivalent).
+//
+// ── Field-number layout ─────────────────────────────────────────────
+//
+//   1 – 9    Identity (id, datastream_id)
+//   10 – 19  Cross-resource references (samplingFeature, procedure)
+//   20 – 29  Time
+//   30 – 39  Parameters payload (opaque bytes, per the spec's "Any")
+//   40 – 49  Result payload (SWE Common `EncodedValues` — inline bytes
+//            or external link via the type's own oneof)
+//   50 – 99  Reserved for future canonical attributes from the spec
+//
+// Field numbers are wire format: never renumber, never reuse. Deprecated
+// fields use the `reserved` keyword.
+
+syntax = "proto3";
+
+package georobotix.csapi;
+
+option java_package = "com.georobotix.csapi";
+option java_outer_classname = "ObservationProto";
+option go_package = "github.com/georobotix/csapi";
+
+import "connectedsystems/cs_common.proto";
+import "swecommon/sweCommon3.proto";
+
+// Observation resource — a single observation belonging to a DataStream.
+message Observation {
+
+  // ─── Identity (1–9) ───────────────────────────────────────────────
+  string id            = 1;  // local feature ID, server-assigned;
+                             // ignored on create
+  string datastream_id = 2;  // local DataStream ID (required per spec —
+                             // JSON encoding: `datastream@id`)
+
+  reserved 3 to 9;
+
+  // ─── Cross-resource references (10–19) ────────────────────────────
+  //
+  // Modeled as typed fields (rather than via a generic Link mechanism)
+  // because the spec's JSON encoding uses different reference styles
+  // for each — local id for samplingFeature, full Link for procedure —
+  // and v1 mirrors that asymmetry.
+  optional string sampling_feature_id = 10;  // optional local FOI ID
+                                             // (JSON: `samplingFeature@id`)
+  Link procedure                      = 11;  // optional procedure link
+                                             // (JSON: `procedure@link`)
+
+  reserved 12 to 19;
+
+  // ─── Time (20–29) ─────────────────────────────────────────────────
+  TimeInstant phenomenon_time = 20;  // optional; defaults to result_time
+                                     // if absent. May be in the far past
+                                     // or future per spec.
+  TimeInstant result_time     = 21;  // required per spec; never in the
+                                     // future.
+
+  reserved 22 to 29;
+
+  // ─── Parameters payload (30–39) ──────────────────────────────────
+  //
+  // Optional observation parameters. Schema is defined per-DataStream
+  // (in the DataStream's `parametersSchema` metadata); receivers decode
+  // against that registered schema. Matches the spec's bare "Any" — no
+  // content-type hint, no inline-or-link variant.
+  optional bytes parameters = 30;
+
+  reserved 31 to 39;
+
+  // ─── Result payload (40–49) ──────────────────────────────────────
+  //
+  // SWE Common `EncodedValues`. Its own oneof expresses the spec's
+  // inline-or-external exclusivity:
+  //   * `inline_data` (bytes) — values encoded per the DataStream's
+  //     registered SWE Common encoding; no schema metadata travels
+  //     with each observation (JSON: `result`).
+  //   * `ref` (AssociationAttributeGroup) — external pointer for
+  //     out-of-band data, e.g. a tile service URL for a large raster
+  //     (JSON: `result@link`).
+  georobotix.swecommon.EncodedValues result = 40;
+
+  reserved 41 to 49;
+  reserved 50 to 99;  // future canonical attributes from the spec
+}

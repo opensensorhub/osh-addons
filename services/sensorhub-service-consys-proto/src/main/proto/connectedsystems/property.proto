@@ -1,0 +1,56 @@
+// OGC Connected Systems API — Property resource (Part 1, clause 14)
+//
+// Models the `Property` (Property Definition) resource — describes a
+// derived or observable / controllable property used by observations
+// and commands. NOT a feature type per spec.
+//
+// Direct analogue of SensorML's `DerivedProperty` (see
+// `sensorml/DerivedProperty.json`) plus the CS API `links` extension.
+
+syntax = "proto3";
+
+package georobotix.csapi;
+
+option java_package = "com.georobotix.csapi";
+option java_outer_classname = "PropertyProto";
+option go_package = "github.com/georobotix/csapi";
+
+import "connectedsystems/cs_common.proto";
+
+// Property (Property Definition) — a derived property used by
+// observations or commands. Maps to SensorML `DerivedProperty`.
+message Property {
+  // ─── Identity (1–9) ───────────────────────────────────────────────
+  string          id          = 1;
+  string          unique_id   = 2;  // globally unique URI (required)
+  string          label       = 3;  // required per spec
+  optional string description = 4;
+
+  reserved 5 to 9;
+
+  // ─── Property semantics (10–19) ───────────────────────────────────
+  string base_property = 10;  // URI of the base property this is derived
+                              // from (required per spec)
+  string object_type   = 11;  // URI of the entity type the base property
+                              // applies to
+  string statistic     = 12;  // URI of the statistical operator applied
+
+  reserved 13 to 19;
+
+  // ─── Qualifiers (20–29) ───────────────────────────────────────────
+  //
+  // SensorML defines `qualifiers` as a list of `AnySimpleComponent`
+  // (sweCommonDefs.json#/$defs/AnySimpleComponent). Carried here as a
+  // list of typed SWE Common simple components when needed; deferred
+  // for v1 (reserved slot).
+  //
+  // 20 reserved for repeated AnySimpleComponent qualifiers
+
+  reserved 20 to 29;
+
+  // ─── Links (30–39) ────────────────────────────────────────────────
+  repeated Link links = 30;
+
+  reserved 31 to 39;
+  reserved 40 to 99;
+}

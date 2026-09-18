@@ -1,0 +1,154 @@
+// OGC SensorML 3.0 — Protocol Buffers Schema (Draft)
+//
+// Standard: OGC SensorML 3.0
+// (https://docs.ogc.org/is/22-008/22-008.html)
+//
+// **Draft scope.** This file is a minimum-viable rendering of the
+// SensorML process-type hierarchy in protobuf, intended to let CS API
+// resources (notably `System`) carry typed SensorML payloads. It
+// covers:
+//
+//   * `DescribedObject` — the root descriptive base, with its core
+//     identity / metadata fields
+//   * `AbstractProcess` and `AbstractPhysicalProcess` — the
+//     intermediate inheritance layers
+//   * the four concrete process types (`SimpleProcess`,
+//     `AggregateProcess`, `PhysicalComponent`, `PhysicalSystem`) as
+//     discriminator markers
+//   * `AnyProcess` — discriminated union over the four
+//
+// Many SensorML attributes are intentionally omitted in this draft
+// (characteristics, capabilities, contacts, documents, history,
+// legalConstraints, security constraints, identifiers, classifiers,
+// inputs/outputs/parameters, modes, configuration, attachedTo, pose,
+// components, connections, …). Reserved field-number ranges in each
+// message hold space for those to slot in incrementally without
+// renumbering existing fields.
+//
+// Proto3 conventions follow `sweCommon3.proto`:
+//   * PascalCase messages, snake_case fields
+//   * Inheritance modeled by embedded-base composition (no flattening)
+//   * `oneof` for the discriminated process-type union
+
+syntax = "proto3";
+
+package georobotix.sensorml;
+
+option java_package = "com.georobotix.sensorml";
+option java_outer_classname = "SensorMlProto";
+option go_package = "github.com/georobotix/sensorml";
+
+import "connectedsystems/cs_common.proto";   // TimePeriod (draft; may
+                                             // later move to a neutral
+                                             // location once shared
+                                             // helpers crystallize)
+import "swecommon/basic_types.proto";        // AssociationAttributeGroup
+                                             // (XLink shape) for `typeOf`
+
+// ─── DescribedObject — descriptive base for all SensorML types ────
+//
+// Subset of the SensorML `DescribedObject` JSON schema. Carries the
+// identity and basic descriptive metadata shared by all process
+// types. Required per spec: `unique_id`, `label`.
+//
+// Omitted (reserved): identifiers, classifiers, securityConstraints,
+// legalConstraints, characteristics, capabilities, contacts,
+// documents, history.
+message DescribedObject {
+  string                id          = 1;  // local ID
+  string                unique_id   = 2;  // globally unique URI (required)
+  string                label       = 3;  // human-readable label (required)
+  string                description = 4;  // human-readable description
+  string                lang        = 5;  // BCP 47 language tag
+  repeated string       keywords    = 6;  // discovery keywords
+  georobotix.csapi.TimePeriod  valid_time  = 7;  // validity period of the
+                                          // description
+
+  reserved 8 to 19;  // future DescribedObject fields (identifiers,
+                     // classifiers, constraints, characteristics, …)
+}
+
+// ─── AbstractProcess — base for all process types ───────────────────
+//
+// Subset of the SensorML `AbstractProcess` schema. Layers
+// process-level metadata (`definition` URI, base-process reference)
+// on top of `DescribedObject`.
+//
+// Omitted (reserved): configuration, featuresOfInterest, inputs,
+// outputs, parameters, modes.
+message AbstractProcess {
+  DescribedObject                         described_object = 1;  // embedded base
+  string                                  definition       = 2;  // type URI
+  georobotix.swecommon.AssociationAttributeGroup type_of          = 3;  // base-process xlink
+
+  reserved 4 to 19;  // future AbstractProcess fields (configuration,
+                     // featuresOfInterest, inputs / outputs /
+                     // parameters, modes)
+}
+
+// ─── AbstractPhysicalProcess — base for physical processes ──────────
+//
+// Adds physical-process metadata on top of `AbstractProcess`.
+//
+// Omitted (reserved): attachedTo, pose, localReferenceFrames.
+message AbstractPhysicalProcess {
+  AbstractProcess process = 1;  // embedded base
+
+  reserved 2 to 19;  // future fields (attachedTo, pose, local frames)
+}
+
+// ─── SimpleProcess — non-physical (computational) process ──────────
+//
+// A process with no physical embodiment — e.g., a software model.
+// Draft has no additional fields beyond `AbstractProcess`.
+message SimpleProcess {
+  AbstractProcess process = 1;
+
+  reserved 2 to 19;  // future SimpleProcess-specific fields (method)
+}
+
+// ─── AggregateProcess — composition of sub-processes ───────────────
+//
+// A process composed of sub-processes connected by data flows.
+// Draft has no additional fields beyond `AbstractProcess`.
+message AggregateProcess {
+  AbstractProcess process = 1;
+
+  reserved 2 to 19;  // future fields (components, connections)
+}
+
+// ─── PhysicalComponent — single physical device ────────────────────
+//
+// A non-decomposable physical device or piece of equipment.
+// Draft has no additional fields beyond `AbstractPhysicalProcess`.
+message PhysicalComponent {
+  AbstractPhysicalProcess process = 1;
+
+  reserved 2 to 19;  // future fields (method, configuration)
+}
+
+// ─── PhysicalSystem — composite physical assembly ──────────────────
+//
+// A physical assembly composed of physical components and
+// connections between them.
+// Draft has no additional fields beyond `AbstractPhysicalProcess`.
+message PhysicalSystem {
+  AbstractPhysicalProcess process = 1;
+
+  reserved 2 to 19;  // future fields (components, connections)
+}
+
+// ─── AnyProcess — discriminated union over the four concrete types ──
+//
+// Used wherever a typed SensorML process reference needs to be
+// carried without committing to a specific subtype at the schema
+// level — notably as the structured SensorML payload on the CS API
+// `System` resource.
+message AnyProcess {
+  oneof kind {
+    SimpleProcess     simple             = 1;
+    AggregateProcess  aggregate          = 2;
+    PhysicalComponent physical_component = 3;
+    PhysicalSystem    physical_system    = 4;
+  }
+}

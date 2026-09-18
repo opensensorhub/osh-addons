@@ -1,0 +1,110 @@
+// OGC SWE Common Data Model 3.0 — Protocol Buffers Schema — Scalar & Range Components
+// Packages 3 & 4: simple scalar components and their range counterparts.
+// Standard: OGC 24-014  (https://docs.ogc.org/is/24-014/24-014.html)
+
+syntax = "proto3";
+
+package georobotix.swecommon;
+
+option java_package = "com.georobotix.swecommon";
+option java_outer_classname = "SweCommonScalarComponentsProto";
+option go_package = "github.com/georobotix/swecommon";
+
+import "swecommon/basic_types.proto";
+
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Package 3 — Simple (Scalar) Components
+// ═══════════════════════════════════════════════════════════════════════════
+
+message Boolean {
+  AbstractSimpleComponent base = 1;
+  optional bool value = 2;
+}
+
+message Count {
+  AbstractSimpleComponent base = 1;
+  AllowedValues constraint = 2;
+  repeated NilValueInteger nil_values = 3;
+  optional int64 value = 4;
+}
+
+message Quantity {
+  AbstractSimpleComponent base = 1;
+  // Unit of measure (required by OGC spec).
+  UnitReference uom = 2;
+  AllowedValues constraint = 3;
+  repeated NilValueNumber nil_values = 4;
+  NumberOrSpecial value = 5;
+}
+
+message Text {
+  AbstractSimpleComponent base = 1;
+  AllowedTokens constraint = 2;
+  repeated NilValueText nil_values = 3;
+  string value = 4;
+}
+
+message Category {
+  AbstractSimpleComponent base = 1;
+  // URI — dictionary / code space.
+  string code_space = 2;
+  AllowedTokens constraint = 3;
+  repeated NilValueText nil_values = 4;
+  string value = 5;
+}
+
+message Time {
+  AbstractSimpleComponent base = 1;
+  // ISO-8601 epoch origin.
+  string reference_time = 2;
+  // URI — local temporal frame.
+  string local_frame = 3;
+  // Temporal unit of measure (required by OGC spec).
+  UnitReference uom = 4;
+  AllowedTimes constraint = 5;
+  repeated NilValueTime nil_values = 6;
+  DateTimeOrNumber value = 7;
+}
+
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Package 4 — Range Components
+// ═══════════════════════════════════════════════════════════════════════════
+
+message CountRange {
+  AbstractSimpleComponent base = 1;
+  AllowedValues constraint = 2;
+  repeated NilValueInteger nil_values = 3;
+  int64 low = 4;
+  int64 high = 5;
+}
+
+message QuantityRange {
+  AbstractSimpleComponent base = 1;
+  UnitReference uom = 2;
+  AllowedValues constraint = 3;
+  repeated NilValueNumber nil_values = 4;
+  NumberOrSpecial low = 5;
+  NumberOrSpecial high = 6;
+}
+
+message TimeRange {
+  AbstractSimpleComponent base = 1;
+  string reference_time = 2;
+  string local_frame = 3;
+  UnitReference uom = 4;
+  AllowedTimes constraint = 5;
+  repeated NilValueTime nil_values = 6;
+  DateTimeOrNumber low = 7;
+  DateTimeOrNumber high = 8;
+}
+
+message CategoryRange {
+  AbstractSimpleComponent base = 1;
+  string code_space = 2;
+  AllowedTokens constraint = 3;
+  repeated NilValueText nil_values = 4;
+  string low = 5;
+  string high = 6;
+}

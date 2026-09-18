@@ -1,0 +1,113 @@
+// OGC SWE Common Data Model 3.0 — Protocol Buffers Schema — Encodings
+// Package 10: text, JSON, XML, and binary block encoding descriptors.
+// Standard: OGC 24-014  (https://docs.ogc.org/is/24-014/24-014.html)
+
+syntax = "proto3";
+
+package georobotix.swecommon;
+
+option java_package = "com.georobotix.swecommon";
+option java_outer_classname = "SweCommonEncodingsProto";
+option go_package = "github.com/georobotix/swecommon";
+
+import "swecommon/basic_types.proto";
+
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Package 10 — Encodings
+// ═══════════════════════════════════════════════════════════════════════════
+
+message AbstractEncoding {
+  AbstractSWE base = 1;
+}
+
+message TextEncoding {
+  // CSV-like delimited text encoding.
+  AbstractEncoding base = 1;
+  bool collapse_white_spaces = 2;
+  // Default ".".
+  string decimal_separator = 3;
+  string token_separator = 4;
+  string block_separator = 5;
+}
+
+message JSONEncoding {
+  // JSON array/object encoding (new in SWE Common 3.0).
+  AbstractEncoding base = 1;
+  bool records_as_arrays = 2;
+  bool vectors_as_arrays = 3;
+}
+
+message XMLEncoding {
+  // XML element encoding.
+  AbstractEncoding base = 1;
+  // URI — target namespace.
+  string namespace = 2;
+}
+
+enum ByteOrder {
+  BYTE_ORDER_UNSPECIFIED = 0;
+  BYTE_ORDER_BIG_ENDIAN = 1;
+  BYTE_ORDER_LITTLE_ENDIAN = 2;
+}
+
+enum ByteEncodingMethod {
+  BYTE_ENCODING_METHOD_UNSPECIFIED = 0;
+  BYTE_ENCODING_METHOD_RAW = 1;
+  BYTE_ENCODING_METHOD_BASE64 = 2;
+}
+
+message BinaryComponent {
+  // Encoding parameters for a single scalar value.
+  AbstractSWE base = 1;
+  // URI — encryption method.
+  string encryption = 2;
+  uint32 significant_bits = 3;
+  uint32 bit_length = 4;
+  uint32 byte_length = 5;
+  // URI — binary data type (required by OGC spec).
+  string data_type = 6;
+  // Path reference to data component (required by OGC spec).
+  string ref = 7;
+}
+
+message BinaryBlock {
+  // Encoding parameters for a block of values.
+  AbstractSWE base = 1;
+  // URI — compression method.
+  string compression = 2;
+  // URI — encryption method.
+  string encryption = 3;
+  uint32 padding_bytes_before = 4;
+  uint32 padding_bytes_after = 5;
+  uint32 byte_length = 6;
+  // Path reference to aggregate component (required by OGC spec).
+  string ref = 7;
+}
+
+message BinaryMember {
+  oneof member {
+    BinaryComponent component = 1;
+    BinaryBlock block = 2;
+  }
+}
+
+message BinaryEncoding {
+  // Raw / base64 binary encoding with explicit member layout.
+  AbstractEncoding base = 1;
+  ByteOrder byte_order = 2;
+  ByteEncodingMethod byte_encoding = 3;
+  // Total stream length in bytes (if known).
+  uint64 byte_length = 4;
+  repeated BinaryMember members = 5;
+}
+
+// Discriminated union over all encoding methods.
+message AnyEncoding {
+  oneof encoding {
+    TextEncoding text_encoding = 1;
+    JSONEncoding json_encoding = 2;
+    XMLEncoding xml_encoding = 3;
+    BinaryEncoding binary_encoding = 4;
+  }
+}
