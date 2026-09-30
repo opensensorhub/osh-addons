@@ -24,7 +24,6 @@ import org.slf4j.LoggerFactory;
 public class SbsParser 
 {
 	Logger logger;
-	@Deprecated // Don't think I need this
 	Map<String, String>  flightNums = new HashMap<>();  // <hexIdent, flightNumber>
 	
 	public SbsParser() {
@@ -42,14 +41,13 @@ public class SbsParser
 
 			rec.messageType = MessageType.valueOf(vals[0]);
 			if (rec.messageType == MessageType.MSG) {
-				rec.transmissionType = Integer.parseInt(vals[1]);
 				parseCommonFields(rec, vals);
 				rec.timeMessageGenerated = dateTimeToUtc(rec.dateMessageGeneratedStr, rec.timeMessageGeneratedStr);
 				rec.timeMessageLogged = dateTimeToUtc(rec.dateMessageLoggedStr, rec.timeMessageLoggedStr);
 				switch (rec.transmissionType) {
 				case 1:
 					rec.callsign = vals[10].trim();
-					logger.trace("Parser Message 1: callsign: {}", rec.callsign );
+					logger.debug("Parser Message 1: callsign: {}", rec.callsign );
 					if(!flightNums.containsKey(rec.hexIdent) || flightNums.get(rec.hexIdent) == null) {
 						flightNums.put(rec.hexIdent, rec.callsign);
 					}
@@ -101,7 +99,7 @@ public class SbsParser
 			}
 			// TODO- support other MessageTypes, but not seeing any other types in PiAware feed
 		} catch (Exception e) {
-			System.err.println("inline: " + inline);
+			logger.error("Error parsing inline {} ",  inline);
 			throw new IOException(e);
 		}
 		return null;
@@ -121,10 +119,11 @@ public class SbsParser
 	}
 	
 	public static void parseCommonFields(SbsPojo rec, String[] vals) {
+		rec.transmissionType = Integer.parseInt(vals[1]);
 		rec.sessionId = Integer.parseInt(vals[2]);
 		rec.aircraftId = Integer.parseInt(vals[3]);
 		rec.hexIdent = vals[4];
-//		rec.flightID = vals[5];  // always 1 in SBS messages.  Override to use Flight number when available
+		rec.flightID = vals[5];  // This is not the same as callSign. It's always '1' in my observations thus far
 		rec.dateMessageGeneratedStr = vals[6];
 		rec.timeMessageGeneratedStr = vals[7];
 		rec.dateMessageLoggedStr = vals[8];
@@ -141,16 +140,19 @@ public class SbsParser
 	public static void main(String[] args) {
 		SbsParser parser = new SbsParser();
 		PiAwareConfig config = new PiAwareConfig();
-		try (Socket socket = new Socket("192.168.1.126", config.sbsOutboundPort);
+		try (Socket socket = new Socket("192.168.1.101", config.sbsOutboundPort);
 				BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()))) {
 
 			String line = null;
 			do  {
 				try {
 					line = in.readLine();
+					System.out.println(line);
 					SbsPojo rec = parser.parse(line);
-					if(rec.transmissionType == 3 ||  rec.transmissionType == 4)
-						System.err.println("TType = " + rec.transmissionType + ", " + rec.hexIdent);
+					if(rec.transmissionType == 1)
+						System.out.println(rec);
+//					if(rec.transmissionType == 3 ||  rec.transmissionType == 4)
+//						System.err.println("TType = " + rec.transmissionType + ", " + rec.hexIdent);
 				} catch (Exception e) {
 					e.printStackTrace();
 				}

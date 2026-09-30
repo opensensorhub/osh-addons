@@ -87,7 +87,6 @@ public class LocationOutput extends AbstractSensorOutput<PiAwareSensor> {
 		DataRecordBuilder builder = fac.createRecord()
 			.addField("time", geoFac.createTime()
 		        .asSamplingTimeIsoUTC()
-//		        .asSamplingTimeIsoGPS()
 		        .description(""))
 			.addField("hexIdent", fac.createText()
 				.label("hexIdent")
@@ -106,7 +105,6 @@ public class LocationOutput extends AbstractSensorOutput<PiAwareSensor> {
 				.description("")
 				.definition("")
 				.build())
-//			.addField("location", vec) //fac.createVector()
 	        .addField("location", geoFac.createVector()
 	                .from(geoFac.newLocationVectorLLA(SWEConstants.DEF_SENSOR_LOC))
 	                .description("Location measured by the GPS device")
@@ -143,10 +141,6 @@ public class LocationOutput extends AbstractSensorOutput<PiAwareSensor> {
 		int index = 0;
 		Double time = (rec.timeMessageGenerated.doubleValue())/1000.;
 //		System.err.println("   *** " + time + "," + rec.flightID + "," + rec.callsign + "," + rec.groundSpeed);
-
-//		logger.debug("time: {}", t);
-//		logger.debug("callsign: {}", rec.callsign);
-//		setDoubleValue(dataBlock, index++, ((double)rec.timeMessageGenerated)/1000.);
 		setDoubleValue(dataBlock, index++, time);
 		setStringValue(dataBlock, index++, rec.hexIdent);
 		setStringValue(dataBlock, index++, rec.flightID);
@@ -170,7 +164,7 @@ public class LocationOutput extends AbstractSensorOutput<PiAwareSensor> {
 				.publish(new DataEvent(latestRecordTime, PiAwareSensor.SENSOR_UID, NAME, foiUid, latestRecord));
 
 		} catch (Exception e) {
-			e.printStackTrace(System.err);
+			logger.error("", e);
 		}
 	}
 

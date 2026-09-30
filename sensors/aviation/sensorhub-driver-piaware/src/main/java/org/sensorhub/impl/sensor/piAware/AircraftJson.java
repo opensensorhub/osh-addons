@@ -6,8 +6,8 @@ public class AircraftJson {
 	Aircraft[] aircraft;
 
 	class Aircraft {
-		String hex;
-		String flight;
+		String hex;		
+		String flight; // This corresponds to callSign- not to be confused with flightId in the SBS format.    
 		String category;
 		long lastMessage;
 	}

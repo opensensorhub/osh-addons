@@ -37,4 +37,30 @@ public class SbsPojo {
 	Boolean spiIdent; // Flag to indicate transponder Ident has been activated.
 	Boolean isOnGround; // Flag to indicate ground squat switch is active
 
+	public String toString() {
+		StringBuilder b = new StringBuilder();
+		b.append("messageTyoe: " +  messageType + "\n");
+		b.append("transmissionType: " + transmissionType + "\n");
+		b.append("sessionId: " + sessionId + "\n");
+		b.append("aircraftId: " + aircraftId + "\n");
+		b.append("hexIdent: " + hexIdent + "\n");
+		b.append("flightID: " + flightID + "\n");
+		b.append("dateMessageStr: " + dateMessageGeneratedStr + "\n");
+		b.append("timeMessageStr: " + timeMessageGeneratedStr + "\n");
+		b.append("callsign: " + callsign + "\n");
+		b.append("altitude: " + altitude + "\n");
+		b.append("groundSpeed: " + groundSpeed + "\n");
+		b.append("track: " + track + "\n");
+		b.append("latitude: " + latitude + "\n");
+		b.append("longitude: " + longitude + "\n");
+		b.append("altitude: " + altitude + "\n");
+		b.append("isOnGround: " + isOnGround + "\n");
+		b.append("verticalRate: " + verticalRate + "\n");
+		b.append("spiIdent: " + spiIdent + "\n");
+		b.append("squawk: " + squawk + "\n");
+		b.append("squawkChange: " + squawkChange + "\n");
+		b.append("emergency: " + emergency + "\n");
+		return b.toString();
+	}
+	
 }

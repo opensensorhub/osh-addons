@@ -62,7 +62,6 @@ public class TrackOutput extends AbstractSensorOutput<PiAwareSensor> {
                     .definition("")
                     .uomCode("deg")
                     .build())
-//          .addField("location", vec) //fac.createVector()
             .addField("verticalRate", fac.createQuantity()
                     .description("64 foot resolution")
                     .definition("")
@@ -102,7 +101,7 @@ public class TrackOutput extends AbstractSensorOutput<PiAwareSensor> {
 				.publish(new DataEvent(latestRecordTime, PiAwareSensor.SENSOR_UID, NAME, foiUid, latestRecord));
 
 		} catch (Exception e) {
-			e.printStackTrace(System.err);
+			logger.error("", e);
 		}
 	}
 

@@ -17,8 +17,10 @@ package org.sensorhub.impl.sensor.piAware;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.net.InetSocketAddress;
 import java.net.MalformedURLException;
 import java.net.Socket;
+import java.net.SocketAddress;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -29,7 +31,6 @@ import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.feature.FoiAddedEvent;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
 import org.sensorhub.impl.sensor.piAware.AircraftJson.Aircraft;
-import org.sensorhub.impl.sensor.piAware.AircraftReader.ReaderTask;
 import org.vast.ogc.gml.IFeature;
 import org.vast.sensorML.SMLHelper;
 import org.vast.swe.SWEHelper;
@@ -55,6 +56,8 @@ public class PiAwareSensor extends AbstractSensorModule<PiAwareConfig>
 	static final String FLIGHT_UID_PREFIX = "urn:osh:aviation:flight:";
     static final String DEF_FLIGHT_ID = SWEHelper.getPropertyUri("aero/FlightID");
     static final String DEF_HEX_ID = SWEHelper.getPropertyUri("aero/HexID");
+    static final int SOCKET_CONNECT_TIMEOUT_MS = 15000;
+    static final long SOCKET_CHECKER_PERIOD = SOCKET_CONNECT_TIMEOUT_MS + 30000L;
 
     // Outputs
 	LocationOutput locationOutput;
@@ -112,32 +115,49 @@ public class PiAwareSensor extends AbstractSensorModule<PiAwareConfig>
 		supportedMessageTypes.add(2); // Not seeing messageType = 2
 		supportedMessageTypes.add(3);
 		supportedMessageTypes.add(4);
-		
-		// Create socket here and keep track so we can reopen if it gets closed (i.e. power/network outage)
-		try {
-			socket  = new Socket(config.deviceIp, config.sbsOutboundPort);
-		} catch (IOException e) {
-			throw new SensorHubException(e.getMessage(), e);
-		}
-		
 	}
-
+	
 	class SocketChecker extends TimerTask {
 		public void run() {
-			if(socket.isClosed()) {
-				logger.info("Socket connection to piAware closed. Attempting restart.");
-				
-				sbsParserThread.running = false;
-				try {
-					socket  = new Socket(config.deviceIp, config.sbsOutboundPort);
-				} catch (IOException e) {
-					System.err.println(e.getMessage());
+			try {
+				logger.debug("SocketChecker isConnected = {}", socket.isConnected());
+				logger.debug("SocketChecker isClosed = {}", socket.isClosed());
+				if(socket == null || socket.isClosed() || !socket.isConnected()) {
+					logger.info("No connection to PiAware socket. Attempting start.");
+					
+					if(sbsParserThread != null)
+						sbsParserThread.running = false;
+					try {
+						socket = new Socket();
+						socket.setSoTimeout(30000);
+						SocketAddress socketAddress = new InetSocketAddress(config.deviceIp, config.sbsOutboundPort);
+						socket.connect(socketAddress, SOCKET_CONNECT_TIMEOUT_MS);
+					} catch (IOException e) {
+						logger.error("IOException connecting to socket", e);
+						return;
+					}
+					
+					// Start SbsParserThread
+					sbsParserThread = new SbsParserThread();
+					Thread thread = new Thread(sbsParserThread);
+					thread.start();
+					
+					// Start or restart AircraftReader Timer task
+					if(aircraftReader == null) {
+						try {
+							String jsonUrl = "http://" + config.deviceIp + ":" + config.dataPort + "/" +  
+										config.dataPath + "/" + config.aircraftJsonFile;
+							aircraftReader = new AircraftReader(jsonUrl);
+						} catch (MalformedURLException e) {
+							logger.warn("aircraftReader malformed url", e);
+						}
+					} else {
+						aircraftReader.stopReaderTask();
+					}
+					aircraftReader.startReaderTask();
 				}
-				
-				sbsParserThread = new SbsParserThread();
-				Thread thread = new Thread(sbsParserThread);
-				thread.start();
-
+			} catch (Throwable t) {
+				logger.error("SocketChecker failed with exception ", t);
 			}
 		}
 	}
@@ -147,20 +167,17 @@ public class PiAwareSensor extends AbstractSensorModule<PiAwareConfig>
 		
 		@Override
 		public void run() {
-			logger.info("Start listening on port " + config.deviceIp);
+			logger.info("Start listening on ip:port {}", config.deviceIp + ":" + config.sbsOutboundPort);
 			try (BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()))) {
 				sbsParser = new SbsParser(getLogger());
 				running = true;
 				String line = null;
 				do  {
+					line = in.readLine();
 					try {
-						line = in.readLine();
 						if(line == null || line.trim().length() == 0)
 							continue;
 						SbsPojo rec = sbsParser.parse(line.trim());
-						
-						if(!supportedMessageTypes.contains(rec.transmissionType))
-							continue;
 						
 						logger.trace("calling ensureFlightId for {}", rec.hexIdent);
 						String uid = ensureFlightFoi(rec.hexIdent);
@@ -168,10 +185,10 @@ public class PiAwareSensor extends AbstractSensorModule<PiAwareConfig>
 						// check reader map for flightID corresponding to this hexId
 						Aircraft aircraft = aircraftReader.getAircraft(rec.hexIdent);
 						if(aircraft != null) {
-							rec.flightID = aircraft.flight;
+//							rec.flightID = aircraft.callSign;
 							rec.category = aircraft.category;
+							rec.callsign = aircraft.flight;
 						}
-						
 						
 						rec.hexIdent = uid; //PiAwareSensor.SENSOR_UID + rec.hexIdent;
 						switch(rec.transmissionType) {
@@ -188,13 +205,18 @@ public class PiAwareSensor extends AbstractSensorModule<PiAwareConfig>
 							break;
 						}
 					} catch (Exception e) {
-						e.printStackTrace();
+						logger.error("Exception in SBSParserThread", e);
 					}
 				} while (line != null && running);
-			} catch (Exception e) {
-				logger.debug("Exception is SBSParserThread", e);
-				e.printStackTrace(System.err);
-				//  Check and reestablish connection if needed
+			} catch (Throwable t) {
+				logger.error("Exception in SBSParserThread", t);
+				// Likely disconnected from PiAware receiver
+				// Close socket and socketChecker thread should attempt to reconnect at configured check period
+				try {
+					socket.close();
+				} catch (IOException e) {
+					logger.error("Exception trying to close socket", e);
+				}
 			}
 			
 		}
@@ -203,22 +225,11 @@ public class PiAwareSensor extends AbstractSensorModule<PiAwareConfig>
 	@Override
 	public void doStart() throws SensorHubException
 	{
-		sbsParserThread = new SbsParserThread();
-		Thread thread = new Thread(sbsParserThread);
-		thread.start();
-
-		try {
-			String jsonUrl = "http://" + config.deviceIp + ":" + config.dataPort + "/" +  
-						config.dataPath + "/" + config.aircraftJsonFile;
-			aircraftReader = new AircraftReader(jsonUrl);
-			aircraftReader.startReaderTask();
-		} catch (MalformedURLException e) {
-			throw new SensorHubException(e.getMessage(), e);
-		}
-		
-		socketChecker= new SocketChecker();
-		socketTimer = new Timer();
-		socketTimer.scheduleAtFixedRate(socketChecker, 0, 5000L);
+		// Create socket here and keep track so we can reopen if it gets closed (i.e. power/network outage)
+			socket = new Socket();
+			socketChecker= new SocketChecker();
+			socketTimer = new Timer();
+			socketTimer.scheduleAtFixedRate(socketChecker, 0, SOCKET_CHECKER_PERIOD);
 	}
 
 	@Override
@@ -254,11 +265,11 @@ public class PiAwareSensor extends AbstractSensorModule<PiAwareConfig>
 		foi.setName(flightId + " Flight");
 		addFoi(foi);
 
-		// send event - don't need to do this anymore?
+		// send event
 		long now = System.currentTimeMillis();
 		eventHandler.publish(new FoiAddedEvent(now, SENSOR_UID, uid, Instant.now() ));
 
-		logger.trace("{}: New FOI added: {}; Num FOIs = {}", flightId, uid, foiMap.size());
+		logger.debug("{}: New FOI added: {}; Num FOIs = {}", flightId, uid, foiMap.size());
 		return uid;
 	}
 
@@ -266,6 +277,6 @@ public class PiAwareSensor extends AbstractSensorModule<PiAwareConfig>
 	@Override
 	public boolean isConnected()
 	{
-		return false;
+		return socket.isConnected();
 	}
 }

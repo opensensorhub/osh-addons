@@ -21,20 +21,27 @@ import org.sensorhub.api.sensor.SensorConfig;
 public class PiAwareConfig extends SensorConfig
 {    
     @DisplayInfo(desc="Device IP of piaware receiver")
-	String deviceIp;
+	public String deviceIp;
+    
     @DisplayInfo(desc="Port of raw feed")
-	int rawOutboundPort = 30002;
+	public int rawOutboundPort = 30002;
+    
     @DisplayInfo(desc="Port of sbs feed")
-	int sbsOutboundPort = 30003;
-	int beastOutboundPort = 30005;
+	public int sbsOutboundPort = 30003;
+    
+    @DisplayInfo(desc="Port for Outbound Beast binary format. Unused currently in this driver")
+	public int beastOutboundPort = 30005;
+    
     @DisplayInfo(desc="Port of piaware server")
-	int dataPort = 8080;
+	public int dataPort = 8080;
 	
     @DisplayInfo(desc="Path of dump1090 processed files running on piaware")
-	String dump1090Path = "/run/dump1090-fa";
+	public String dump1090Path = "/run/dump1090-fa";
+    
     @DisplayInfo(desc="Path of piaware server")
-	String dataPath = "/data"; 
+	public String dataPath = "/data"; 
+    
     @DisplayInfo(desc="Json file containing additional aircraft info")
-	String aircraftJsonFile = "aircraft.json";
+	public String aircraftJsonFile = "aircraft.json";
 	
 }
