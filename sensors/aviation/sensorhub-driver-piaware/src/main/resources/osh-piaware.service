@@ -2,12 +2,12 @@
 Description=OSH PiAwareDriver
 
 [Service]
-WorkingDirectory=/opt/osh-node
-ExecStart=/bin/bash /opt/osh-node/launch.sh
+WorkingDirectory=/opt/osh/osh-node
+ExecStart=/bin/bash /opt/osh/osh-node/launch.sh
 User=pi
 Group=pi
 Restart=always
-RestartSec=90
+RestartSec=10
 
 [Install]
 WantedBy=multi-user.target
