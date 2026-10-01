@@ -2,7 +2,9 @@ package org.sensorhub.mpegts;
 
 import org.bytedeco.ffmpeg.avcodec.*;
 import org.bytedeco.ffmpeg.avformat.AVFormatContext;
+import org.bytedeco.ffmpeg.avutil.AVDictionaryEntry;
 import org.bytedeco.ffmpeg.global.avcodec;
+import org.bytedeco.ffmpeg.global.avutil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,6 +38,35 @@ public class StreamContext {
 
     private int codecId;
 
+    /**
+     * FourCC tag of the codec associated with the stream, packed as an FFmpeg MKTAG.
+     * Container formats that do not carry a tag report zero.
+     */
+    private int codecTag;
+
+    /**
+     * Value of the {@code handler_name} stream metadata entry, or null if the container does not provide one.
+     * Useful for identifying vendor-specific data streams (e.g. "GoPro MET" for GPMF telemetry).
+     */
+    private String handlerName;
+
+    /**
+     * Width of the frames in this stream, in pixels. Zero for non-video streams.
+     */
+    private int frameWidth;
+
+    /**
+     * Height of the frames in this stream, in pixels. Zero for non-video streams.
+     */
+    private int frameHeight;
+
+    /**
+     * Number of samples per second in this stream. Zero for non-audio streams.
+     */
+    private int sampleRate;
+
+    private StreamType streamType;
+
     private AVBSFContext bsfContext = null;
 
     private boolean isInjectingExtradata = false;
@@ -43,6 +74,14 @@ public class StreamContext {
     private volatile boolean isOpen = false;
 
     private final Object lock = new Object();
+
+    public StreamContext() { }
+
+    public StreamContext(int streamId, StreamType streamType, double streamTimeBase) {
+        setStreamId(streamId);
+        setStreamType(streamType);
+        setStreamTimeBase(streamTimeBase);
+    }
 
     /**
      * Returns the ID of the stream associated with this context.
@@ -61,6 +100,10 @@ public class StreamContext {
     public void setStreamId(int streamId) {
         this.streamId = streamId;
     }
+
+    public void setStreamType(StreamType streamType) { this.streamType = streamType; }
+
+    public StreamType getStreamType() { return streamType; }
 
     /**
      * Returns the time base units for stream timing used to compute a timestamp for each packet extracted.
@@ -107,6 +150,10 @@ public class StreamContext {
         return codecName;
     }
 
+    public int getCodecId() {
+        return codecId;
+    }
+
     /**
      * Sets the name of the codec associated with the stream.
      *
@@ -118,7 +165,104 @@ public class StreamContext {
 
     private void setCodecId(int codecId) { this.codecId = codecId; }
 
+    /**
+     * Returns the FourCC tag of the codec associated with the stream, packed as an FFmpeg MKTAG.
+     * Use {@link StreamContext#getCodecTagString()} for the human-readable form.
+     *
+     * @return The packed codec tag, or zero if the container does not carry one.
+     */
+    public int getCodecTag() {
+        return codecTag;
+    }
+
+    /**
+     * Returns the FourCC tag of the codec associated with the stream, decoded to a string.
+     * For example, a GoPro GPMF telemetry track reports {@code gpmd}.
+     *
+     * @return The codec tag, or an empty string if the container does not carry one.
+     */
+    public String getCodecTagString() {
+        return fourCcToString(codecTag);
+    }
+
+    /**
+     * Returns the value of the {@code handler_name} stream metadata entry.
+     * For example, a GoPro GPMF telemetry track reports {@code GoPro MET}.
+     *
+     * @return The handler name, or null if the container does not provide one.
+     */
+    public String getHandlerName() {
+        return handlerName;
+    }
+
+    /**
+     * Returns the width of the frames in this stream, in pixels.
+     *
+     * @return The frame width, or zero for non-video streams.
+     */
+    public int getFrameWidth() {
+        return frameWidth;
+    }
+
+    /**
+     * Returns the height of the frames in this stream, in pixels.
+     *
+     * @return The frame height, or zero for non-video streams.
+     */
+    public int getFrameHeight() {
+        return frameHeight;
+    }
+
+    /**
+     * Returns the frame dimensions of this stream in the [width, height] form expected by the video outputs.
+     *
+     * @return An int[] where index 0 is the width and index 1 is the height of the frames.
+     */
+    public int[] getFrameDimensions() {
+        return new int[]{frameWidth, frameHeight};
+    }
+
+    /**
+     * Returns the number of samples per second in this stream.
+     *
+     * @return The sample rate, or zero for non-audio streams.
+     */
+    public int getSampleRate() {
+        return sampleRate;
+    }
+
     public void setInjectingExtradata(boolean isInjectingExtradata) { this.isInjectingExtradata = isInjectingExtradata; }
+
+    /**
+     * Decodes an FFmpeg MKTAG-packed FourCC into a string, dropping any padding.
+     *
+     * @param fourCc The packed FourCC.
+     * @return The decoded tag, or an empty string if the tag is zero.
+     */
+    private static String fourCcToString(int fourCc) {
+        StringBuilder builder = new StringBuilder(4);
+
+        for (int i = 0; i < 4; i++) {
+            int character = (fourCc >> (8 * i)) & 0xFF;
+            if (character == 0) {
+                break;
+            }
+            builder.append((char) character);
+        }
+
+        return builder.toString().trim();
+    }
+
+    /**
+     * Reads the {@code handler_name} metadata entry for this stream, if the container provides one.
+     *
+     * @param avFormatContext The format context the stream belongs to.
+     * @return The handler name, or null if it is absent.
+     */
+    private String readHandlerName(AVFormatContext avFormatContext) {
+        AVDictionaryEntry entry = avutil.av_dict_get(avFormatContext.streams(getStreamId()).metadata(), "handler_name", null, 0);
+        return entry != null ? entry.value().getString() : null;
+    }
 
     /**
      * Returns whether this context has a valid stream ID.
@@ -129,7 +273,7 @@ public class StreamContext {
         return streamId != INVALID_STREAM_ID;
     }
 
-    private String selectBsfName(int codecId, AVFormatContext avFormatContext) {
+    private String selectBsfName(int codecId) {
 
         // Best guess at useful BSFs. If a video format does not work, may
         // need to add a corresponding BSF here.
@@ -166,8 +310,15 @@ public class StreamContext {
             setCodecName(avcodec.avcodec_get_name(params.codec_id()).getString());
             setCodecId(params.codec_id());
 
+            // Store the stream descriptors that clients need in order to build outputs for this stream
+            this.codecTag = params.codec_tag();
+            this.handlerName = readHandlerName(avFormatContext);
+            this.frameWidth = params.width();
+            this.frameHeight = params.height();
+            this.sampleRate = params.sample_rate();
+
             if (isInjectingExtradata) {
-                String bsfNames = selectBsfName(codecId, avFormatContext);
+                String bsfNames = selectBsfName(codecId);
 
                 // Initialize BSFs if needed
                 if (bsfNames != null) {

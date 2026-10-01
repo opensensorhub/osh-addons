@@ -46,4 +46,24 @@ public class Connection {
 
     @DisplayInfo(label = "Register Devices", desc = "Registers devices for the video stream. Set true if input is not from a network stream or file (e.g. dshow).")
     public boolean registerDevices = false;
+
+    /**
+     * Max number of video streams to output.
+     */
+    @DisplayInfo(label = "Max Video Streams", desc = "Maximum number of video streams to output. Set 0 to disable video output. Set negative to output all available video streams.")
+    public int maxVideoStreams = 1;
+
+    /**
+     * Max number of audio streams to output.
+     */
+    @DisplayInfo(label = "Max Audio Streams", desc = "Maximum number of audio streams to output. Set 0 to disable audio output. Set negative to output all available audio streams.")
+    public int maxAudioStreams = 1;
+
+    /**
+     * Max number of binary data streams to output.
+     */
+    @DisplayInfo(label = "Max Binary Data Streams", desc = "Maximum number of binary data streams to output. Set 0 to disable binary data output. Set negative to output all available binary data streams.")
+    public int maxBinaryDataStreams = 0;
+
+
 }

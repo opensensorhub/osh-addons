@@ -16,11 +16,16 @@ import org.sensorhub.impl.module.AbstractModule;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
 import org.sensorhub.impl.sensor.ffmpeg.config.FFMPEGConfig;
 import org.sensorhub.impl.sensor.ffmpeg.outputs.AudioOutput;
+import org.sensorhub.impl.sensor.ffmpeg.outputs.DataOutput;
 import org.sensorhub.impl.sensor.ffmpeg.outputs.VideoOutput;
 import org.sensorhub.mpegts.MpegTsProcessor;
+import org.sensorhub.mpegts.StreamContext;
 import org.vast.swe.SWEConstants;
 
 import java.net.UnknownHostException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
@@ -39,14 +44,37 @@ public class FFMPEGSensor extends AbstractSensorModule<FFMPEGConfig> {
     protected ScheduledExecutorService executor;
 
     /**
-     * Sensor output for the video frames.
+     * Sensor output for the video frames of the first video stream of the source.
+     * The outputs for any further video streams are in {@link FFMPEGSensor#videoOutputs}.
      */
     protected VideoOutput<FFMPEGSensor> videoOutput;
 
     /**
-     * Sensor output for the audio data.
+     * Sensor output for the audio data of the first audio stream of the source.
+     * The outputs for any further audio streams are in {@link FFMPEGSensor#audioOutputs}.
      */
     protected AudioOutput<FFMPEGSensor> audioOutput;
+
+    /**
+     * Sensor output for the raw bytes of the first binary data stream of the source.
+     * The outputs for any further data streams are in {@link FFMPEGSensor#dataOutputs}.
+     */
+    protected DataOutput<FFMPEGSensor> dataOutput;
+
+    /**
+     * All video outputs, ordered by stream ID. The first entry is also held in {@link FFMPEGSensor#videoOutput}.
+     */
+    protected final List<VideoOutput<FFMPEGSensor>> videoOutputs = new ArrayList<>();
+
+    /**
+     * All audio outputs, ordered by stream ID. The first entry is also held in {@link FFMPEGSensor#audioOutput}.
+     */
+    protected final List<AudioOutput<FFMPEGSensor>> audioOutputs = new ArrayList<>();
+
+    /**
+     * All binary data outputs, ordered by stream ID. The first entry is also held in {@link FFMPEGSensor#dataOutput}.
+     */
+    protected final List<DataOutput<FFMPEGSensor>> dataOutputs = new ArrayList<>();
 
     @Override
     protected void doInit() throws SensorHubException {
@@ -74,10 +102,14 @@ public class FFMPEGSensor extends AbstractSensorModule<FFMPEGConfig> {
             }
         }
 
-        // We also have to clear out the video output since its settings may have changed
+        // We also have to clear out the outputs since their settings may have changed
         // (based on having a new input video, for example).
         videoOutput = null;
         audioOutput = null;
+        dataOutput = null;
+        videoOutputs.clear();
+        audioOutputs.clear();
+        dataOutputs.clear();
 
         // We need the background thread here since we start reading the video data immediately to determine the video size.
         setupExecutor();
@@ -142,10 +174,9 @@ public class FFMPEGSensor extends AbstractSensorModule<FFMPEGConfig> {
             logger.debug("Already had an executor.");
         }
 
-        if (videoOutput != null)
-            videoOutput.setExecutor(executor);
-        if (audioOutput != null)
-            audioOutput.setExecutor(executor);
+        videoOutputs.forEach(output -> output.setExecutor(executor));
+        audioOutputs.forEach(output -> output.setExecutor(executor));
+        dataOutputs.forEach(output -> output.setExecutor(executor));
     }
 
     /**
@@ -165,12 +196,22 @@ public class FFMPEGSensor extends AbstractSensorModule<FFMPEGConfig> {
      * The caller must be careful not to call this if the video output has already been created and added to the sensor.
      */
     protected void createVideoOutput(int[] videoDims, String codecName) {
-        videoOutput = new VideoOutput<>(this, videoDims, codecName);
+        int index = videoOutputs.size();
+        String name = outputName("video", index);
+
+        var output = new VideoOutput<FFMPEGSensor>(this, videoDims, codecName, name,
+                outputLabel("Video", index), "Video stream using ffmpeg library");
+
         if (executor != null) {
-            videoOutput.setExecutor(executor);
+            output.setExecutor(executor);
         }
-        addOutput(videoOutput, false);
-        videoOutput.doInit();
+        addOutput(output, false);
+        output.doInit();
+        videoOutputs.add(output);
+
+        // Keep the field pointing at the primary video output
+        if (videoOutput == null)
+            videoOutput = output;
     }
 
     /**
@@ -178,12 +219,45 @@ public class FFMPEGSensor extends AbstractSensorModule<FFMPEGConfig> {
      * The caller must be careful not to call this if the audio output has already been created and added to the sensor.
      */
     protected void createAudioOutput(int sampleRate, String codecName) {
-        audioOutput = new AudioOutput<>(this, sampleRate, codecName);
+        int index = audioOutputs.size();
+        String name = outputName("audio", index);
+
+        var output = new AudioOutput<FFMPEGSensor>(this, sampleRate, codecName, name,
+                outputLabel("Audio", index), "Audio stream using ffmpeg library");
+
         if (executor != null) {
-            audioOutput.setExecutor(executor);
+            output.setExecutor(executor);
         }
-        addOutput(audioOutput, false);
-        audioOutput.doInit();
+        addOutput(output, false);
+        output.doInit();
+        audioOutputs.add(output);
+
+        // Keep the field pointing at the primary audio output
+        if (audioOutput == null)
+            audioOutput = output;
+    }
+
+    /**
+     * Create and initialize the binary data output.
+     * The caller must be careful not to call this if the data output has already been created and added to the sensor.
+     */
+    protected void createDataOutput() {
+        int index = dataOutputs.size();
+        String name = outputName("data", index);
+
+        var output = new DataOutput<FFMPEGSensor>(this, name,
+                outputLabel("Data", index), "Raw data stream using ffmpeg library");
+
+        if (executor != null) {
+            output.setExecutor(executor);
+        }
+        addOutput(output, false);
+        output.doInit();
+        dataOutputs.add(output);
+
+        // Keep the field pointing at the primary data output
+        if (dataOutput == null)
+            dataOutput = output;
     }
 
     /**
@@ -221,33 +295,178 @@ public class FFMPEGSensor extends AbstractSensorModule<FFMPEGConfig> {
 
         // Initialize the MPEG transport stream processor from the source named in the configuration.
         if (mpegTsProcessor.openStream()) {
-            // If there is a video content in the stream
-            if (mpegTsProcessor.hasVideoStream()) {
-                // In case we were waiting until we got video data to make the video frame output,
-                // we go ahead and do that now.
-                if (videoOutput == null) {
-                    createVideoOutput(mpegTsProcessor.getVideoStreamFrameDimensions(), mpegTsProcessor.getVideoCodecName());
-                }
-                // Set video stream packet listener to video output
-                mpegTsProcessor.setVideoDataBufferListener(videoOutput);
-            }
-
-            // If there is an audio content in the stream
-            if (mpegTsProcessor.hasAudioStream()) {
-                // In case we were waiting until we got audio data to make the audio output,
-                // we go ahead and do that now.
-                if (audioOutput == null) {
-                    createAudioOutput(mpegTsProcessor.getAudioSampleRate(), mpegTsProcessor.getAudioCodecName());
-                }
-                // Set audio stream packet listener to audio output
-                mpegTsProcessor.setAudioDataBufferListener(audioOutput);
-            }
-
+            initializeOutputs();
             logger.info("MPEG TS stream for {} opened.", getUniqueIdentifier());
             return true;
         }
 
         return false;
+    }
+
+    /**
+     * Called after the stream is opened.
+     * Initialize outputs based on the stream contents.
+     * <p>
+     * An output is created for every video, audio, and binary data stream the source carries, up to the
+     * limits set by {@link org.sensorhub.impl.sensor.ffmpeg.config.Connection#maxVideoStreams},
+     * {@link org.sensorhub.impl.sensor.ffmpeg.config.Connection#maxAudioStreams}, and
+     * {@link org.sensorhub.impl.sensor.ffmpeg.config.Connection#maxBinaryDataStreams}, and each output is
+     * registered as the listener for its own stream.
+     * <p>
+     * Outputs are reused across stop/start cycles: on restart the stream contexts are rebuilt by the stream
+     * processor, so the listeners have to be re-registered, but the outputs themselves stay valid.
+     * <br>Override this method for custom output handling. (Custom data stream output, etc.)
+     */
+    protected void initializeOutputs() {
+        int videoCount = 0;
+        int audioCount = 0;
+        int dataCount = 0;
+
+        for (StreamContext streamContext : mpegTsProcessor.getStreamCollection().getStreamContexts()) {
+            // The collection is sized to the stream count and may hold gaps if a stream was removed
+            if (streamContext == null)
+                continue;
+
+            switch (streamContext.getStreamType()) {
+                case VIDEO -> {
+                    if (isWithinStreamLimit(videoCount, config.connection.maxVideoStreams))
+                        attachVideoOutput(streamContext, videoCount++);
+                    else
+                        logSkippedStream(streamContext, config.connection.maxVideoStreams);
+                }
+                case AUDIO -> {
+                    if (isWithinStreamLimit(audioCount, config.connection.maxAudioStreams))
+                        attachAudioOutput(streamContext, audioCount++);
+                    else
+                        logSkippedStream(streamContext, config.connection.maxAudioStreams);
+                }
+                case DATA -> {
+                    if (isWithinStreamLimit(dataCount, config.connection.maxBinaryDataStreams))
+                        attachDataOutput(streamContext, dataCount++);
+                    else
+                        logSkippedStream(streamContext, config.connection.maxBinaryDataStreams);
+                }
+                default -> logger.debug("Ignoring stream {} of type {}",
+                        streamContext.getStreamId(), streamContext.getStreamType());
+            }
+        }
+
+        logger.info("Initialized {} video, {} audio, and {} binary data output(s) for {}",
+                videoCount, audioCount, dataCount, getUniqueIdentifier());
+
+        if (videoCount == 0 && audioCount == 0 && dataCount == 0)
+            reportStatus("No video, audio, or binary data streams published from " + config.connection.connectionString);
+    }
+
+    /**
+     * @return All video outputs of this driver, ordered by stream ID.
+     */
+    public List<VideoOutput<FFMPEGSensor>> getVideoOutputs() {
+        return Collections.unmodifiableList(videoOutputs);
+    }
+
+    /**
+     * @return All audio outputs of this driver, ordered by stream ID.
+     */
+    public List<AudioOutput<FFMPEGSensor>> getAudioOutputs() {
+        return Collections.unmodifiableList(audioOutputs);
+    }
+
+    /**
+     * @return All binary data outputs of this driver, ordered by stream ID.
+     */
+    public List<DataOutput<FFMPEGSensor>> getDataOutputs() {
+        return Collections.unmodifiableList(dataOutputs);
+    }
+
+    /**
+     * Creates the video output for the given stream if it does not exist yet, then registers it as the
+     * listener for that stream.
+     *
+     * @param streamContext The video stream to publish.
+     * @param index         Zero-based ordinal of this stream among the video streams of the source.
+     */
+    protected void attachVideoOutput(StreamContext streamContext, int index) {
+        if (index >= videoOutputs.size()) {
+            createVideoOutput(streamContext.getFrameDimensions(), streamContext.getCodecName());
+
+            logger.info("Created video output '{}' for stream {} ({}, {}x{})", videoOutputs.get(index).getName(),
+                    streamContext.getStreamId(), streamContext.getCodecName(),
+                    streamContext.getFrameWidth(), streamContext.getFrameHeight());
+        }
+
+        streamContext.setDataBufferListener(videoOutputs.get(index));
+    }
+
+    /**
+     * Creates the audio output for the given stream if it does not exist yet, then registers it as the
+     * listener for that stream.
+     *
+     * @param streamContext The audio stream to publish.
+     * @param index         Zero-based ordinal of this stream among the audio streams of the source.
+     */
+    protected void attachAudioOutput(StreamContext streamContext, int index) {
+        if (index >= audioOutputs.size()) {
+            createAudioOutput(streamContext.getSampleRate(), streamContext.getCodecName());
+
+            logger.info("Created audio output '{}' for stream {} ({}, {} Hz)", audioOutputs.get(index).getName(),
+                    streamContext.getStreamId(), streamContext.getCodecName(), streamContext.getSampleRate());
+        }
+
+        streamContext.setDataBufferListener(audioOutputs.get(index));
+    }
+
+    /**
+     * Creates the binary data output for the given stream if it does not exist yet, then registers it as the
+     * listener for that stream.
+     *
+     * @param streamContext The data stream to publish.
+     * @param index         Zero-based ordinal of this stream among the data streams of the source.
+     */
+    protected void attachDataOutput(StreamContext streamContext, int index) {
+        if (index >= dataOutputs.size()) {
+            createDataOutput();
+
+            logger.info("Created binary data output '{}' for stream {} (codec {}, tag '{}', handler '{}')",
+                    dataOutputs.get(index).getName(), streamContext.getStreamId(), streamContext.getCodecName(),
+                    streamContext.getCodecTagString(), streamContext.getHandlerName());
+        }
+
+        streamContext.setDataBufferListener(dataOutputs.get(index));
+    }
+
+    /**
+     * Determines whether another stream of a kind should be published.
+     *
+     * @param count The number of streams of that kind that are already published.
+     * @param max   The configured maximum for that kind. Zero disables the kind, negative means no limit.
+     * @return {@code true} if an output should be created for the stream, {@code false} otherwise.
+     */
+    private static boolean isWithinStreamLimit(int count, int max) {
+        return max < 0 || count < max;
+    }
+
+    /**
+     * Reports a stream that is left unpublished because the configured limit for its kind was reached.
+     */
+    private void logSkippedStream(StreamContext streamContext, int max) {
+        logger.info("Ignoring {} stream {} ({}): the configured maximum of {} stream(s) of this type is already published",
+                streamContext.getStreamType(), streamContext.getStreamId(), streamContext.getCodecName(), max);
+    }
+
+    /**
+     * Builds the output name for a stream, leaving the first stream of each kind unsuffixed so that it
+     * matches the name a single-stream source would have used.
+     */
+    protected static String outputName(String baseName, int index) {
+        return index == 0 ? baseName : baseName + (index + 1);
+    }
+
+    /**
+     * Builds the output label for a stream, leaving the first stream of each kind unsuffixed.
+     */
+    protected static String outputLabel(String baseLabel, int index) {
+        return index == 0 ? baseLabel : baseLabel + " " + (index + 1);
     }
 
     /**
