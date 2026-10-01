@@ -158,7 +158,7 @@
     "ogcCapabilitiesInfo": {
       "title": "Test SOS Service",
       "description": "An SOS service automatically deployed by SensorHub",
-      "keywords": ["SensorHub", "Audio", "Wav"],
+      "keywords": ["SensorHub", "aviation", "piAware", "flightAware", "ads-b", "raspberryPi"],
       "fees": "NONE",
       "accessConstraints": "NONE",
       "serviceProvider": {
