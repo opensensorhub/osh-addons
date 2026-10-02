@@ -12,9 +12,9 @@
 package org.sensorhub.impl.sensor.ffmpeg;
 
 import org.sensorhub.api.common.SensorHubException;
-import org.sensorhub.impl.module.AbstractModule;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
 import org.sensorhub.impl.sensor.ffmpeg.config.FFMPEGConfig;
+import org.sensorhub.impl.sensor.ffmpeg.config.streamfilter.MaxCountFilter;
 import org.sensorhub.impl.sensor.ffmpeg.outputs.AudioOutput;
 import org.sensorhub.impl.sensor.ffmpeg.outputs.DataOutput;
 import org.sensorhub.impl.sensor.ffmpeg.outputs.VideoOutput;
@@ -22,10 +22,10 @@ import org.sensorhub.mpegts.MpegTsProcessor;
 import org.sensorhub.mpegts.StreamContext;
 import org.vast.swe.SWEConstants;
 
-import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
@@ -87,6 +87,11 @@ public class FFMPEGSensor extends AbstractSensorModule<FFMPEGConfig> {
 
         if (config.connection.fps < 0)
             throw new SensorHubException("FPS must be a positive value");
+
+        if (config.connection.streamFilter == null) {
+            logger.warn("No stream filter specified, using default");
+            config.connection.streamFilter = new MaxCountFilter();
+        }
 
         // Every time we do init we have to tear down the mpegTsProcessor,
         // just in case they changed some setting that might cause the video output to be different.
@@ -307,10 +312,8 @@ public class FFMPEGSensor extends AbstractSensorModule<FFMPEGConfig> {
      * Called after the stream is opened.
      * Initialize outputs based on the stream contents.
      * <p>
-     * An output is created for every video, audio, and binary data stream the source carries, up to the
-     * limits set by {@link org.sensorhub.impl.sensor.ffmpeg.config.Connection#maxVideoStreams},
-     * {@link org.sensorhub.impl.sensor.ffmpeg.config.Connection#maxAudioStreams}, and
-     * {@link org.sensorhub.impl.sensor.ffmpeg.config.Connection#maxBinaryDataStreams}, and each output is
+     * An output is created for every video, audio, and binary data stream the source carries,
+     * filtered by {@link org.sensorhub.impl.sensor.ffmpeg.config.Connection#streamFilter}, and each output is
      * registered as the listener for its own stream.
      * <p>
      * Outputs are reused across stop/start cycles: on restart the stream contexts are rebuilt by the stream
@@ -321,30 +324,18 @@ public class FFMPEGSensor extends AbstractSensorModule<FFMPEGConfig> {
         int videoCount = 0;
         int audioCount = 0;
         int dataCount = 0;
+        var streamFilter = config.connection.streamFilter;
 
-        for (StreamContext streamContext : mpegTsProcessor.getStreamCollection().getStreamContexts()) {
-            // The collection is sized to the stream count and may hold gaps if a stream was removed
-            if (streamContext == null)
-                continue;
-
+        for (StreamContext streamContext : streamFilter.getFilteredStreams(mpegTsProcessor.getStreamCollection())) {
             switch (streamContext.getStreamType()) {
                 case VIDEO -> {
-                    if (isWithinStreamLimit(videoCount, config.connection.maxVideoStreams))
-                        attachVideoOutput(streamContext, videoCount++);
-                    else
-                        logSkippedStream(streamContext, config.connection.maxVideoStreams);
+                    attachVideoOutput(streamContext, videoCount++);
                 }
                 case AUDIO -> {
-                    if (isWithinStreamLimit(audioCount, config.connection.maxAudioStreams))
-                        attachAudioOutput(streamContext, audioCount++);
-                    else
-                        logSkippedStream(streamContext, config.connection.maxAudioStreams);
+                    attachAudioOutput(streamContext, audioCount++);
                 }
                 case DATA -> {
-                    if (isWithinStreamLimit(dataCount, config.connection.maxBinaryDataStreams))
-                        attachDataOutput(streamContext, dataCount++);
-                    else
-                        logSkippedStream(streamContext, config.connection.maxBinaryDataStreams);
+                    attachDataOutput(streamContext, dataCount++);
                 }
                 default -> logger.debug("Ignoring stream {} of type {}",
                         streamContext.getStreamId(), streamContext.getStreamType());
@@ -433,25 +424,6 @@ public class FFMPEGSensor extends AbstractSensorModule<FFMPEGConfig> {
         }
 
         streamContext.setDataBufferListener(dataOutputs.get(index));
-    }
-
-    /**
-     * Determines whether another stream of a kind should be published.
-     *
-     * @param count The number of streams of that kind that are already published.
-     * @param max   The configured maximum for that kind. Zero disables the kind, negative means no limit.
-     * @return {@code true} if an output should be created for the stream, {@code false} otherwise.
-     */
-    private static boolean isWithinStreamLimit(int count, int max) {
-        return max < 0 || count < max;
-    }
-
-    /**
-     * Reports a stream that is left unpublished because the configured limit for its kind was reached.
-     */
-    private void logSkippedStream(StreamContext streamContext, int max) {
-        logger.info("Ignoring {} stream {} ({}): the configured maximum of {} stream(s) of this type is already published",
-                streamContext.getStreamType(), streamContext.getStreamId(), streamContext.getCodecName(), max);
     }
 
     /**
