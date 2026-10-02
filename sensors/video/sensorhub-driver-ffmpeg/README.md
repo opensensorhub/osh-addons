@@ -63,7 +63,7 @@ When added to an OpenSensorHub node, the driver has the following configuration 
     - **Register Devices:**
       Register external A/V device libraries. Enable if input is not from a network stream or file (e.g. Direct Show, V4L).
       Disable this option if the driver fails to start and produces the error `java.lang.UnsatisfiedLinkError: no jniavdevice in java.library.path`.
-    - **Stream Options:**
+    - **Stream Filter:**
         Select sub-streams to be processed and outputted. If left unselected, the default is one video and one audio output.
         - **Max Count:**
           Select the maximum number of streams for each type (video, audio, binary data) to process and output.

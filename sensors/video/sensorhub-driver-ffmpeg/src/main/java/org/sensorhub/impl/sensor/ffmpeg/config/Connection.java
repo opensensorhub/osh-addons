@@ -52,6 +52,6 @@ public class Connection {
      * Stream filter
      */
     @DisplayInfo.Required
-    @DisplayInfo(label = "Stream Options", desc = "Used to filter streams for output.")
+    @DisplayInfo(label = "Stream Filter", desc = "Used to filter streams for output.")
     public StreamFilter streamFilter;
 }
