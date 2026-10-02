@@ -72,6 +72,28 @@ When added to an OpenSensorHub node, the driver has the following configuration 
           Select streams based on their index. Specify indices using comma-separated values.
           Select a range of indices using a hyphen-separated value.
           For example, "0, 2-4, 6" will select streams 0, 2, 3, 4, and 6.
+        - For the stream filter selection UI to work, add the following to AdminUIConfig customForms
+          in config.json:
+```json
+{
+  "objClass": "org.sensorhub.ui.AdminUIConfig",
+  "widgetSet": "org.sensorhub.ui.SensorHubWidgetSet",
+  "bundleRepoUrls": [],
+  "customPanels": [],
+  "customForms": [
+    {
+      "objClass": "org.sensorhub.ui.CustomUIConfig",
+      "configClass": "org.sensorhub.impl.sensor.ffmpeg.config.Connection",
+      "uiClass": "com.georobotix.ui.ffmpeg.forms.FFmpegStreamConfigForm"
+    }
+  ],
+  "enableLandingPage": false,
+  "id": "5cb05c9c-9123-4fa1-8731-ffaa51489678",
+  "autoStart": true,
+  "moduleClass": "org.sensorhub.ui.AdminUIModule",
+  "name": "Admin UI"
+}
+```
 
 - **Position:**
     - **Location:** (Optional)
