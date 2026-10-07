@@ -63,6 +63,37 @@ When added to an OpenSensorHub node, the driver has the following configuration 
     - **Register Devices:**
       Register external A/V device libraries. Enable if input is not from a network stream or file (e.g. Direct Show, V4L).
       Disable this option if the driver fails to start and produces the error `java.lang.UnsatisfiedLinkError: no jniavdevice in java.library.path`.
+    - **Stream Filter:**
+        Select sub-streams to be processed and outputted. If left unselected, the default is one video and one audio output.
+        - **Max Count:**
+          Select the maximum number of streams for each type (video, audio, binary data) to process and output.
+          The default is one video, one audio, and zero binary data streams.
+        - **Stream Index:**
+          Select streams based on their index. Specify indices using comma-separated values.
+          Select a range of indices using a hyphen-separated value.
+          For example, "0, 2-4, 6" will select streams 0, 2, 3, 4, and 6.
+        - For the stream filter selection UI to work, add the following to AdminUIConfig customForms
+          in config.json:
+```json
+{
+  "objClass": "org.sensorhub.ui.AdminUIConfig",
+  "widgetSet": "org.sensorhub.ui.SensorHubWidgetSet",
+  "bundleRepoUrls": [],
+  "customPanels": [],
+  "customForms": [
+    {
+      "objClass": "org.sensorhub.ui.CustomUIConfig",
+      "configClass": "org.sensorhub.impl.sensor.ffmpeg.config.Connection",
+      "uiClass": "com.georobotix.ui.ffmpeg.forms.FFmpegStreamConfigForm"
+    }
+  ],
+  "enableLandingPage": false,
+  "id": "5cb05c9c-9123-4fa1-8731-ffaa51489678",
+  "autoStart": true,
+  "moduleClass": "org.sensorhub.ui.AdminUIModule",
+  "name": "Admin UI"
+}
+```
 
 - **Position:**
     - **Location:** (Optional)
