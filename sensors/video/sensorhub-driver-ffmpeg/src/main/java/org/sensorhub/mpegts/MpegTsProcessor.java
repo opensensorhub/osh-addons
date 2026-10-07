@@ -493,7 +493,7 @@ public class MpegTsProcessor extends Thread {
             return null;
         }
 
-        return streamCollection.getStreamContextsByType(StreamType.VIDEO).getFirst();
+        return streamCollection.getStreamContextsByType(StreamType.VIDEO).stream().findFirst().orElse(null);
     }
 
     public StreamContext getAudioStreamContext() {
@@ -501,7 +501,7 @@ public class MpegTsProcessor extends Thread {
             return null;
         }
 
-        return streamCollection.getStreamContextsByType(StreamType.AUDIO).getFirst();
+        return streamCollection.getStreamContextsByType(StreamType.AUDIO).stream().findFirst().orElse(null);
     }
 
     public StreamContext getDataStreamContext() {
@@ -509,7 +509,7 @@ public class MpegTsProcessor extends Thread {
             return null;
         }
 
-        return streamCollection.getStreamContextsByType(StreamType.DATA).getFirst();
+        return streamCollection.getStreamContextsByType(StreamType.DATA).stream().findFirst().orElse(null);
     }
 
     public StreamCollection getStreamCollection() {
