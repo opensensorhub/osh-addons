@@ -1,6 +1,6 @@
 package org.sensorhub.impl.sensor.notecardGPS;
 
-public class notecardGPSConstantsI2C {
+public class NotecardGPSConstantsI2C {
 
     public final static String SENSOR_NAME = "notecardGPS";
     public final static int I2C_BUS = 1;

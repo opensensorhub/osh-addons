@@ -1,6 +1,6 @@
 description = 'Nexrad Doppler Radar Network'
 ext.details = 'Driver for Nexrad Doppler radars, supporting both Level II and Level III products'
-version = '1.0.0-SNAPSHOT'
+version = '1.0.1'
 
 rootProject.allprojects {
   repositories {

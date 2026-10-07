@@ -5,6 +5,7 @@
 
 package com.botts.impl.service.discovery.servlet.handler;
 
+import com.botts.impl.service.discovery.DiscoveryServlet;
 import com.botts.impl.service.discovery.ResourcePermissions;
 import com.botts.impl.service.discovery.engine.RulesEngineWrapper;
 import com.botts.impl.service.discovery.engine.visualizations.VisualizationMapper;
@@ -13,6 +14,7 @@ import com.botts.impl.service.discovery.engine.visualizations.VisualizationRuleR
 import com.botts.impl.service.discovery.servlet.context.RequestContext;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import org.sensorhub.impl.SensorHub;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -120,10 +122,11 @@ public class VisualizationHandler extends BaseHandler {
         VisualizationMapper mapper = VisualizationMapper.getInstance();
         VisualizationRuleRelation rule = mapper.findRuleById(visualizationId);
         List<String> ruleIds = rule.getIncludedRules();
+        DiscoveryServlet discoveryServlet = (DiscoveryServlet)context.getServlet();
         
         // Rules Engine Interface
         RulesEngineWrapper.getInstance().setTargetRuleIds(ruleIds);
-        RulesEngineWrapper.getInstance().fire();
+        RulesEngineWrapper.getInstance().fire((SensorHub)discoveryServlet.parentService.getParentHub());
         
         // Map of Visualization Results (Datastreams that satisfy the conditions)
         Map<String, Map<String, Map<String, VisualizationRuleResult>>> results = mapper.generateMappedResults(rule);

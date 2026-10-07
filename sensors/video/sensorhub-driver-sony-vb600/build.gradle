@@ -1,6 +1,6 @@
 description = "Sony SNC-VB600 Driver"
 ext.details = "Driver for connecting to the Sony Network Camera VB600."
-version = "1.0.0"
+version = "1.0.1"
 
 // To build in entire java cv platform of projects use
 //    implementation("org.bytedeco:javacv-platform:1.5.2")

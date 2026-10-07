@@ -1,6 +1,6 @@
 description = 'Garmin VIRB-XE Camera'
 ext.details = 'Driver for Garmin VIRB-XE camera which includes GPS, orientation and ANT+ external sensors'
-version = '1.0.0'
+version = '1.0.1'
 
 dependencies {
   implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion

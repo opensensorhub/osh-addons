@@ -1,6 +1,6 @@
 description = 'Simulated Weather Station'
 ext.details = 'Driver for simulated home weather station'
-version = '0.1-SNAPSHOT'
+version = '0.1.1'
 
 dependencies {
   implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion

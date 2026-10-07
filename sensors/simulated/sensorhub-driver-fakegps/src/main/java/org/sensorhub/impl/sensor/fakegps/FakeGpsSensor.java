@@ -49,7 +49,7 @@ public class FakeGpsSensor extends AbstractSensorModule<FakeGpsConfig>
         config.validate();
         
         // generate IDs
-        generateUniqueID("urn:osh:sensor:simgps:", null);
+        generateUniqueID("urn:osh:sensor:georobotix:simgps:", null);
         generateXmlID("GPS_SENSOR_", null);
         
         // init main data interface

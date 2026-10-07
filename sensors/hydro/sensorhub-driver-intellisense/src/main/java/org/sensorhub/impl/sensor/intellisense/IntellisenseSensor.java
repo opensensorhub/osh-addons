@@ -29,7 +29,7 @@ import net.opengis.sensorml.v20.PhysicalSystem;
 public class IntellisenseSensor extends AbstractSensorModule<IntellisenseConfig>
 {
 //	static final Logger log = LoggerFactory.getLogger(IntellisenseSensor.class);
-	static final String SENSOR_UID_PREFIX = "urn:osh:sensor:intellisense:";
+	static final String SENSOR_UID_PREFIX = "urn:osh:sensor:georobotix:intellisense:";
 	static final String DEVICE_UID_PREFIX = SENSOR_UID_PREFIX + "station:";
 	
 	IntellisenseOutput output;
