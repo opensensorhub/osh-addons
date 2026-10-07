@@ -55,7 +55,7 @@ public class FakeWeatherStation implements IFeature
     FakeWeatherStation(int num, double lat, double lon)
     {
         this.id = String.format("WS%03d", num);
-        this.uid = "urn:osh:sensor:simweather:station:" + id;
+        this.uid = "urn:osh:sensor:georobotix:simweather:station:" + id;
         this.lat = lat;
         this.lon = lon;        
     }

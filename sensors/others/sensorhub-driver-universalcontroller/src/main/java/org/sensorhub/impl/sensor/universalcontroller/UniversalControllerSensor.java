@@ -44,7 +44,7 @@ public class UniversalControllerSensor extends AbstractSensorModule<UniversalCon
         super.doInit();
 
         // Generate identifiers
-        generateUniqueID("urn:osh:sensor:", config.serialNumber);
+        generateUniqueID("urn:osh:sensor:georobotix:", config.serialNumber);
         generateXmlID("UNIVERSAL_CONTROLLER", config.serialNumber);
 
         // Get what types of controllers to search for

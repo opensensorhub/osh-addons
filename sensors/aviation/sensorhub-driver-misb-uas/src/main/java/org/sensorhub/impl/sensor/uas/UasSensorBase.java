@@ -175,7 +175,7 @@ public abstract class UasSensorBase<UasConfigType extends UasConfig> extends Abs
      * Creates the strings that uniquely identify this sensor in OpenSensorHub.
      */
     protected void generateIds() {
-        generateUniqueID("urn:osh:sensor:uas:", config.serialNumber);
+        generateUniqueID("urn:osh:sensor:georobotix:uas:", config.serialNumber);
         generateXmlID("MISB_UAS_", config.serialNumber);
     }
 
@@ -380,7 +380,7 @@ public abstract class UasSensorBase<UasConfigType extends UasConfig> extends Abs
         addFoi(uasFoi);
         
         imagedFoi = new MovingFeature();
-        imagedFoi.setUniqueIdentifier("urn:osh:foi:imagedArea:" + config.serialNumber);
+        imagedFoi.setUniqueIdentifier("urn:osh:foi:georobotix:imagedArea:" + config.serialNumber);
         imagedFoi.setName("UAS " + config.serialNumber + " Imaged Area");
         imagedFoi.setDescription("Area viewed by imaging sensor on-board platform " + config.serialNumber);
         addFoi(imagedFoi);

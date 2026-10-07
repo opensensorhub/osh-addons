@@ -1,6 +1,6 @@
 description = 'Logback Capture'
 ext.details = 'Logback appender implementation forwarding logs to a system output'
-version = '1.0.0'
+version = '1.0.1'
 
 dependencies {
   implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion

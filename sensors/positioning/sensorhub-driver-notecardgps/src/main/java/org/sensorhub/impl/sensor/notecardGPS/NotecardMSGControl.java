@@ -8,12 +8,12 @@ import org.sensorhub.api.command.CommandException;
 import org.sensorhub.impl.sensor.AbstractSensorControl;
 import org.vast.swe.SWEHelper;
 
-public class notecardMSGControl extends AbstractSensorControl<notecardGPSSensor> {
+public class NotecardMSGControl extends AbstractSensorControl<NotecardGPSSensor> {
 
     private DataRecord commandDataStruct;
 
     // CONSTRUCTOR
-    public notecardMSGControl( notecardGPSSensor notecardGPSSensor) {
+    public NotecardMSGControl(NotecardGPSSensor notecardGPSSensor) {
         super("Blues Notecard Message Control", notecardGPSSensor);
     }
 

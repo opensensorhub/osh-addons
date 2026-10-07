@@ -15,6 +15,18 @@ Developer are Copyright (C) 2014 the Initial Developer. All Rights Reserved.
 
 package org.sensorhub.impl.sensor.axis;
 
+import net.opengis.sensorml.v20.IdentifierList;
+import net.opengis.sensorml.v20.Term;
+import org.sensorhub.api.common.SensorHubException;
+import org.sensorhub.api.sensor.SensorException;
+import org.sensorhub.impl.comm.RobustHTTPConnection;
+import org.sensorhub.impl.module.RobustConnection;
+import org.sensorhub.impl.security.ClientAuth;
+import org.sensorhub.impl.sensor.AbstractSensorModule;
+import org.sensorhub.impl.sensor.rtpcam.RTSPClient;
+import org.vast.sensorML.SMLFactory;
+import org.vast.swe.SWEHelper;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -22,17 +34,6 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import net.opengis.sensorml.v20.IdentifierList;
-import net.opengis.sensorml.v20.Term;
-import org.sensorhub.api.sensor.SensorException;
-import org.sensorhub.impl.comm.RobustHTTPConnection;
-import org.sensorhub.impl.module.RobustConnection;
-import org.sensorhub.impl.security.ClientAuth;
-import org.sensorhub.impl.sensor.AbstractSensorModule;
-import org.sensorhub.impl.sensor.rtpcam.RTSPClient;
-import org.sensorhub.api.common.SensorHubException;
-import org.vast.sensorML.SMLFactory;
-import org.vast.swe.SWEHelper;
 
 
 /**
@@ -124,6 +125,7 @@ public class AxisCameraDriver extends AbstractSensorModule < AxisCameraConfig > 
         // create connection handler
         connection = new RobustHTTPConnection(this, config.connection, "Axis Camera") {
             public boolean tryConnect() throws IOException {
+
                 // check we can reach the HTTP server
                 // and access the param URL
                 HttpURLConnection conn = tryConnectGET(getHostUrl() + VAPIX_QUERY_PARAMS_LIST);
@@ -215,7 +217,7 @@ public class AxisCameraDriver extends AbstractSensorModule < AxisCameraConfig > 
         connection.waitForConnection();
 
         // generate identifiers
-        generateUniqueID("urn:axis:cam:", config.uidExtension.isBlank() ? serialNumber : serialNumber.trim() + ":" + config.uidExtension);
+        generateUniqueID("urn:osh:sensor:georobotix:axis:cam:", config.uidExtension.isBlank() ? serialNumber : serialNumber.trim() + ":" + config.uidExtension);
         generateXmlID("AXIS_CAM_", config.uidExtension.isBlank() ? serialNumber : serialNumber.trim() + "_" + config.uidExtension);
 
         // create I/O objects

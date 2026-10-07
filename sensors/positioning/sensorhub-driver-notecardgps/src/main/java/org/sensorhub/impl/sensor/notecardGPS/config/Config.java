@@ -11,13 +11,12 @@
  ******************************* END LICENSE BLOCK ***************************/
 package org.sensorhub.impl.sensor.notecardGPS.config;
 
-import org.sensorhub.impl.sensor.notecardGPS.notecardGPSSensor;
+import org.sensorhub.impl.sensor.notecardGPS.NotecardGPSSensor;
 import org.sensorhub.api.config.DisplayInfo;
-import org.sensorhub.api.config.DisplayInfo.FieldType.Type;
 import org.sensorhub.api.sensor.SensorConfig;
 
 /**
- * Configuration settings for the {@link notecardGPSSensor} driver exposed via the OpenSensorHub Admin panel.
+ * Configuration settings for the {@link NotecardGPSSensor} driver exposed via the OpenSensorHub Admin panel.
  * <p>
  * Public fields are exposed in the Admin panel for configuration by the user.
  * These fields can be annotated with the DisplayInfo annotation to provide additional information to the user
@@ -39,7 +38,7 @@ public class Config extends SensorConfig {
 
     @DisplayInfo.Required
     @DisplayInfo(label = "Notecard Settings", desc = "Configuration options for the Notecard")
-    public noteCardConfig NCconfig = new noteCardConfig();
+    public NoteCardConfig NCconfig = new NoteCardConfig();
 
     @DisplayInfo.Required
     @DisplayInfo(label = "I²C Settings", desc = "Configuration options for the I2C Connection")

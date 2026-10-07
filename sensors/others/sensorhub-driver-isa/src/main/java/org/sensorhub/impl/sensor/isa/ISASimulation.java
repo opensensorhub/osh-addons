@@ -96,7 +96,7 @@ public class ISASimulation
     {
         // setup simulation clock to synchronize with MISB
         // + set handler to reset outputs when simulation restarts
-        this.clock = new SynchronizedClock(hub, "urn:osh:sensor:uas:predator001", "sensorLocation", time -> {
+        this.clock = new SynchronizedClock(hub, "urn:osh:sensor:georobotix:uas:predator001:", "sensorLocation", time -> {
             
             // reset all sensor output time if simulation is restarting
             if (time.toEpochMilli() < lastTime)
@@ -129,7 +129,7 @@ public class ISASimulation
         {
             var loc = sensorLocations[i];
             driver.registerSensor(new RadiologicalSensor(driver, String.format("RADIO%03d", i+1))
-                .addTriggerSource("urn:osh:process:vmti", "targetLocation", RadioReadingOutput.RADIO_MATERIAL_CATEGORY_CODE[1], 1200.0f)
+                .addTriggerSource("urn:osh:process:georobotix:vmti", "targetLocation", RadioReadingOutput.RADIO_MATERIAL_CATEGORY_CODE[1], 1200.0f)
                 .setManufacturer("Radiological Sensors, Inc.")
                 .setModelNumber("RD123")
                 .setSoftwareVersion("FW21.23.89")

@@ -1,6 +1,6 @@
 description = 'GPS Goal Sensor'
 ext.details = "ROS interface for OpenSensorHub to Send Direct Remote Controlled GPS target pose to drive a platform to desired location"
-version = '1.0.0'
+version = '1.0.1'
 
 repositories {
     mavenCentral()

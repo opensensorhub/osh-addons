@@ -64,7 +64,7 @@ public class USGSWaterDriver extends AbstractSensorModule <USGSWaterConfig> impl
 {
 	static final Logger log = LoggerFactory.getLogger(USGSWaterDriver.class);
 	static final String BASE_URL = "https://waterservices.usgs.gov/nwis/iv?sites=";
-    static final String UID_PREFIX = "urn:usgs:water:";
+    static final String UID_PREFIX = "urn:osh:sensor:georobotix:usgs:water:";
     
     final int urlChunkSize = 100;
     Timer timer;
@@ -127,7 +127,7 @@ public class USGSWaterDriver extends AbstractSensorModule <USGSWaterConfig> impl
         
         loadQualCodes();
         // generate identifiers
-        this.uniqueID = "urn:usgs:water:live";
+        this.uniqueID = "urn:osh:sensor:georobotix:usgs:water:live";
         this.xmlID = "USGS_WATER_DATA_NETWORK";
         
         if (config.exposeFilter.parameters.contains(ObsParam.WATER_TEMP))

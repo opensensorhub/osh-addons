@@ -1,6 +1,6 @@
 description = 'Common Utility Functions'
 ext.details = 'Basic processing blocks for control flow and array handling'
-version = '1.0.0'
+version = '1.0.1'
 
 dependencies {
   implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion

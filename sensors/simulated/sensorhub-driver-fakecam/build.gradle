@@ -1,6 +1,6 @@
 description = 'Simulated Camera Sensor'
 ext.details = 'Demo sensor simulating a live video feed by replaying a video file'
-version = '0.1'
+version = '0.1.1'
 
 dependencies {
   implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion

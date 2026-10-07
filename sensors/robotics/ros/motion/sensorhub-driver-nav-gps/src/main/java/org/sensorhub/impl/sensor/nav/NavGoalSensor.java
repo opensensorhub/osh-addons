@@ -36,7 +36,7 @@ public class NavGoalSensor extends AbstractSensorModule<NavGoalConfig> {
         logger = LoggerFactory.getLogger(NavGoalSensor.class);
 
         // Generate identifiers
-        generateUniqueID("ros-nav-gps-", config.id);
+        generateUniqueID("urn:osh:sensor:georobotix:ros-nav-gps:", config.id);
         generateXmlID("ros-nav-gps-", config.id);
 
         // Create and initialize output

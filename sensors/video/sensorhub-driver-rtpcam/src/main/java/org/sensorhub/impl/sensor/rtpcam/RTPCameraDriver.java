@@ -48,7 +48,7 @@ public class RTPCameraDriver extends AbstractSensorModule<RTPCameraConfig>
         dataInterface = null;
         
         // generate identifiers
-        generateUniqueID("urn:osh:sensor:rtpcam:", config.cameraID);
+        generateUniqueID("urn:osh:sensor:georobotix:rtpcam:", config.cameraID);
         generateXmlID("RTP_CAM_", config.cameraID);
         
         // create connection handler

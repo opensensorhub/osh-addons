@@ -48,7 +48,7 @@ public class LogbackDriver extends AbstractSensorModule<LogbackDriverConfig> {
         Asserts.checkNotNullOrBlank(config.uniqueId, "Must configure or use default UID for this driver");
 
         // Generate identifiers
-        generateUniqueID("urn:osh:sensor:logback:", config.uniqueId);
+        generateUniqueID("urn:osh:sensor:georobotix:logback:", config.uniqueId);
         generateXmlID("LOGBACK_SENSOR_",  config.uniqueId);
 
         // Create log output

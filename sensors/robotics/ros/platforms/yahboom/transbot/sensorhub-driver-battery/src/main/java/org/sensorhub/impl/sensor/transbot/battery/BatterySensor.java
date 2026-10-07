@@ -35,7 +35,7 @@ public class BatterySensor extends AbstractSensorModule<BatteryConfig> {
         super.doInit();
 
         // Generate identifiers
-        generateUniqueID("ros-transbot-", config.id);
+        generateUniqueID("urn:osh:sensor:georobotix:ros-transbot:", config.id);
         generateXmlID("ros-transbot-", config.id);
 
         // Create and initialize output

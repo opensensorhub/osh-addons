@@ -1,6 +1,6 @@
 description = 'SensorThings API'
 ext.details = 'Implementation of OGC SensorThing API based on FROST server'
-version = '0.1.0'
+version = '0.1.1'
 
 
 def thisProjectDir = projectDir

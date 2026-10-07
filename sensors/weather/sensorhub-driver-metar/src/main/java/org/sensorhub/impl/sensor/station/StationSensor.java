@@ -42,7 +42,7 @@ public class StationSensor extends AbstractSensorModule<StationConfig>
         super.doInit();
         
         // generate IDs
-        this.uniqueID = "urn:osh:sensor:metar:network";
+        this.uniqueID = "urn:osh:sensor:georobotix:metar:network";
         this.xmlID = "METAR_NETWORK";
         
         dataInterface = new StationOutput(this);

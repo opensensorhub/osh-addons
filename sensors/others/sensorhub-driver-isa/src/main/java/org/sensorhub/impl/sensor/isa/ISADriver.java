@@ -47,7 +47,7 @@ public class ISADriver extends AbstractSensorModule<ISAConfig> implements ISyste
         super.doInit();
         
         // add unique ID based on serial number
-        this.uniqueID = "urn:osh:sensor:isa:" + config.networkID;
+        this.uniqueID = "urn:osh:sensor:georobotix:isa:" + config.networkID;
         this.xmlID = "ISA_" + config.networkID.toUpperCase();
         
         /*// init comm provider

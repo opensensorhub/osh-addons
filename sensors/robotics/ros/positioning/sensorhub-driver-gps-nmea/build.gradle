@@ -1,6 +1,6 @@
 description = 'NMEA GPS Sensor'
 ext.details = 'ROS interface for OpenSensorHub to receive GPS measurements'
-version = '1.0.0'
+version = '1.0.1'
 
 repositories {
     mavenCentral()

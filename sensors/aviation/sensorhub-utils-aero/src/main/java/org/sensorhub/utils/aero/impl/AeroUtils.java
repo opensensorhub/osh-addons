@@ -92,10 +92,11 @@ public class AeroUtils
                 {
                     line = line.trim();
                     if (!line.isEmpty()) {
-                        var tokens = line.split(",");
-                        var iata = tokens[2].replaceAll("\"", "");
-                        var icao = tokens[3].replaceAll("\"", "");
-                        iataToIcaoMap.put(iata, icao);
+                        var tokens = line.split("\",\"");
+                        var iata = tokens[2].trim();
+                        var icao = tokens[3].trim();
+                        if (!iata.isBlank() && !icao.isBlank())
+                            iataToIcaoMap.put(iata, icao);
                     }
                 }
             }

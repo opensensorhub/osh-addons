@@ -1,6 +1,6 @@
 description = 'Universal Controller Processing'
 ext.details = 'Take controller input to process command outputs'
-version = '1.0.0'
+version = '1.0.1'
 
 dependencies {
   implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion

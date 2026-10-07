@@ -150,7 +150,7 @@ public class VirbXeDriver extends AbstractSensorModule<VirbXeConfig>
         connection.waitForConnection();
         
         // generate identifiers
-        generateUniqueID("urn:garmin:cam:", serialNumber);
+        generateUniqueID("urn:osh:sensor:georobotix:garmin:cam:", serialNumber);
         generateXmlID("GARMIN_VIRB_XE_", serialNumber);
         
         // create I/O objects

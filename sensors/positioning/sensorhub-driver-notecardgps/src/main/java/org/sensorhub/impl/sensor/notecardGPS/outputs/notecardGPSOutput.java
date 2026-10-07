@@ -11,7 +11,7 @@
  ******************************* END LICENSE BLOCK ***************************/
 package org.sensorhub.impl.sensor.notecardGPS.outputs;
 
-import org.sensorhub.impl.sensor.notecardGPS.notecardGPSSensor;
+import org.sensorhub.impl.sensor.notecardGPS.NotecardGPSSensor;
 import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.DataEncoding;
@@ -21,7 +21,6 @@ import org.sensorhub.impl.sensor.AbstractSensorOutput;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.vast.swe.SWEBuilders;
-import org.vast.swe.SWEConstants;
 import org.vast.swe.SWEHelper;
 import org.vast.swe.helper.GeoPosHelper;
 
@@ -31,9 +30,9 @@ import java.time.ZoneOffset;
 
 
 /**
- * Output specification and provider for {@link notecardGPSSensor}.
+ * Output specification and provider for {@link NotecardGPSSensor}.
  */
-public class notecardGPSOutput extends AbstractSensorOutput<notecardGPSSensor> {
+public class notecardGPSOutput extends AbstractSensorOutput<NotecardGPSSensor> {
     static final String SENSOR_OUTPUT_NAME = "NotecardGPS";
     static final String SENSOR_OUTPUT_LABEL = "GPS";
     static final String SENSOR_OUTPUT_DESCRIPTION = "This is the output for the GPS module on the Blues Notecard";
@@ -56,7 +55,7 @@ public class notecardGPSOutput extends AbstractSensorOutput<notecardGPSSensor> {
      *
      * @param parentSensor Sensor driver providing this output.
      */
-    public notecardGPSOutput(notecardGPSSensor parentSensor) {
+    public notecardGPSOutput(NotecardGPSSensor parentSensor) {
         super(SENSOR_OUTPUT_NAME, parentSensor);
     }
 

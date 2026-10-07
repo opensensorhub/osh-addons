@@ -1,6 +1,6 @@
 description = 'Astracam Pro'
 ext.details = 'ROS interface for OpenSensorHub to receive image frames'
-version = '1.0.0'
+version = '1.0.1'
 
 repositories {
     mavenCentral()

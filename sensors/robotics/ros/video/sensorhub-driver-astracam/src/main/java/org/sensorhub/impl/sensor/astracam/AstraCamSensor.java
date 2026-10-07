@@ -32,7 +32,7 @@ public class AstraCamSensor extends AbstractSensorModule<AstraCamConfig> {
         super.doInit();
 
         // Generate identifiers
-        generateUniqueID("ros-image-", config.id);
+        generateUniqueID("urn:osh:sensor:georobotix:ros-image:", config.id);
         generateXmlID("ros-image-", config.id);
 
         // Create and initialize output

@@ -1,0 +1,27 @@
+description = 'UDP Connectionless Comm Provider'
+ext.details = 'Common API for non-blocking UDP Comms'
+version = '1.0.2'
+
+
+dependencies {
+  implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion  
+}
+
+osgi {
+  manifest {
+    attributes ('Bundle-Vendor': 'Botts Innovative Research, Inc.')
+    attributes ('Bundle-Activator': 'org.sensorhub.api.comm.providers.Activator')
+  }
+}
+
+// add info to maven pom
+ext.pom >>= {
+  developers {
+    developer {
+      id 'nickgaray'
+      name 'Nick Garay'
+      organization 'Botts Innovative Research, Inc.'
+      organizationUrl 'http://www.botts-inc.com'
+    }
+  }
+}
