@@ -9,7 +9,7 @@ import org.sensorhub.api.config.DisplayInfo;
  @since June 9, 2025
  */
 
-public class noteCardConfig {
+public class NoteCardConfig {
     @DisplayInfo.Required
     @DisplayInfo(label="NoteHub Product UID", desc="Provide the Product UID associated with your NoteHub.io Project")
     public String NHproductUID = "com.botts-inc.bill.brown:gps";

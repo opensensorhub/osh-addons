@@ -67,7 +67,7 @@ public class V4LCameraDriver extends AbstractSensorModule<V4LCameraConfig>
         super.doInit();
         
         // generate IDs
-        generateUniqueID("urn:osh:sensor:v4l-cam:", config.serialNumber);
+        generateUniqueID("urn:osh:sensor:georobotix:v4l-cam:", config.serialNumber);
         generateXmlID("V4L_CAMERA_", config.serialNumber);
         this.camParams = config.defaultParams.clone();
         

@@ -1,7 +1,7 @@
 description = 'Discovery Service'
 ext.details = 'Service providing discovery based on defineable rulesets'
 
-version= '2.0.0'
+version= '2.0.1'
 
 dependencies {
   implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion

@@ -49,7 +49,7 @@ import net.opengis.sensorml.v20.PhysicalSystem;
 public class USGSWaterDataArchive extends AbstractModule<USGSWaterDataConfig> implements IObsSystemDatabaseModule<USGSWaterDataConfig>
 {
     static final String BASE_USGS_URL = "https://waterservices.usgs.gov/nwis/";
-    static final String UID_PREFIX = "urn:usgs:water:";
+    static final String UID_PREFIX = "urn:osh:sensor:georobotix:usgs:water:";
 
     ISystemDescStore procStore;
     IFoiStore foiStore;

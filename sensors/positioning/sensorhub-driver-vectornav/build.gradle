@@ -1,6 +1,6 @@
 description = 'VectorNav VN200 GPS/INS'
 ext.details = 'Driver for VectorNav VN200 Inertial Navigation Systems'
-version = '0.1-SNAPSHOT'
+version = '0.1.1'
 
 dependencies {
   implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion

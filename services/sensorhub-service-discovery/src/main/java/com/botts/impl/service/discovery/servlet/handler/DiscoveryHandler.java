@@ -4,11 +4,13 @@
  ******************************* END LICENSE BLOCK ***************************/
 package com.botts.impl.service.discovery.servlet.handler;
 
+import com.botts.impl.service.discovery.DiscoveryServlet;
 import com.botts.impl.service.discovery.ResourcePermissions;
 import com.botts.impl.service.discovery.engine.RulesEngineWrapper;
 import com.botts.impl.service.discovery.servlet.context.RequestContext;
 
 import com.georobotix.ai.impl.rulesengine.Constants;
+import org.sensorhub.impl.SensorHub;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -140,7 +142,9 @@ public class DiscoveryHandler extends BaseHandler {
 
         RulesEngineWrapper.getInstance().setTargetRuleIds(ruleIds);
 
-        RulesEngineWrapper.getInstance().fire();
+        DiscoveryServlet discoveryServlet = (DiscoveryServlet)context.getServlet();
+
+        RulesEngineWrapper.getInstance().fire((SensorHub)discoveryServlet.parentService.getParentHub());
 
         context.setResponseContentType(APPLICATION_JSON_MIME_TYPE);
 

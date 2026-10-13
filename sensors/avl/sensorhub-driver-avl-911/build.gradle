@@ -1,6 +1,6 @@
 description = 'AVL 911 Sensor'
 ext.details = "Driver for Automatic Vehicle Location providing location and status based on Intergraph's 911 system"
-version = '1.0.0'
+version = '1.0.1'
 
 dependencies {
   implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion

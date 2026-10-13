@@ -31,7 +31,7 @@ import org.slf4j.LoggerFactory;
  * and performing initialization and shutdown for the driver and its outputs.
  */
 public class UnmannedSystem extends AbstractSensorModule<org.sensorhub.impl.sensor.mavsdk.UnmannedConfig> {
-    static final String UID_PREFIX = "urn:osh:driver:mavsdk:";
+    static final String UID_PREFIX = "urn:osh:sensor:georobotix:mavsdk:";
     static final String XML_PREFIX = "MAVSDK_DRIVER_";
 
     private static final Logger logger = LoggerFactory.getLogger(UnmannedSystem.class);

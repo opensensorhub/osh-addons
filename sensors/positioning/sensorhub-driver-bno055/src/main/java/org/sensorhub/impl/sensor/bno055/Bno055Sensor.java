@@ -86,7 +86,7 @@ public class Bno055Sensor extends AbstractSensorModule<Bno055Config>
         super.doInit();
         
         // generate identifiers: use serial number from config or first characters of local ID
-        generateUniqueID("urn:bosch:bno055:", config.serialNumber);
+        generateUniqueID("urn:osh:sensor:georobotix:bosch:bno055:", config.serialNumber);
         generateXmlID("BOSCH_BNO055_", config.serialNumber);
         
         // create main data interface

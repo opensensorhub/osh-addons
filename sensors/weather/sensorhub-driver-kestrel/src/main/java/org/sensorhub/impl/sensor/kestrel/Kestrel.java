@@ -63,7 +63,7 @@ public class Kestrel extends AbstractSensorModule<KestrelConfig> {
         super.doInit();
 
         // generate IDs
-        generateUniqueID("urn:osh:sensor:kestrel:", config.deviceAddress);
+        generateUniqueID("urn:osh:sensor:georobotix:kestrel:", config.deviceAddress);
         generateXmlID("KESTREL_WEATHER_", config.deviceAddress);
 
         // create output interfaces

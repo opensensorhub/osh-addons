@@ -34,7 +34,7 @@ public class MoveBaseSensor extends AbstractSensorModule<MoveBaseConfig> {
         logger = LoggerFactory.getLogger(MoveBaseSensor.class);
 
         // Generate identifiers
-        generateUniqueID("ros-movebase-", config.id);
+        generateUniqueID("urn:osh:sensor:georobotix:ros-movebase:", config.id);
         generateXmlID("ros-movebase-", config.id);
 
         moveBaseControl = new MoveBaseControl(this);

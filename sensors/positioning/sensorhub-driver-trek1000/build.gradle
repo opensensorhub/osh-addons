@@ -1,6 +1,6 @@
 description = 'DecaWave TREK1000'
 ext.details = 'Driver for DecaWave\'s TREK1000 UWB positioning system'
-version = '1.0.0'
+version = '1.0.1'
 
 dependencies {
   implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion

@@ -41,7 +41,7 @@ import net.opengis.sensorml.v20.PhysicalSystem;
 public class NexradSensor extends AbstractSensorModule<NexradConfig>
 {
 	static final Logger logger = LoggerFactory.getLogger(NexradSensor.class);
-	static final String SITE_UID_PREFIX = "urn:osh:sensors:nexrad:";
+	static final String SITE_UID_PREFIX = "urn:osh:sensor:georobotix:nexrad:";
 
 	NexradOutput dataInterface;
 	RadialProvider radialProvider;  // either Realtime or archive AWS source
