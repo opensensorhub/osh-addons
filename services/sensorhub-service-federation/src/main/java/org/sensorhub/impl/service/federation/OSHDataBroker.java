@@ -34,7 +34,7 @@ import static org.sensorhub.impl.service.federation.BrokerLogging.log;
  * instead of broker-env2.json.
  */
 public class OSHDataBroker implements DiscoveryMixin, MirroringMixin, ObservationMixin,
-        CommandRoutingMixin, SchemaBuildersMixin
+        CommandRoutingMixin, SchemaBuildersMixin, ReconcileMixin
 {
     private final EventHandler eventHandler = new EventHandler();
     private EnvironmentData env;
@@ -44,7 +44,10 @@ public class OSHDataBroker implements DiscoveryMixin, MirroringMixin, Observatio
     private final Map<String, Map.Entry<System, ControlStream>> csMap = new ConcurrentHashMap<>();
     private final List<Thread> workerThreads = new CopyOnWriteArrayList<>();
     private final ObsEcho obsEcho = new ObsEcho();
+    private final StreamRegistry streamRegistry = new StreamRegistry();
     private boolean binaryDatastreamsEnabled = false;
+    private int removedAfterCycles = 3;
+    private boolean deleteOnRemoved = false;
 
     public OSHDataBroker()
     {
@@ -61,6 +64,15 @@ public class OSHDataBroker implements DiscoveryMixin, MirroringMixin, Observatio
         for (Thread t : workerThreads)
             t.interrupt();
         workerThreads.clear();
+
+        // Interrupt every per-stream reconcile pump/forwarder (these are tracked
+        // in the stream registry, not workerThreads) and clear the registry.
+        for (PumpEntry e : streamRegistry.snapshot())
+        {
+            if (e.thread != null)
+                e.thread.interrupt();
+            streamRegistry.remove(e.key);
+        }
 
         for (CommanderNode n : commandNodes)
             stopMqtt(n.getNode());
@@ -91,6 +103,8 @@ public class OSHDataBroker implements DiscoveryMixin, MirroringMixin, Observatio
     public void loadFromConfig(FederatedBrokerConfig config)
     {
         this.binaryDatastreamsEnabled = config.enableBinaryDatastreams;
+        this.removedAfterCycles = config.removedAfterCycles;
+        this.deleteOnRemoved = "delete".equalsIgnoreCase(config.onRemoved);
         this.env = new EnvironmentData(config.nodes);
         OSHConnect oshMain = new OSHConnect("OSH Data Brokerage");
 
@@ -161,7 +175,11 @@ public class OSHDataBroker implements DiscoveryMixin, MirroringMixin, Observatio
     }
 
     /**
-     * High-level orchestrator: systems first, then datastreams, then control streams.
+     * High-level orchestrator. Delegates to {@link #reconcileOnce()} so startup
+     * and steady-state discovery share one code path: the first cycle discovers +
+     * mirrors every system, datastream, and control stream (registering a pump for
+     * each), and every subsequent cycle picks up resources that appeared and
+     * retires ones that vanished.
      */
     public void discoverAll()
     {
@@ -174,15 +192,7 @@ public class OSHDataBroker implements DiscoveryMixin, MirroringMixin, Observatio
         log.info("Starting discovery and mirroring...");
         log.info("==================================================");
 
-        // 1. Systems: discover + mirror
-        log.info("Phase 1: Systems");
-        discoverAndMirrorSystems();
-        // 2. Datastreams: discover + mirror
-        log.info("Phase 2: Datastreams");
-        discoverAndMirrorDatastreams();
-        // 3. Control streams: discover + mirror
-        log.info("Phase 3: Control Streams");
-        discoverAndMirrorControlstreams();
+        reconcileOnce();
 
         log.info("Discovery complete. Waiting 5s for stabilization...");
         try
@@ -249,5 +259,23 @@ public class OSHDataBroker implements DiscoveryMixin, MirroringMixin, Observatio
     public ObsEcho getObsEcho()
     {
         return obsEcho;
+    }
+
+    @Override
+    public StreamRegistry getStreamRegistry()
+    {
+        return streamRegistry;
+    }
+
+    @Override
+    public int getRemovedAfterCycles()
+    {
+        return removedAfterCycles;
+    }
+
+    @Override
+    public boolean isDeleteOnRemoved()
+    {
+        return deleteOnRemoved;
     }
 }

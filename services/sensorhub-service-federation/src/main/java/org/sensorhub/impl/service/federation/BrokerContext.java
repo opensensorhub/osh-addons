@@ -48,4 +48,13 @@ public interface BrokerContext
 
     /** Fingerprints of already-forwarded observations, so a re-delivery is relayed once. */
     ObsEcho getObsEcho();
+
+    /** Mirror of {@code self.stream_registry}: active pumps tracked by the reconcile loop. */
+    StreamRegistry getStreamRegistry();
+
+    /** Mirror of {@code self._env.removed_after_cycles}: absences before a stream is retired. */
+    int getRemovedAfterCycles();
+
+    /** Mirror of {@code on_removed == "delete"}: whether a retired stream's commander mirror is deleted. */
+    boolean isDeleteOnRemoved();
 }

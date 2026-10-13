@@ -35,6 +35,12 @@ public class ControlStream
         return underlyingResource.getCsId();
     }
 
+    /** Node-qualified reconcile key (control-stream ids are only unique per node). */
+    public String getRemoteKey()
+    {
+        return parentNode.getAddress() + ":" + parentNode.getPort() + "/" + getId();
+    }
+
     public ControlStreamResource getUnderlyingResource()
     {
         return underlyingResource;
@@ -102,5 +108,11 @@ public class ControlStream
     public Deque<byte[]> getInboundDeque()
     {
         return inboundDeque;
+    }
+
+    /** Shared per-node MQTT client (used by reconcile to unsubscribe a retired topic). */
+    public MqttCommClient getMqttClient()
+    {
+        return mqttClient;
     }
 }

@@ -111,6 +111,53 @@ public interface MirroringMixin extends CommandRoutingMixin
         log.info("Mirrored {} control stream(s)", mirroredCount);
     }
 
+    /**
+     * Mirror one remote control stream onto its commander system (adopt-or-create)
+     * and record it in cs_map, WITHOUT subscribing/forwarding — the caller starts
+     * the forwarder. Returns the commander {@link ControlStream}, or {@code null}
+     * when the stream is skipped (no command schema) or the create failed. Used by
+     * the reconcile loop to activate a single newly-discovered control stream; the
+     * dedup logic matches {@link #mirrorControlstreamsToCommander} (adopt only on
+     * an exact inputName + schema match).
+     */
+    default ControlStream mirrorOneControlstream(System cmdSys, System remoteSys, ControlStream remoteCs)
+    {
+        ControlStreamResource csRes = remoteCs.getUnderlyingResource();
+        String csName = csRes.getName() != null ? csRes.getName() : "unknown";
+
+        if (csRes.getCommandSchema() == null)
+        {
+            log.warn("Skipping control stream {}: source has no command_schema "
+                    + "(oshconnect discovery did not populate it)", csName);
+            return null;
+        }
+
+        Map<String, ControlStream> cmdCsIndex = indexCommanderControlstreams(cmdSys);
+        ControlStream existing = findExistingMirrorControlstream(cmdCsIndex, csRes.getInputName(),
+                controlstreamSchemaSig(remoteCs));
+        if (existing != null)
+        {
+            getCsMap().put(existing.getId(), Map.entry(remoteSys, remoteCs));
+            log.info("Adopted existing commander control stream for {} -> {}", csName, existing.getId());
+            return existing;
+        }
+
+        ControlStreamResource csResource = csRes.modelCopy(remoteResourceStripKeys());
+        try
+        {
+            ControlStream newCs = cmdSys.addInsertControlstream(csResource);
+            String commanderCsId = newCs.getId() != null ? newCs.getId() : "unknown";
+            getCsMap().put(commanderCsId, Map.entry(remoteSys, remoteCs));
+            log.info("Mirrored control stream: {} -> {}", csName, commanderCsId);
+            return newCs;
+        }
+        catch (Exception e)
+        {
+            log.error("Failed to mirror control stream {}: {}", csName, e.toString());
+            return null;
+        }
+    }
+
     default void mirrorSystemsToCommander(Node commander, List<System> systems)
     {
         log.info("Mirroring {} system(s) to commander", systems.size());
