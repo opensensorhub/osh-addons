@@ -16,6 +16,7 @@ package org.sensorhub.impl.service.consys.mqtt;
 
 import static org.junit.Assert.*;
 import static org.sensorhub.impl.service.consys.mqtt.ConSysTopicValidator.ResourceType.*;
+import java.net.URI;
 import java.util.Optional;
 import org.junit.Test;
 import org.sensorhub.api.comm.mqtt.InvalidTopicException;
@@ -302,5 +303,31 @@ public class TestConSysTopicValidator
             ConSysTopicValidator.stripDataSuffix(
                 "systems/abc/datastreams/xyz/observations"));
         assertNull(ConSysTopicValidator.stripDataSuffix(null));
+    }
+
+    @Test
+    public void testWithFormat() throws Exception
+    {
+        var proto = ResourceFormat.fromMimeType("application/swe+proto");
+        var path = "/systems/abc/datastreams/xyz/observations";
+
+        // no format → URI unchanged
+        var uri = new URI(path);
+        assertSame(uri, ConSysTopicValidator.withFormat(uri, null));
+
+        // format added as f=<mime type>, decoded intact ('+' kept)
+        assertEquals("f=application/swe+proto",
+            ConSysTopicValidator.withFormat(new URI(path), proto).getQuery());
+        assertEquals(path, ConSysTopicValidator.withFormat(new URI(path), proto).getPath());
+
+        // appended to an existing query
+        assertEquals("resultTime=latest&f=application/swe+proto",
+            ConSysTopicValidator.withFormat(new URI(path + "?resultTime=latest"), proto).getQuery());
+
+        // explicit f or format param takes precedence
+        assertEquals("f=json",
+            ConSysTopicValidator.withFormat(new URI(path + "?f=json"), proto).getQuery());
+        assertEquals("a=1&format=json",
+            ConSysTopicValidator.withFormat(new URI(path + "?a=1&format=json"), proto).getQuery());
     }
 }
