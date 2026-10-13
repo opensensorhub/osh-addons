@@ -14,6 +14,8 @@ Copyright (C) 2026 Sensia Software LLC. All Rights Reserved.
 
 package org.sensorhub.impl.service.consys.mqtt;
 
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -232,6 +234,28 @@ public final class ConSysTopicValidator
                 "Unknown :data format subtopic: '" + token + "'. Known: "
                 + FORMAT_SUBTOPICS.keySet());
         return Optional.of(fmt);
+    }
+
+    /**
+     * @return {@code uri} with an {@code f=<mime type>} query param for the
+     * given format, unless {@code format} is null or the query already sets
+     * {@code f} or {@code format} (an explicit param takes precedence)
+     */
+    public static URI withFormat(URI uri, ResourceFormat format) throws URISyntaxException
+    {
+        if (format == null)
+            return uri;
+        var query = uri.getQuery();
+        if (query != null)
+        {
+            for (var param: query.split("&"))
+            {
+                if (param.startsWith("f=") || param.startsWith("format="))
+                    return uri;
+            }
+        }
+        var formatParam = "f=" + format.getMimeType();
+        return new URI(null, null, uri.getPath(), query != null ? query + "&" + formatParam : formatParam, null);
     }
 
 

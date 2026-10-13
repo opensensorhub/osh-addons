@@ -189,8 +189,6 @@ public class ConSysApiMqttConnector implements IMqttHandler
             // always evaluate request because we need to check for permissions
             // even if subscriber was already created
             var ctx = getResourceContext(topic, sub);
-            var fmt = ConSysTopicValidator.parseDataTopicFormat(topic);
-            fmt.ifPresent(ctx::setResponseFormat);
             servlet.getSecurityHandler().setCurrentUser(userID);
             servlet.getRootHandler().doGet(ctx);
             
@@ -380,10 +378,19 @@ public class ConSysApiMqttConnector implements IMqttHandler
 
     private RequestContext getResourceContext(String topic, MqttSubscriber streamHandler) throws InvalidTopicException
     {
-        return new RequestContext(
-            servlet,
-            getResourceUri(topic),
-            streamHandler);
+        // pass the :data/<format-token> format to the handler as a query param
+        var fmt = ConSysTopicValidator.parseDataTopicFormat(topic);
+        try
+        {
+            return new RequestContext(
+                servlet,
+                ConSysTopicValidator.withFormat(getResourceUri(topic), fmt.orElse(null)),
+                streamHandler);
+        }
+        catch (URISyntaxException e)
+        {
+            throw new InvalidTopicException("Invalid SWE API resource URI");
+        }
     }
     
     
