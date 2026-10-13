@@ -1,6 +1,6 @@
 description = 'FFMPEG processing modules'
 ext.details = 'FFMPEG based modules for video processing'
-version = '0.1'
+version = '0.1.1'
 
 
 dependencies {

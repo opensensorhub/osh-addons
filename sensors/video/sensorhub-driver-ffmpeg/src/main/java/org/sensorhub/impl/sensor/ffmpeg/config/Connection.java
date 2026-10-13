@@ -12,6 +12,7 @@
 package org.sensorhub.impl.sensor.ffmpeg.config;
 
 import org.sensorhub.api.config.DisplayInfo;
+import org.sensorhub.impl.sensor.ffmpeg.config.streamfilter.StreamFilter;
 
 /**
  * Configuration settings for the FFmpeg driver exposed via the OpenSensorHub Admin panel.
@@ -43,4 +44,14 @@ public class Connection {
 
     @DisplayInfo(label = "Inject Extradata for Streaming", desc = "Injects extradata into the video stream. Set true if this driver is being used to output a live video stream for late-join decoders.")
     public boolean injectExtradata = true;
+
+    @DisplayInfo(label = "Register Devices", desc = "Registers devices for the video stream. Set true if input is not from a network stream or file (e.g. dshow).")
+    public boolean registerDevices = false;
+
+    /**
+     * Stream filter
+     */
+    @DisplayInfo.Required
+    @DisplayInfo(label = "Stream Filter", desc = "Used to filter streams for output.")
+    public StreamFilter streamFilter;
 }

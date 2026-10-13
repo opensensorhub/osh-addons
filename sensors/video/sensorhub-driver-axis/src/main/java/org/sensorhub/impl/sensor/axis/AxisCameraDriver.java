@@ -15,6 +15,18 @@ Developer are Copyright (C) 2014 the Initial Developer. All Rights Reserved.
 
 package org.sensorhub.impl.sensor.axis;
 
+import net.opengis.sensorml.v20.IdentifierList;
+import net.opengis.sensorml.v20.Term;
+import org.sensorhub.api.common.SensorHubException;
+import org.sensorhub.api.sensor.SensorException;
+import org.sensorhub.impl.comm.RobustHTTPConnection;
+import org.sensorhub.impl.module.RobustConnection;
+import org.sensorhub.impl.security.ClientAuth;
+import org.sensorhub.impl.sensor.AbstractSensorModule;
+import org.sensorhub.impl.sensor.rtpcam.RTSPClient;
+import org.vast.sensorML.SMLFactory;
+import org.vast.swe.SWEHelper;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -22,17 +34,6 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import net.opengis.sensorml.v20.IdentifierList;
-import net.opengis.sensorml.v20.Term;
-import org.sensorhub.api.sensor.SensorException;
-import org.sensorhub.impl.comm.RobustHTTPConnection;
-import org.sensorhub.impl.module.RobustConnection;
-import org.sensorhub.impl.security.ClientAuth;
-import org.sensorhub.impl.sensor.AbstractSensorModule;
-import org.sensorhub.impl.sensor.rtpcam.RTSPClient;
-import org.sensorhub.api.common.SensorHubException;
-import org.vast.sensorML.SMLFactory;
-import org.vast.swe.SWEHelper;
 
 
 /**
@@ -62,6 +63,8 @@ public class AxisCameraDriver extends AbstractSensorModule < AxisCameraConfig > 
     AxisPtzOutput ptzPosOutput;
     AxisVideoControl videoControlInterface;
     AxisPtzControl ptzControlInterface;
+    AxisSensorOrientationOutput sensorOrientationOutput;
+
 
     String hostUrl;
     String serialNumber;
@@ -71,11 +74,17 @@ public class AxisCameraDriver extends AbstractSensorModule < AxisCameraConfig > 
 
     int vapixVersion = 0;
 
+    double initialHeading = 0.0;
+    double initialPitch = 0.0;
+    double initialRoll = 0.0;
+
+
     boolean ptzSupported = false;
     boolean mjpegSupported = false;
     boolean h264Supported = false;
     boolean h265Supported = false;
     boolean mpeg4Supported = false;
+    boolean initialOrientationCaptured = false;
 
     public AxisCameraDriver() {
 
@@ -111,10 +120,12 @@ public class AxisCameraDriver extends AbstractSensorModule < AxisCameraConfig > 
         ptzPosOutput = null;
         ptzControlInterface = null;
         ptzSupported = false;
+        initialOrientationCaptured = false;
 
         // create connection handler
         connection = new RobustHTTPConnection(this, config.connection, "Axis Camera") {
             public boolean tryConnect() throws IOException {
+
                 // check we can reach the HTTP server
                 // and access the param URL
                 HttpURLConnection conn = tryConnectGET(getHostUrl() + VAPIX_QUERY_PARAMS_LIST);
@@ -206,7 +217,7 @@ public class AxisCameraDriver extends AbstractSensorModule < AxisCameraConfig > 
         connection.waitForConnection();
 
         // generate identifiers
-        generateUniqueID("urn:axis:cam:", config.uidExtension.isBlank() ? serialNumber : serialNumber.trim() + ":" + config.uidExtension);
+        generateUniqueID("urn:osh:sensor:georobotix:axis:cam:", config.uidExtension.isBlank() ? serialNumber : serialNumber.trim() + ":" + config.uidExtension);
         generateXmlID("AXIS_CAM_", config.uidExtension.isBlank() ? serialNumber : serialNumber.trim() + "_" + config.uidExtension);
 
         // create I/O objects
@@ -241,16 +252,41 @@ public class AxisCameraDriver extends AbstractSensorModule < AxisCameraConfig > 
             addOutput(h265VideoStream.getOutput(), false);
         }
 
+        if (config.position.orientation != null) {
+            initialHeading = config.position.orientation.heading;
+            initialPitch = config.position.orientation.pitch;
+            initialRoll = config.position.orientation.roll;
+            initialOrientationCaptured = true;
+
+            // add Static System orientation output
+            addOrientationOutput(Double.NaN);
+            orientationOutput.getRecordDescription().setLabel("Platform Orientation");
+            orientationOutput.getRecordDescription().setDescription(
+                "Static mount orientation of the camera platform at its installed position. " +
+                "Represents heading, pitch, and roll in the NED frame when the camera PTZ is at (0, 0, 0). " +
+                "Set via configuration and published once on start.");
+        }
+
         if (ptzSupported) {
             // add PTZ output
             ptzPosOutput = new AxisPtzOutput(this);
             addOutput(ptzPosOutput, false);
             ptzPosOutput.init();
 
+          
+
             // add PTZ controller
             ptzControlInterface = new AxisPtzControl(this);
             addControlInput(ptzControlInterface);
             ptzControlInterface.init();
+
+            // add camera sensor orientation 
+            if (initialOrientationCaptured) {
+                sensorOrientationOutput = new AxisSensorOrientationOutput(this, getLocalFrameID());
+                addOutput(sensorOrientationOutput, false);
+
+                
+            }
         }
     }
 
@@ -274,7 +310,29 @@ public class AxisCameraDriver extends AbstractSensorModule < AxisCameraConfig > 
         if (ptzSupported) {
             ptzPosOutput.start();
             ptzControlInterface.start();
+    
         }
+    }
+
+    protected void updateOrientationFromPtz(double pan, double tilt) {
+        if (!initialOrientationCaptured || sensorOrientationOutput == null)
+            return;
+
+        double newHeading = normalizeHeadingDeg(initialHeading + pan);
+        double newPitch = initialPitch + tilt;
+        double newRoll = initialRoll;
+
+        sensorOrientationOutput.updateOrientation(newHeading, newPitch, newRoll);
+    }
+
+    /** Wrap a heading angle into the range (-180, 180]. */
+    private static double normalizeHeadingDeg(double deg) {
+        double d = deg % 360.0;
+        if (d > 180.0)
+            d -= 360.0;
+        else if (d <= -180.0)
+            d += 360.0;
+        return d;
     }
 
 

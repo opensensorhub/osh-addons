@@ -1,6 +1,6 @@
 description = 'METAR Weather Sensor Network'
 ext.details = 'Driver for METAR weather station network through Anything Weather server'
-version = '1.0.0'
+version = '1.0.1'
 
 dependencies {
   implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion

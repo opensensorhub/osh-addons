@@ -32,7 +32,7 @@ import org.vast.util.Asserts;
  */
 public class AVLDriver extends AbstractSensorModule<AVLConfig>
 {
-	static final String UID_PREFIX = "urn:osh:sensor:avl:";
+	static final String UID_PREFIX = "urn:osh:sensor:georobotix:avl:";
     	
 	ICommProvider<?> commProvider;
     AVLOutput dataInterface;

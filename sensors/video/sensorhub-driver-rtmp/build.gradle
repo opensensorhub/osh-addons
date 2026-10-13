@@ -1,6 +1,6 @@
 description = 'RTMP Video Driver'
 ext.details = 'Driver to listen for and demux RTMP video streams'
-version = '1.0.0'
+version = '1.0.1'
 
 dependencies {
   implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion

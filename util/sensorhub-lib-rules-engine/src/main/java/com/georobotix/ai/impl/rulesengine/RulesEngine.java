@@ -16,9 +16,11 @@ import org.sensorhub.api.datastore.obs.DataStreamKey;
 import org.sensorhub.api.datastore.obs.IDataStreamStore;
 import org.sensorhub.api.event.EventUtils;
 import org.sensorhub.api.system.SystemEvent;
+import org.sensorhub.impl.SensorHub;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.xml.crypto.Data;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -207,10 +209,39 @@ public class RulesEngine {
     }
 
     /**
+     * Returns facts generated from datastreams in the federated database
+     *
+     * @param hub Handle to the instance of OpenSensorHub
+     * @return A list of facts generated from the node's federated database
+     */
+    public List<DataStreamFact> getFederatedDbFacts(SensorHub hub) {
+        IDataStreamStore dsStore = hub.getDatabaseRegistry().getFederatedDatabase().getDataStreamStore();
+        List<DataStreamFact> fedDbFacts = new ArrayList<>();
+
+        for (Map.Entry<DataStreamKey, IDataStreamInfo> entry : dsStore.entrySet()) {
+            IDataStreamInfo dataStreamInfo = entry.getValue();
+
+            String systemId = hub.getIdEncoders()
+                    .getSystemIdEncoder()
+                    .encodeID(dataStreamInfo.getSystemID().getInternalID());
+
+            String dataStreamId = hub.getIdEncoders()
+                    .getDataStreamIdEncoder()
+                    .encodeID(entry.getKey().getInternalID());
+
+
+            fedDbFacts.add(new DataStreamFact(systemId, dataStreamId, dataStreamInfo));
+        }
+
+        return fedDbFacts;
+    }
+
+    /**
      * Executes the rule engine on current knowledge with current rules to
      * generate a result set.
      */
-    synchronized public void fire() {
+    synchronized public void fire(SensorHub hub) {
+        List<DataStreamFact> fedDbFacts = this.getFederatedDbFacts(hub);
 
         // Clear the result set to not aggregate results across queries
         resultSet.clear();
@@ -227,7 +258,7 @@ public class RulesEngine {
 
                     synchronized (factsLock) {
 
-                        List<DataStreamFact> collect = facts.stream().filter(condition).collect(Collectors.toList());
+                        List<DataStreamFact> collect = fedDbFacts.stream().filter(condition).collect(Collectors.toList());
 
                         resultSet.addResults(ruleId, collect);
                     }

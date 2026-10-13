@@ -29,7 +29,7 @@ import net.opengis.swe.v20.ValidationException;
 
 public class AutoWiringComponent extends AbstractDataComponentImpl
 {
-    public static final String AUTO_WIRING_URI = "urn:osh:process:wiring:auto";
+    public static final String AUTO_WIRING_URI = "urn:osh:process:georobotix:wiring:auto";
     
     
     public void replaceWithComponent(ExecutableProcessImpl process, DataComponent comp)

@@ -44,13 +44,13 @@ public class TestNavUtils
     public void testDistanceToSegment()
     {
         var dist = NavUtils.distanceToSegment(new Coordinate(-10,0), new Coordinate(10,0), 0, 10, 10000);
-        assertEquals(NavUtils.EARTH_RADIUS_KM*NavUtils.KILOMETERS_TO_NAUTICALMILES*Math.toRadians(10), dist, 1e-6);
+        assertEquals(NavUtils.EARTH_RADIUS_KM*Math.toRadians(10), dist, 1e-6);
         
         dist = NavUtils.distanceToSegment(new Coordinate(40,10), new Coordinate(40,-10), 50, 0, 10000);
-        assertEquals(NavUtils.EARTH_RADIUS_KM*NavUtils.KILOMETERS_TO_NAUTICALMILES*Math.toRadians(10), dist, 1e-6);
+        assertEquals(NavUtils.EARTH_RADIUS_KM*Math.toRadians(10), dist, 1e-6);
         
         dist = NavUtils.distanceToSegment(new Coordinate(0,0), new Coordinate(0,90), 10, 0, 10000);
-        assertEquals(NavUtils.EARTH_RADIUS_KM*NavUtils.KILOMETERS_TO_NAUTICALMILES*Math.toRadians(10), dist, 1e-6);
+        assertEquals(NavUtils.EARTH_RADIUS_KM*Math.toRadians(10), dist, 1e-6);
         
         dist = NavUtils.distanceToSegment(new Coordinate(0,0), new Coordinate(0,90), 0, 0, 10000);
         assertEquals(0.0, dist, 1e-6);
@@ -77,13 +77,13 @@ public class TestNavUtils
         var polyline = jts.createLineString(coords);
         
         var dist = NavUtils.distanceToPolyline(polyline, 0, 10, 10000);
-        assertEquals(NavUtils.EARTH_RADIUS_KM*NavUtils.KILOMETERS_TO_NAUTICALMILES*Math.toRadians(10), dist, 1e-6);
+        assertEquals(NavUtils.EARTH_RADIUS_KM*Math.toRadians(10), dist, 1e-6);
         
         dist = NavUtils.distanceToPolyline(polyline, 0, -10, 10000);
-        assertEquals(NavUtils.EARTH_RADIUS_KM*NavUtils.KILOMETERS_TO_NAUTICALMILES*Math.toRadians(10), dist, 1e-6);
+        assertEquals(NavUtils.EARTH_RADIUS_KM*Math.toRadians(10), dist, 1e-6);
         
         dist = NavUtils.distanceToPolyline(polyline, 10, -10, 10000);
-        assertEquals(NavUtils.EARTH_RADIUS_KM*NavUtils.KILOMETERS_TO_NAUTICALMILES*Math.toRadians(10), dist, 1e-6);
+        assertEquals(NavUtils.EARTH_RADIUS_KM*Math.toRadians(10), dist, 1e-6);
         
         dist = NavUtils.distanceToPolyline(polyline, 18, 0, 10000);
         assertEquals(0.0, dist, 1e-6);
@@ -130,11 +130,11 @@ public class TestNavUtils
         };
         var polyline = jts.createLineString(coords);
         
-        var dist = NavUtils.distanceToPolyline(polyline, -102.26556, 38.77969, 100);
-        assertEquals(62.75, dist, 1e-2);
+        var dist = NavUtils.distanceToPolyline(polyline, -102.26556, 38.77969, 200);
+        assertEquals(116.22, dist, 1e-2);
         
         dist = NavUtils.distanceToPolyline(polyline, -95.35947777777777, 39.29526944444444, 100);
-        assertEquals(4.73, dist, 1e-2);
+        assertEquals(8.77, dist, 1e-2);
     }
 
 }

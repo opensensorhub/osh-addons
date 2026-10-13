@@ -24,7 +24,6 @@ import net.opengis.sensorml.v20.impl.SettingsImpl;
 import net.opengis.swe.v20.AbstractSWEIdentifiable;
 import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.DataRecord;
-import org.slf4j.Logger;
 import org.vast.process.ExecutableProcessImpl;
 import org.vast.process.ProcessException;
 import org.vast.sensorML.*;
@@ -69,8 +68,8 @@ public class ProcessHelper extends SMLUtils {
     }
 
     public class ProcessChainBuilder {
-        ReferenceImpl controlType = new ReferenceImpl("urn:osh:process:datasink:commandstream");
-        ReferenceImpl sourceType = new ReferenceImpl("urn:osh:process:datasource:stream");
+        ReferenceImpl controlType = new ReferenceImpl("urn:osh:process:georobotix:datasink:commandstream");
+        ReferenceImpl sourceType = new ReferenceImpl("urn:osh:process:georobotix:datasource:stream");
         ProcessHelper helper;
         AggregateProcessImpl aggregateProcess;
 

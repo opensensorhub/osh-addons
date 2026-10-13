@@ -14,6 +14,8 @@ Copyright (C) 2025 Sensia Software LLC. All Rights Reserved.
 
 package org.sensorhub.utils.aero.impl;
 
+import java.util.Arrays;
+import java.util.stream.Collectors;
 import org.sensorhub.utils.aero.AeroHelper;
 import org.sensorhub.utils.aero.IWaypoint;
 import org.vast.data.DataBlockProxy;
@@ -120,5 +122,36 @@ public interface WaypointRecord extends IDataAccessor, IWaypoint
 
     @SweMapping(path="info")
     void setInfo(String val);
+    
+    
+    /**
+     * Adds a tag to the info field if it's not already present
+     */
+    public default void addTag(String tag)
+    {
+        var info = getInfo();
+        if (info == null) {
+            setInfo(tag);
+        } else if (!info.contains(tag)) {
+            setInfo(info + "," + tag);
+        }
+    }
+    
+    
+    /**
+     * Remove a tag from the info field
+     */
+    public default void removeTag(String tag)
+    {
+        var info = getInfo();
+        if (info == null) {
+            return;
+        } else {
+            info = Arrays.stream(info.split(","))
+                .filter(t -> !t.equals(tag))
+                .collect(Collectors.joining(","));
+            setInfo(info.isBlank() ? null : info);
+        }
+    }
     
 }

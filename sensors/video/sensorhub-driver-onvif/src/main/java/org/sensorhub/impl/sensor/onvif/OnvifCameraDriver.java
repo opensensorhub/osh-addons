@@ -414,7 +414,7 @@ public class OnvifCameraDriver extends AbstractSensorModule<OnvifCameraConfig>
             streamId = "noVideo";
         }
 
-        generateUniqueID("urn:onvif:cam:", serialNumber + (streamId != null ? (":" + streamId) : ""));
+        generateUniqueID("urn:osh:sensor:georobotix:onvif:cam:", serialNumber + (streamId != null ? (":" + streamId) : ""));
         generateXmlID("ONVIF_CAM_", serialNumber + (streamId != null ? (":" + streamId) : ""));
 
         // Add inputs/outputs for supported features
