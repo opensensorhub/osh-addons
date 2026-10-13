@@ -40,6 +40,7 @@ import org.sensorhub.api.datastore.obs.DataStreamKey;
 import org.sensorhub.impl.service.consys.obs.CustomObsFormat;
 import org.sensorhub.impl.service.consys.resource.RequestContext;
 import org.sensorhub.impl.service.consys.resource.ResourceBinding;
+import org.sensorhub.impl.service.consys.task.CustomCommandFormat;
 
 
 /**
@@ -76,7 +77,7 @@ import org.sensorhub.impl.service.consys.resource.ResourceBinding;
  * @author Ian Patterson
  * @since 2026
  */
-public final class ProtoFormat implements CustomObsFormat
+public final class ProtoFormat implements CustomObsFormat, CustomCommandFormat
 {
     /** MIME type for protobuf-encoded SWE Common payloads. */
     public static final String MIME_TYPE = "application/swe+proto";
@@ -109,6 +110,14 @@ public final class ProtoFormat implements CustomObsFormat
         // compressed video stream is evaluated as its real bytes-field schema and
         // not as a giant nested pixel structure.
         return canEncode(structWithEncoding(dsInfo));
+    }
+
+
+    @Override
+    public boolean isCompatible(ICommandStreamInfo csInfo)
+    {
+        // command bindings encode the raw parameter structure
+        return canEncode(csInfo.getRecordStructure());
     }
 
 
@@ -209,7 +218,7 @@ public final class ProtoFormat implements CustomObsFormat
 
 
     @Override
-    public ResourceBinding<CommandStreamKey, ICommandStreamInfo> getCommandSchemaBinding(RequestContext ctx, IdEncoders idEncoders, ICommandStreamInfo csInfo) throws IOException
+    public ResourceBinding<CommandStreamKey, ICommandStreamInfo> getSchemaBinding(RequestContext ctx, IdEncoders idEncoders, ICommandStreamInfo csInfo) throws IOException
     {
         // /controlstreams/{id}/schema?commandFormat=application/swe+proto
         return new CommandStreamSchemaBindingProto(ctx, idEncoders, false, cmdSchemas, ConSysApiProtoService.getCache());

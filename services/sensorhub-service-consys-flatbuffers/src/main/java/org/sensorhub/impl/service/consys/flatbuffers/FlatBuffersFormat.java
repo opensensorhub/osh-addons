@@ -34,6 +34,7 @@ import org.sensorhub.impl.service.consys.flatbuffers.observations.ObsBindingFlat
 import org.sensorhub.impl.service.consys.obs.CustomObsFormat;
 import org.sensorhub.impl.service.consys.resource.RequestContext;
 import org.sensorhub.impl.service.consys.resource.ResourceBinding;
+import org.sensorhub.impl.service.consys.task.CustomCommandFormat;
 import net.opengis.swe.v20.DataArray;
 import net.opengis.swe.v20.DataChoice;
 import net.opengis.swe.v20.DataComponent;
@@ -66,7 +67,7 @@ import net.opengis.swe.v20.Vector;
  * @author Ian Patterson
  * @since 2026
  */
-public final class FlatBuffersFormat implements CustomObsFormat
+public final class FlatBuffersFormat implements CustomObsFormat, CustomCommandFormat
 {
     /** MIME type for FlatBuffers (FlexBuffers) encoded SWE Common payloads. */
     public static final String MIME_TYPE = "application/swe+flatbuffers";
@@ -80,6 +81,14 @@ public final class FlatBuffersFormat implements CustomObsFormat
     public boolean isCompatible(IDataStreamInfo dsInfo)
     {
         return canEncode(dsInfo.getRecordStructure());
+    }
+
+
+    @Override
+    public boolean isCompatible(ICommandStreamInfo csInfo)
+    {
+        // command bindings encode the raw parameter structure
+        return canEncode(csInfo.getRecordStructure());
     }
 
 
@@ -161,7 +170,7 @@ public final class FlatBuffersFormat implements CustomObsFormat
 
 
     @Override
-    public ResourceBinding<CommandStreamKey, ICommandStreamInfo> getCommandSchemaBinding(RequestContext ctx, IdEncoders idEncoders, ICommandStreamInfo csInfo) throws IOException
+    public ResourceBinding<CommandStreamKey, ICommandStreamInfo> getSchemaBinding(RequestContext ctx, IdEncoders idEncoders, ICommandStreamInfo csInfo) throws IOException
     {
         // /controlstreams/{id}/schema?commandFormat=application/swe+flatbuffers → JSON schema
         return new CommandStreamSchemaBindingFlatBuffers(ctx, idEncoders, false);
