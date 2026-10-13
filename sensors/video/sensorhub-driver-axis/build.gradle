@@ -27,8 +27,8 @@ osgi {
 ext.pom >>= {
   developers {
     developer {
-      id 'rmw-workbotts'
-      name 'Robin White'
+      id 'mikebotts'
+      name 'Mike Botts'
       organization 'Botts Innovative Research, Inc.'
       organizationUrl 'http://www.botts-inc.com' 
     }
