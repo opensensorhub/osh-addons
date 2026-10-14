@@ -307,6 +307,11 @@ public interface ReconcileMixin extends DiscoveryMixin
             return;
         }
 
+        // Backfill before the pump starts: one-shot outputs (sensorLocation) were
+        // published before this subscription existed and would otherwise never arrive.
+        if (!isSelfSourced(dsObj))
+            seedLatestObservations(dsObj, mirror);
+
         Thread thread = startObservationPump(dsObj);
         getStreamRegistry().add(new PumpEntry(key, "obs", thread, dsObj.getMqttClient(), topic,
                 mirror.getId(), sysObj.getUrn(), datastreamSchemaSig(dsObj), cycle));
@@ -426,4 +431,85 @@ public interface ReconcileMixin extends DiscoveryMixin
             log.warn("[RECONCILE] unsubscribe failed for {}: {}", topic, e.toString());
         }
     }
+    /**
+     +     * Backfill the remote datastream's latest stored observation(s) into the
+     +     * pump's inbound deque, ahead of anything already received over MQTT.
+     +     * MQTT only delivers observations published after we subscribe; sensorLocation
+     +     * publishes once in AbstractSensorModule.afterStart(). Duplicates are safe:
+     +     * the pump dedups via ObsEcho. Observations an adopted commander mirror
+     +     * already holds are skipped.
+     +     */
+    default int seedLatestObservations(Datastream remoteDs, Datastream commanderDs)
+    {
+            if (remoteDs == null || commanderDs == null || remoteDs.getEncodingMode() == EncodingMode.BINARY)
+                    return 0;
+
+            String key = remoteDs.getRemoteKey();
+            try
+            {
+                        ApiResponse res = getLatestObservations(remoteDs);
+                if (!res.ok())
+                    {
+                                log.warn("[SEED] latest-observation query failed for {}: HTTP {}", key, res.statusCode());
+                    return 0;
+                }
+                var latest = parseObservation(res.text(), remoteDs.getId());
+                if (latest == null)
+                        return 0;
+
+                Long newestOnCommander = newestPhenomenonTimeMs(commanderDs);
+                int queued = 0;
+                // addFirst reverses order, so walk backwards to keep the seeds in time order
+                        for (int i = latest.size() - 1; i >= 0; i--)
+                    {
+                                var obs = latest.get(i);
+                    Long t = getObsEcho().phenomenonTimeMs(obs);
+                    if (newestOnCommander != null && t != null && t <= newestOnCommander)
+                            continue;
+                    remoteDs.getInboundDeque().addFirst(obs.toString().getBytes("UTF-8"));
+                    queued++;
+                }
+                if (queued > 0)
+                        log.info("[SEED] queued {} latest observation(s) for {} -> commander {}", queued, key, commanderDs.getId());
+                return queued;
+            }
+            catch (Exception e)
+            {
+                        log.warn("[SEED] could not backfill latest observation for {}: {}", key, e.toString());
+                return 0;
+            }
+        }
+
+            /** GET /datastreams/{id}/observations?resultTime=latest (latest per FOI). */
+            default ApiResponse getLatestObservations(Datastream ds)
+    {
+            return ds.getParentNode().getApiHelper().getResource(APIResourceTypes.DATASTREAM, ds.getId(),
+                            APIResourceTypes.OBSERVATION, Map.of("resultTime", "latest", "f", "application/om+json"));
+        }
+
+            /** Newest phenomenonTime (epoch ms) stored on a datastream, or null if none / unknown. */
+            default Long newestPhenomenonTimeMs(Datastream ds)
+    {
+            try
+            {
+                        ApiResponse res = getLatestObservations(ds);
+                if (!res.ok())
+                        return null;
+                var items = parseObservation(res.text(), ds.getId());
+                if (items == null)
+                        return null;
+                Long newest = null;
+                for (var obs : items)
+                    {
+                                Long t = getObsEcho().phenomenonTimeMs(obs);
+                    if (t != null && (newest == null || t > newest))
+                            newest = t;
+                }
+                return newest;
+            }
+            catch (Exception e)
+            {
+                        return null;
+            }
+        }
 }
