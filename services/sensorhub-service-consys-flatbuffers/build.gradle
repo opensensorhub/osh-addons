@@ -1,0 +1,34 @@
+plugins {
+  id 'java'
+}
+
+description = 'Connected Systems API FlatBuffers Extension'
+ext.details = 'Bidirectional FlatBuffers (swe+flatbuffers) adapter for OGC API Connected Systems — self-describing FlexBuffers observation/command payloads with a JSON logical schema description.'
+
+
+dependencies {
+  implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
+  implementation 'org.sensorhub:sensorhub-service-consys:' + oshCoreVersion
+
+  // FlatBuffers Java runtime — used for FlexBuffers (the schema-less arm of
+  // FlatBuffers) encode/decode of observation & command payloads. Java has no
+  // runtime "dynamic table" facility (no protobuf-DynamicMessage analog), so
+  // the per-datastream shape is carried as a JSON logical schema and the values
+  // as self-describing FlexBuffers. embeddedImpl bundles the jar into the OSGi
+  // bundle (same convention as sensorhub-service-consys-proto's protobuf-java).
+  embeddedImpl 'com.google.flatbuffers:flatbuffers-java:25.2.10'
+
+  testImplementation 'junit:junit:4.13.1'
+}
+
+test {
+  useJUnit()
+}
+
+// add info to OSGI manifest
+osgi {
+  manifest {
+    attributes('Bundle-Vendor': 'GeoRobotix Innovative Research')
+    attributes('Bundle-Activator': 'org.sensorhub.impl.service.consys.flatbuffers.Activator')
+  }
+}
