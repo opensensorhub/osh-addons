@@ -96,7 +96,7 @@ public class UnmannedControlTakeoff extends AbstractSensorControl<UnmannedSystem
                 .description(SENSOR_CONTROL_DESCRIPTION)
                 .definition(SWEHelper.getPropertyUri("Control"))
                 .addField("TakeoffAltitudeAGL", factory.createQuantity()
-                                .definition(GeoPosHelper.DEF_ALTITUDE_GROUND))
+                        .definition(GeoPosHelper.DEF_ALTITUDE_GROUND))
                 .build();
     }
 
@@ -104,6 +104,14 @@ public class UnmannedControlTakeoff extends AbstractSensorControl<UnmannedSystem
     protected boolean execCommand(DataBlock command) throws CommandException {
 
         try {
+            // Air-only guard: takeoff is meaningless for ground/surface vehicles, and we
+            // refuse it when the connected vehicle is positively identified as non-airborne.
+            VehicleDomain domain = parentSensor.getVehicleDomain();
+            if ( !domain.permitsFlightCommand() ) {
+                throw new CommandException("Refusing takeoff: connected vehicle is not airborne-capable ("
+                        + domain + ")");
+            }
+
             double altitude = command.getDoubleValue(0);
 
             log.debug("Command received - Alt: " + altitude);
@@ -153,18 +161,17 @@ public class UnmannedControlTakeoff extends AbstractSensorControl<UnmannedSystem
                         .ignoreElement()
                 )
                 .subscribe(() -> {
-                        log.debug("Reached takeoff altitude");
+                            log.debug("Reached takeoff altitude");
 
-                        if ( null != locationRef) {
-                            locationRef.enable();
-                        }
-                    },
-          throwable -> {
-                        throw new CommandException(throwable.getMessage());
-                    });
+                            if ( null != locationRef) {
+                                locationRef.enable();
+                            }
+                        },
+                        throwable -> {
+                            throw new CommandException(throwable.getMessage());
+                        });
 
     }
 
 
 }
-
