@@ -8,9 +8,13 @@ import com.georobotix.ai.impl.rulesengine.facts.DataStreamFact;
 import com.georobotix.ai.impl.rulesengine.rules.DataStreamRule;
 import com.georobotix.ai.impl.rulesengine.rules.Rules;
 import com.google.gson.stream.JsonWriter;
+import net.opengis.swe.v20.BinaryBlock;
+import net.opengis.swe.v20.BinaryEncoding;
+import net.opengis.swe.v20.BinaryMember;
 import net.opengis.swe.v20.DataComponent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.vast.util.TimeExtent;
 
 import java.io.IOException;
 import java.io.StringWriter;
@@ -28,7 +32,7 @@ public class DataStreamResults {
     private final Logger logger = LoggerFactory.getLogger(DataStreamResults.class);
 
     Map<String, List<String>> systemToRulesMap = new HashMap<>();
-    
+
     Map<String, List<DataStreamFact>> rulesToDataStreamsMap = new HashMap<>();
 
     /**
@@ -56,7 +60,7 @@ public class DataStreamResults {
             }
 
             boolean mapHasRule = systemToRulesMap.get(dataStreamFact.getSystemId())
-                        .stream().anyMatch(currentRule -> currentRule.equalsIgnoreCase(ruleId));
+                    .stream().anyMatch(currentRule -> currentRule.equalsIgnoreCase(ruleId));
 
             if (!mapHasRule) {
 
@@ -100,6 +104,10 @@ public class DataStreamResults {
      *          "location": [
      *              {
      *                  "dataStreamId": "8wl0jfwp",
+     *                  "phenomenonTime": [
+     *                      "2021-03-23T15:27:20.796Z",
+     *                      "2021-03-25T14:24:16.414Z"
+     *                  ],
      *                  "paths": [
      *                      {
      *                          "name": "location",
@@ -122,6 +130,10 @@ public class DataStreamResults {
      *          "orientation": [
      *              {
      *                  "dataStreamId": "7tpnywjt",
+     *                  "phenomenonTime": [
+     *                      "2021-03-23T15:27:20.796Z",
+     *                      "2021-03-25T14:24:16.414Z"
+     *                  ],
      *                  "paths": [
      *                      {
      *                          "name": "attitude",
@@ -174,6 +186,51 @@ public class DataStreamResults {
 
                         List<String> targets = rule.getTargets();
 
+                        TimeExtent timeExtent = fact.getDataStreamInfo().getPhenomenonTimeRange();
+
+                        writer.name("phenomenonTime");
+
+                        writer.beginArray();
+
+                        if (timeExtent == null) {
+
+                            logger.error("{} is missing phenomTime",
+                                    fact.getDataStreamInfo().getName());
+
+                            writer.value("0");
+
+                            writer.value("0");
+
+                        } else {
+
+                            writer.value(timeExtent.begin().toString());
+
+                            writer.value(timeExtent.end().toString());
+                        }
+
+                        writer.endArray();
+
+                        if (fact.getDataStreamInfo().getRecordEncoding() instanceof BinaryEncoding) {
+
+                            List<BinaryMember> mbrList = ((BinaryEncoding) fact.getDataStreamInfo().getRecordEncoding()).getMemberList();
+                            BinaryBlock binaryBlock = null;
+
+                            // try to find binary block encoding def in list
+                            for (BinaryMember spec : mbrList) {
+
+                                if (spec instanceof BinaryBlock) {
+
+                                    binaryBlock = (BinaryBlock) spec;
+                                    break;
+                                }
+                            }
+
+                            if (binaryBlock != null) {
+
+                                writer.name("encoding").value(binaryBlock.getCompression());
+                            }
+                        }
+
                         writer.name("paths");
 
                         writer.beginArray();
@@ -224,7 +281,7 @@ public class DataStreamResults {
 
         return stringWriter.toString();
     }
-    
+
     public Map<String, List<DataStreamFact>> getRulesToDataStreamsMap() {
         return rulesToDataStreamsMap;
     }

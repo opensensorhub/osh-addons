@@ -27,7 +27,7 @@ public class Descriptor extends JarModuleProvider implements IModuleProvider {
      */
     @Override
     public Class<? extends IModule<?>> getModuleClass() {
-        return KrakenSdrSensor.class;
+        return KrakenSdrDriver.class;
     }
 
     /**

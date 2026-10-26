@@ -4,11 +4,11 @@
  ******************************* END LICENSE BLOCK ***************************/
 package com.botts.impl.service.discovery;
 
-import com.botts.impl.service.discovery.engine.RulesEngine;
-import com.botts.impl.service.discovery.engine.facts.DataStreamFact;
-import com.botts.impl.service.discovery.engine.rules.RuleManager;
-import com.botts.impl.service.discovery.engine.rules.Rules;
+import com.botts.impl.service.discovery.engine.RulesEngineWrapper;
 import com.botts.impl.service.discovery.engine.visualizations.VisualizationMapper;
+import com.georobotix.ai.impl.rulesengine.facts.DataStreamFact;
+import com.georobotix.ai.impl.rulesengine.rules.RuleManager;
+import com.georobotix.ai.impl.rulesengine.rules.Rules;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.data.DataStreamAddedEvent;
 import org.sensorhub.api.data.DataStreamEvent;
@@ -57,11 +57,6 @@ public class DiscoveryService extends AbstractHttpServiceModule<DiscoveryService
      */
     private Flow.Subscription dataStreamSubscription = null;
     
-    /**
-     * Subscription used by the service to be notified in changes to modules
-     */
-    private Flow.Subscription moduleEventSubscription = null;
-
     /**
      * A thread pool controlling the maximum number of concurrent requests processed by the service
      */
@@ -113,12 +108,12 @@ public class DiscoveryService extends AbstractHttpServiceModule<DiscoveryService
                             if (dataStreamEvent instanceof DataStreamAddedEvent) {
 
                                 logger.debug("Adding new fact to knowledge base");
-                                RulesEngine.getInstance().addFact(new DataStreamFact(systemId, dataStreamId, dataStreamInfo));
+                                RulesEngineWrapper.getInstance().addFact(new DataStreamFact(systemId, dataStreamId, dataStreamInfo));
 
                             } else if (dataStreamEvent instanceof DataStreamRemovedEvent) {
 
                                 logger.debug("Removing fact from knowledge base");
-                                RulesEngine.getInstance().removeFact(systemId, dataStreamId);
+                                RulesEngineWrapper.getInstance().removeFact(systemId, dataStreamId);
                             }
                         }
                     }
@@ -140,7 +135,6 @@ public class DiscoveryService extends AbstractHttpServiceModule<DiscoveryService
         initializeFacts();
         VisualizationMapper visualizationMapper = VisualizationMapper.getInstance();
         visualizationMapper.setFile(config.visRulesFilePath);
-//        visualizationMapper.setEncoder(idEncoder);
         visualizationMapper.setParentHub(this.getParentHub());
         // set federatedDB for visualization mapper
         visualizationMapper.setFederatedDB(getParentHub().getDatabaseRegistry().getFederatedDatabase().getDataStreamStore());
@@ -195,7 +189,7 @@ public class DiscoveryService extends AbstractHttpServiceModule<DiscoveryService
 
         initialized.set(false);
 
-        RulesEngine.getInstance().reset();
+        RulesEngineWrapper.getInstance().reset();
     }
 
     @Override
@@ -246,7 +240,7 @@ public class DiscoveryService extends AbstractHttpServiceModule<DiscoveryService
     }
 
     /**
-     * Loads the rules to be used by the internal rules based engine
+     * Loads the rules to be used by the internal rule engine
      *
      * @throws SensorHubException if rules could not be loaded or are missing
      */
@@ -265,7 +259,7 @@ public class DiscoveryService extends AbstractHttpServiceModule<DiscoveryService
 
             RuleManager.loadRules(configRules, rules);
 
-            RulesEngine.getInstance().setRules(rules);
+            RulesEngineWrapper.getInstance().setRules(rules);
 
         } catch (IOException e) {
 
@@ -285,7 +279,7 @@ public class DiscoveryService extends AbstractHttpServiceModule<DiscoveryService
             IDataStreamInfo dataStreamInfo = dataStreamEntry.getValue();
             String systemId = getParentHub().getIdEncoders().getSystemIdEncoder().encodeID(dataStreamInfo.getSystemID().getInternalID());
             String dataStreamId = getParentHub().getIdEncoders().getDataStreamIdEncoder().encodeID(dataStreamEntry.getKey().getInternalID());
-            RulesEngine.getInstance().addFact(new DataStreamFact(systemId, dataStreamId, dataStreamInfo));
+            RulesEngineWrapper.getInstance().addFact(new DataStreamFact(systemId, dataStreamId, dataStreamInfo));
         }
     }
 

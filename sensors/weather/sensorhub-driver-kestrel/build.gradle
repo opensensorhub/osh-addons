@@ -1,7 +1,7 @@
 description = 'Kestrel Weather'
 ext.details = ''
 
-version = '1.0.0'
+version = '1.0.1'
 
 dependencies {
     implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion

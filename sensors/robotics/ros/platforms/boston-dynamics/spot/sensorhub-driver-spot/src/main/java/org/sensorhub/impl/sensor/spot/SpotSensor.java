@@ -74,7 +74,7 @@ public class SpotSensor extends AbstractSensorModule<SpotConfig> {
         }
 
         // Generate identifiers
-        generateUniqueID("urn:osh:system:boston_dynamics:spot:", config.serialNumber);
+        generateUniqueID("urn:osh:system:georobotix:boston_dynamics:spot:", config.serialNumber);
         generateXmlID("BOSTON_DYNAMICS_SPOT_", config.serialNumber);
 
         // Create and initialize outputs

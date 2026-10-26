@@ -42,7 +42,7 @@ public class DH390Driver extends AbstractSensorModule<DH390Config> {
     protected void doInit() throws SensorHubException {
         super.doInit();
 
-        generateUniqueID("urn:osh:sensor:flir:dh-390:", config.serialNumber);
+        generateUniqueID("urn:osh:sensor:georobotix:flir:dh-390:", config.serialNumber);
         generateXmlID("FLIR_DH-390_", config.serialNumber);
 
         if (visualMpegTsProcessor != null)

@@ -28,7 +28,7 @@ public class Descriptor extends JarModuleProvider implements IModuleProvider {
      */
     @Override
     public Class<? extends IModule<?>> getModuleClass() {
-        return notecardGPSSensor.class;
+        return NotecardGPSSensor.class;
     }
 
     /**

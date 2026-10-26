@@ -4,14 +4,12 @@
  ******************************* END LICENSE BLOCK ***************************/
 package com.botts.impl.service.discovery.servlet.context;
 
-import com.botts.impl.service.discovery.DiscoveryServlet;
 import com.google.common.base.Strings;
 import org.sensorhub.api.security.IPermission;
 import org.sensorhub.impl.module.ModuleSecurity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.servlet.ServletConfig;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;

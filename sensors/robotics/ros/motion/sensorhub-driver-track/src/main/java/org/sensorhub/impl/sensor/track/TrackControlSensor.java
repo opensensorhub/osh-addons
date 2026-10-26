@@ -36,7 +36,7 @@ public class TrackControlSensor extends AbstractSensorModule<TrackControlConfig>
         logger = LoggerFactory.getLogger(TrackControlSensor.class);
 
         // Generate identifiers
-        generateUniqueID("ros-track-", config.id);
+        generateUniqueID("urn:osh:sensor:georobotix:ros-track:", config.id);
         generateXmlID("ros-track-", config.id);
 
         // Create and initialize output

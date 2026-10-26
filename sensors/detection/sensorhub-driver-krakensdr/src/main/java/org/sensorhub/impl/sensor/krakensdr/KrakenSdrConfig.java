@@ -15,7 +15,7 @@ import org.sensorhub.api.config.DisplayInfo;
 import org.sensorhub.api.sensor.SensorConfig;
 
 /**
- * Configuration settings for the {@link KrakenSdrSensor} driver exposed via the OpenSensorHub Admin panel.
+ * Configuration settings for the {@link KrakenSdrDriver} driver exposed via the OpenSensorHub Admin panel.
  * <p>
  * Public fields are exposed in the Admin panel for configuration by the user.
  * These fields can be annotated with the DisplayInfo annotation to provide additional information to the user
@@ -34,19 +34,14 @@ public class KrakenSdrConfig extends SensorConfig {
      */
     @DisplayInfo.Required
     @DisplayInfo(desc = "Serial number or unique identifier")
-    public String serialNumber = "kraken_rt";
+    public String serialNumber = "kraken001";
 
     @DisplayInfo.Required
     @DisplayInfo(label="Kraken IP Address", desc="Provide the shared IP Address assigned to the KrakenSD")
     public String krakenIPaddress = "localhost";
 
     @DisplayInfo.Required
-    @DisplayInfo(label="Kraken Data-out Port", desc="Provide the USB Port for your Sensor (Usually 8081)")
-    public String krakenPort = "8081";
-
-    @DisplayInfo.Required
-    @DisplayInfo(label="Sample Rate (seconds)", desc="Provide the USB Port for your Sensor (Usually 8081")
-    public int sampleRate = 2;
-
+    @DisplayInfo(label="Kraken WebSocket Port", desc="Port for the KrakenSDR WebSocket data stream. Usually 8082.")
+    public String krakenWsPort = "8082";
 
 }

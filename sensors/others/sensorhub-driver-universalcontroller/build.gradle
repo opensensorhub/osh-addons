@@ -1,6 +1,6 @@
 description = 'Universal Controller Driver'
 ext.details = "Driver to be able to read inputs from a gamepad device such as from a PS2 or Xbox controller OR read from a Wii Remote with or without nunchuk."
-version = '1.0.0'
+version = '1.0.1'
 
 dependencies {
     implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion

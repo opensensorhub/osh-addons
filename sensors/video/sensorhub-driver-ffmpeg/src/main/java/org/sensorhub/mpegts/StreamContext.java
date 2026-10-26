@@ -1,17 +1,12 @@
 package org.sensorhub.mpegts;
 
-import org.bytedeco.ffmpeg.avcodec.AVCodec;
-import org.bytedeco.ffmpeg.avcodec.AVCodecContext;
-import org.bytedeco.ffmpeg.avcodec.AVCodecParameters;
-import org.bytedeco.ffmpeg.avcodec.AVPacket;
+import org.bytedeco.ffmpeg.avcodec.*;
 import org.bytedeco.ffmpeg.avformat.AVFormatContext;
+import org.bytedeco.ffmpeg.avutil.AVDictionaryEntry;
 import org.bytedeco.ffmpeg.global.avcodec;
-import org.bytedeco.javacpp.BytePointer;
-import org.bytedeco.javacpp.PointerPointer;
+import org.bytedeco.ffmpeg.global.avutil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.ByteArrayOutputStream;
 
 public class StreamContext {
 
@@ -43,9 +38,50 @@ public class StreamContext {
 
     private int codecId;
 
-    private byte[] extraData = null;
+    /**
+     * FourCC tag of the codec associated with the stream, packed as an FFmpeg MKTAG.
+     * Container formats that do not carry a tag report zero.
+     */
+    private int codecTag;
+
+    /**
+     * Value of the {@code handler_name} stream metadata entry, or null if the container does not provide one.
+     * Useful for identifying vendor-specific data streams (e.g. "GoPro MET" for GPMF telemetry).
+     */
+    private String handlerName;
+
+    /**
+     * Width of the frames in this stream, in pixels. Zero for non-video streams.
+     */
+    private int frameWidth;
+
+    /**
+     * Height of the frames in this stream, in pixels. Zero for non-video streams.
+     */
+    private int frameHeight;
+
+    /**
+     * Number of samples per second in this stream. Zero for non-audio streams.
+     */
+    private int sampleRate;
+
+    private StreamType streamType;
+
+    private AVBSFContext bsfContext = null;
 
     private boolean isInjectingExtradata = false;
+
+    private volatile boolean isOpen = false;
+
+    private final Object lock = new Object();
+
+    public StreamContext() { }
+
+    public StreamContext(int streamId, StreamType streamType, double streamTimeBase) {
+        setStreamId(streamId);
+        setStreamType(streamType);
+        setStreamTimeBase(streamTimeBase);
+    }
 
     /**
      * Returns the ID of the stream associated with this context.
@@ -64,6 +100,10 @@ public class StreamContext {
     public void setStreamId(int streamId) {
         this.streamId = streamId;
     }
+
+    public void setStreamType(StreamType streamType) { this.streamType = streamType; }
+
+    public StreamType getStreamType() { return streamType; }
 
     /**
      * Returns the time base units for stream timing used to compute a timestamp for each packet extracted.
@@ -110,6 +150,10 @@ public class StreamContext {
         return codecName;
     }
 
+    public int getCodecId() {
+        return codecId;
+    }
+
     /**
      * Sets the name of the codec associated with the stream.
      *
@@ -121,7 +165,104 @@ public class StreamContext {
 
     private void setCodecId(int codecId) { this.codecId = codecId; }
 
+    /**
+     * Returns the FourCC tag of the codec associated with the stream, packed as an FFmpeg MKTAG.
+     * Use {@link StreamContext#getCodecTagString()} for the human-readable form.
+     *
+     * @return The packed codec tag, or zero if the container does not carry one.
+     */
+    public int getCodecTag() {
+        return codecTag;
+    }
+
+    /**
+     * Returns the FourCC tag of the codec associated with the stream, decoded to a string.
+     * For example, a GoPro GPMF telemetry track reports {@code gpmd}.
+     *
+     * @return The codec tag, or an empty string if the container does not carry one.
+     */
+    public String getCodecTagString() {
+        return fourCcToString(codecTag);
+    }
+
+    /**
+     * Returns the value of the {@code handler_name} stream metadata entry.
+     * For example, a GoPro GPMF telemetry track reports {@code GoPro MET}.
+     *
+     * @return The handler name, or null if the container does not provide one.
+     */
+    public String getHandlerName() {
+        return handlerName;
+    }
+
+    /**
+     * Returns the width of the frames in this stream, in pixels.
+     *
+     * @return The frame width, or zero for non-video streams.
+     */
+    public int getFrameWidth() {
+        return frameWidth;
+    }
+
+    /**
+     * Returns the height of the frames in this stream, in pixels.
+     *
+     * @return The frame height, or zero for non-video streams.
+     */
+    public int getFrameHeight() {
+        return frameHeight;
+    }
+
+    /**
+     * Returns the frame dimensions of this stream in the [width, height] form expected by the video outputs.
+     *
+     * @return An int[] where index 0 is the width and index 1 is the height of the frames.
+     */
+    public int[] getFrameDimensions() {
+        return new int[]{frameWidth, frameHeight};
+    }
+
+    /**
+     * Returns the number of samples per second in this stream.
+     *
+     * @return The sample rate, or zero for non-audio streams.
+     */
+    public int getSampleRate() {
+        return sampleRate;
+    }
+
     public void setInjectingExtradata(boolean isInjectingExtradata) { this.isInjectingExtradata = isInjectingExtradata; }
+
+    /**
+     * Decodes an FFmpeg MKTAG-packed FourCC into a string, dropping any padding.
+     *
+     * @param fourCc The packed FourCC.
+     * @return The decoded tag, or an empty string if the tag is zero.
+     */
+    private static String fourCcToString(int fourCc) {
+        StringBuilder builder = new StringBuilder(4);
+
+        for (int i = 0; i < 4; i++) {
+            int character = (fourCc >> (8 * i)) & 0xFF;
+            if (character == 0) {
+                break;
+            }
+            builder.append((char) character);
+        }
+
+        return builder.toString().trim();
+    }
+
+    /**
+     * Reads the {@code handler_name} metadata entry for this stream, if the container provides one.
+     *
+     * @param avFormatContext The format context the stream belongs to.
+     * @return The handler name, or null if it is absent.
+     */
+    private String readHandlerName(AVFormatContext avFormatContext) {
+        AVDictionaryEntry entry = avutil.av_dict_get(avFormatContext.streams(getStreamId()).metadata(), "handler_name", null, 0);
+        return entry != null ? entry.value().getString() : null;
+    }
 
     /**
      * Returns whether this context has a valid stream ID.
@@ -132,6 +273,26 @@ public class StreamContext {
         return streamId != INVALID_STREAM_ID;
     }
 
+    private String selectBsfName(int codecId) {
+
+        // Best guess at useful BSFs. If a video format does not work, may
+        // need to add a corresponding BSF here.
+        return switch (codecId) {
+            // filter_units=pass_types=1|5: Allow IDR and non-IDR slices to pass. All other units are removed. Parameter sets are added in-stream with dump_extra.
+            case avcodec.AV_CODEC_ID_H264 -> "h264_mp4toannexb,filter_units=pass_types=1|5,dump_extra";
+            // filter_units=pass_types=0-31: Allow slices to pass. All other units are removed. Parameter sets are added in-stream with dump_extra.
+            case avcodec.AV_CODEC_ID_HEVC -> "hevc_mp4toannexb,filter_units=pass_types=0-31,dump_extra";
+            case avcodec.AV_CODEC_ID_VVC -> "vvc_mp4toannexb,dump_extra";
+            case avcodec.AV_CODEC_ID_EVC -> "evc_mp4toannexb,dump_extra";
+            case avcodec.AV_CODEC_ID_MPEG4 -> "mpeg4_unpack_bframes,dump_extra";
+            case avcodec.AV_CODEC_ID_MPEG2VIDEO, avcodec.AV_CODEC_ID_VC1, avcodec.AV_CODEC_ID_WMV3 -> "dump_extra";
+            case avcodec.AV_CODEC_ID_MJPEG -> "mjpeg2jpeg";
+            case avcodec.AV_CODEC_ID_VP9 -> "vp9_superframe_split";
+            case avcodec.AV_CODEC_ID_AV1 -> "av1_frame_split";
+            default -> null;
+        };
+    }
+
     /**
      * Opens the codec context, and sets it up according to the {@link StreamContext#streamId}.
      * This method must be called before any packets are decoded.
@@ -139,33 +300,45 @@ public class StreamContext {
      * @throws IllegalStateException if the codec is unsupported or cannot be opened.
      */
     public void openCodecContext(AVFormatContext avFormatContext) throws IllegalStateException {
-        if (!hasStream()) return;
+        synchronized (lock) {
+            if (isOpen) return;
+            if (!hasStream()) return;
 
-        AVCodecParameters params = avFormatContext.streams(getStreamId()).codecpar();
+            AVCodecParameters params = avFormatContext.streams(getStreamId()).codecpar();
 
-        // Get the associated codec from the ID stored in the context
-        AVCodec codec = avcodec.avcodec_find_decoder(params.codec_id());
+            // Store the codec name
+            setCodecName(avcodec.avcodec_get_name(params.codec_id()).getString());
+            setCodecId(params.codec_id());
 
-        if (codec == null) {
-            throw new IllegalStateException("Unsupported codec");
-        }
+            // Store the stream descriptors that clients need in order to build outputs for this stream
+            this.codecTag = params.codec_tag();
+            this.handlerName = readHandlerName(avFormatContext);
+            this.frameWidth = params.width();
+            this.frameHeight = params.height();
+            this.sampleRate = params.sample_rate();
 
-        // Store the codec name
-        setCodecName(codec.name().getString());
-        setCodecId(codec.id());
+            if (isInjectingExtradata) {
+                String bsfNames = selectBsfName(codecId);
 
-        if (isInjectingExtradata) {
-            BytePointer extra = params.extradata();
-            int extraLen = params.extradata_size();
-            if (codecId == avcodec.AV_CODEC_ID_H264) {
-                extraData = getAnnexBExtradata(extra, extraLen);
-            } else if (codecId == avcodec.AV_CODEC_ID_HEVC) {
-                extraData = getHvccAnnexBExtradata(extra, extraLen);
-            } else {
-                extraData = null;
+                // Initialize BSFs if needed
+                if (bsfNames != null) {
+                    bsfContext = new AVBSFContext(null);
+                    if (avcodec.av_bsf_list_parse_str(bsfNames, bsfContext) < 0) {
+                        throw new IllegalStateException("Failed to parse BSF list: " + bsfNames);
+
+                    }
+                    if (avcodec.avcodec_parameters_copy(bsfContext.par_in(), params) < 0) {
+                        throw new IllegalStateException("Failed to copy codec parameters");
+                    }
+
+                    bsfContext.time_base_in(avFormatContext.streams(getStreamId()).time_base());
+
+                    if (avcodec.av_bsf_init(bsfContext) < 0) {
+                        throw new IllegalStateException("Failed to initialize BSF: " + bsfNames);
+                    }
+                }
             }
-        } else {
-            extraData = null;
+            isOpen = true;
         }
     }
 
@@ -176,134 +349,51 @@ public class StreamContext {
      * @param avPacket The packet to process
      */
     public void processPacket(AVPacket avPacket) {
-        if (getStreamId() == INVALID_STREAM_ID) return;
-        if (getDataBufferListener() == null) return;
-        if (avPacket.stream_index() != getStreamId()) return;
+        synchronized (lock) {
+            if (!isOpen) return;
+            if (getStreamId() == INVALID_STREAM_ID) return;
+            if (getDataBufferListener() == null) return;
+            if (avPacket.stream_index() != getStreamId()) return;
 
-        // Extract the data buffer from the packet
+            if (bsfContext != null) {
+                AVPacket filtered = avcodec.av_packet_alloc();
+                AVPacket clonePacket = avcodec.av_packet_clone(avPacket);
+                try {
+                    avcodec.av_bsf_send_packet(bsfContext, clonePacket);
+                    while (avcodec.av_bsf_receive_packet(bsfContext, filtered) >= 0) {
+                        notifyPacketListener(filtered);
+                        avcodec.av_packet_unref(filtered);
+                    }
+                } finally {
+                    avcodec.av_packet_free(clonePacket);
+                    avcodec.av_packet_free(filtered);
+                }
+            } else {
+                // Pass packet data straight to listener
+                notifyPacketListener(avPacket);
+            }
+        }
+    }
+
+    /**
+     * Notify the listener with the data buffer extracted from the packet.
+     * @param avPacket The packet containing the data buffer
+     */
+    private void notifyPacketListener(AVPacket avPacket) {
         byte[] dataBuffer = new byte[avPacket.size()];
         avPacket.data().get(dataBuffer);
-
-        // Prepend cached parameter sets ahead of every keyframe so late-join
-        // decoders have the VPS/SPS/PPS they need. Applies to both H.264 (SPS/PPS)
-        // and HEVC (VPS/SPS/PPS) when extradata injection is enabled.
-        if (extraData != null && (avPacket.flags() & avcodec.AV_PKT_FLAG_KEY) != 0) {
-            getDataBufferListener().onDataBuffer(new DataBufferRecord(avPacket.pts() * getStreamTimeBase(), extraData));
-        }
-        // Pass data buffer to the interested listener
         getDataBufferListener().onDataBuffer(new DataBufferRecord(avPacket.pts() * getStreamTimeBase(), dataBuffer));
     }
 
-    /**
-     * Converts the given H.264 extradata from AVCC format (AVCDecoderConfigurationRecord,
-     * ISO/IEC 14496-15 §5.2.4.1) to Annex B format. If the data is already in Annex B format,
-     * it is returned directly.
-     *
-     * @param extradata A BytePointer containing the codec extradata. Must not be null.
-     * @param size The size of the extradata in bytes.
-     * @return A byte array containing the Annex B formatted extradata, or {@code null} if the data
-     *         is invalid, cannot be processed, or if an error occurs during processing.
-     */
-    private byte[] getAnnexBExtradata(BytePointer extradata, int size) {
-        if (extradata == null || size < 7) return null;
+    public void close() {
+        synchronized (lock) {
+            if (!isOpen) return;
+            isOpen = false;
 
-        byte[] data = new byte[size];
-        extradata.get(data);
-
-        // Check for Annex B start code, either 0x000001 or 0x00000001
-        if (data[0] == 0x00 && data[1] == 0x00 && (data[2] == 0x01 || (data[2] == 0x00 && data[3] == 0x01))) {
-            // Already in Annex B format, use directly
-            return data;
-        }
-
-        // Otherwise, we need to convert AVCC to Annex B format
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        int pos = 5;
-        int numSps = data[pos++] & 0x1F;
-        try {
-            for (int i = 0; i < numSps; i++) {
-                if (pos + 2 > data.length) return null;
-                int spsLen = ((data[pos++] & 0xFF) << 8) | (data[pos++] & 0xFF);
-                if (pos + spsLen > data.length) return null;
-                out.write(new byte[]{0x00, 0x00, 0x00, 0x01});
-                out.write(data, pos, spsLen);
-                pos += spsLen;
+            if (bsfContext != null) {
+                avcodec.av_bsf_free(bsfContext);
+                bsfContext = null;
             }
-
-            int numPps = data[pos++] & 0xFF;
-            for (int i = 0; i < numPps; i++) {
-                if (pos + 2 > data.length) return null;
-                int ppsLen = ((data[pos++] & 0xFF) << 8) | (data[pos++] & 0xFF);
-                if (pos + ppsLen > data.length) return null;
-                out.write(new byte[]{0x00, 0x00, 0x00, 0x01});
-                out.write(data, pos, ppsLen);
-                pos += ppsLen;
-            }
-        } catch (Exception e) {
-            logger.error("Error extracting SPS and PPS from AVCC extradata", e);
         }
-        return out.toByteArray();
-    }
-
-    /**
-     * Converts HEVC extradata from HVCC format (HEVCDecoderConfigurationRecord,
-     * ISO/IEC 14496-15 §8.3.3.1.2) to Annex B format. Walks the {@code numOfArrays}
-     * table and emits every contained NAL (typically VPS=32, SPS=33, PPS=34) prefixed
-     * with the 4-byte 0x00000001 start code so that downstream pipelines can decode
-     * without out-of-band parameter sets.
-     * <p>
-     * If the data is already in Annex B format, it is returned directly.
-     *
-     * @param extradata A BytePointer containing the codec extradata. Must not be null.
-     * @param size The size of the extradata in bytes.
-     * @return A byte array containing the Annex B formatted VPS/SPS/PPS NALs, or
-     *         {@code null} if the data is invalid, too short, or cannot be parsed.
-     */
-    private byte[] getHvccAnnexBExtradata(BytePointer extradata, int size) {
-        // HVCC has a 22-byte fixed header followed by numOfArrays (1 byte),
-        // so the minimum useful size is 23 bytes.
-        if (extradata == null || size < 23) return null;
-
-        byte[] data = new byte[size];
-        extradata.get(data);
-
-        // If already Annex B, pass straight through.
-        if (data[0] == 0x00 && data[1] == 0x00 && (data[2] == 0x01 || (data[2] == 0x00 && data[3] == 0x01))) {
-            return data;
-        }
-
-        // configurationVersion must be 1 per ISO/IEC 14496-15.
-        if ((data[0] & 0xFF) != 1) {
-            logger.warn("Unsupported HVCC configurationVersion: {}", data[0] & 0xFF);
-            return null;
-        }
-
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        try {
-            int pos = 22;
-            int numOfArrays = data[pos++] & 0xFF;
-
-            for (int i = 0; i < numOfArrays; i++) {
-                if (pos + 3 > data.length) return null;
-
-                pos++;
-                int numNalus = ((data[pos++] & 0xFF) << 8) | (data[pos++] & 0xFF);
-
-                for (int j = 0; j < numNalus; j++) {
-                    if (pos + 2 > data.length) return null;
-                    int nalLen = ((data[pos++] & 0xFF) << 8) | (data[pos++] & 0xFF);
-                    if (nalLen <= 0 || pos + nalLen > data.length) return null;
-                    out.write(new byte[]{0x00, 0x00, 0x00, 0x01});
-                    out.write(data, pos, nalLen);
-                    pos += nalLen;
-                }
-            }
-        } catch (Exception e) {
-            logger.error("Error extracting VPS/SPS/PPS from HVCC extradata", e);
-            return null;
-        }
-
-        byte[] result = out.toByteArray();
-        return result.length == 0 ? null : result;
     }
 }

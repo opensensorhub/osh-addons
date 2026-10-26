@@ -7,7 +7,7 @@ package com.botts.impl.service.discovery.servlet.handler;
 
 import com.botts.impl.service.discovery.DiscoveryServlet;
 import com.botts.impl.service.discovery.ResourcePermissions;
-import com.botts.impl.service.discovery.engine.RulesEngine;
+import com.botts.impl.service.discovery.engine.RulesEngineWrapper;
 import com.botts.impl.service.discovery.engine.visualizations.VisualizationMapper;
 import com.botts.impl.service.discovery.engine.visualizations.VisualizationRuleRelation;
 import com.botts.impl.service.discovery.engine.visualizations.VisualizationRuleResult;
@@ -122,11 +122,11 @@ public class VisualizationHandler extends BaseHandler {
         VisualizationMapper mapper = VisualizationMapper.getInstance();
         VisualizationRuleRelation rule = mapper.findRuleById(visualizationId);
         List<String> ruleIds = rule.getIncludedRules();
+        DiscoveryServlet discoveryServlet = (DiscoveryServlet)context.getServlet();
         
         // Rules Engine Interface
-        RulesEngine.getInstance().setRuleIds(ruleIds);
-        DiscoveryServlet discoveryServlet = (DiscoveryServlet) context.getServlet();
-        RulesEngine.getInstance().getFilteredResults((SensorHub) discoveryServlet.parentService.getParentHub());
+        RulesEngineWrapper.getInstance().setTargetRuleIds(ruleIds);
+        RulesEngineWrapper.getInstance().fire((SensorHub)discoveryServlet.parentService.getParentHub());
         
         // Map of Visualization Results (Datastreams that satisfy the conditions)
         Map<String, Map<String, Map<String, VisualizationRuleResult>>> results = mapper.generateMappedResults(rule);
