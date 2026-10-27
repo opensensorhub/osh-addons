@@ -1,0 +1,161 @@
+// OGC SWE Common Data Model 3.0 — Protocol Buffers Schema — Basic Types
+// Packages 1 & 2: value types and abstract data component hierarchy.
+// Standard: OGC 24-014  (https://docs.ogc.org/is/24-014/24-014.html)
+
+syntax = "proto3";
+
+package georobotix.swecommon;
+
+option java_package = "com.georobotix.swecommon";
+option java_outer_classname = "SweCommonBasicTypesProto";
+option go_package = "github.com/georobotix/swecommon";
+
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Package 1 — Basic Types
+// ═══════════════════════════════════════════════════════════════════════════
+
+message AbstractSWE {
+  // Referenceable ID (URI fragment).
+  string id = 1;
+}
+
+message AbstractSWEIdentifiable {
+  AbstractSWE base = 1;
+  // Short human-readable name.
+  string label = 2;
+  // Longer human-readable description.
+  string description = 3;
+}
+
+message UnitReference {
+  // Human-readable unit label.
+  string label = 1;
+  // Preferred display symbol.
+  string symbol = 2;
+  // UCUM code (provide code or href, or both).
+  string code = 3;
+  // URI to unit definition.
+  string href = 4;
+}
+
+// A numeric value, or a special IEEE-754 sentinel.
+message NumberOrSpecial {
+  oneof kind {
+    double number = 1;
+    SpecialValue special = 2;
+  }
+
+  enum SpecialValue {
+    SPECIAL_VALUE_UNSPECIFIED = 0;
+    SPECIAL_VALUE_NAN = 1;
+    SPECIAL_VALUE_POSITIVE_INFINITY = 2;
+    SPECIAL_VALUE_NEGATIVE_INFINITY = 3;
+  }
+}
+
+// ISO-8601 date-time string, or a numeric / special value.
+message DateTimeOrNumber {
+  oneof kind {
+    string date_time = 1;       // ISO-8601 encoded
+    double number = 2;
+    NumberOrSpecial.SpecialValue special = 3;
+  }
+}
+
+// ── Nil values ─────────────────────────────────────────────────────────
+
+message NilValueText {
+  // URI — reason for the nil sentinel.
+  string reason = 1;
+  string value = 2;
+}
+
+message NilValueInteger {
+  string reason = 1;
+  int64 value = 2;
+}
+
+message NilValueNumber {
+  string reason = 1;
+  NumberOrSpecial value = 2;
+}
+
+message NilValueTime {
+  string reason = 1;
+  DateTimeOrNumber value = 2;
+}
+
+// ── Constraints ────────────────────────────────────────────────────────
+
+message NumberInterval {
+  NumberOrSpecial low = 1;
+  NumberOrSpecial high = 2;
+}
+
+message AllowedValues {
+  // Enumerated permitted values.
+  repeated NumberOrSpecial values = 1;
+  // Inclusive numeric intervals.
+  repeated NumberInterval intervals = 2;
+  // Significant figures (1–40; 0 = unset).
+  uint32 significant_figures = 3;
+}
+
+message AllowedTokens {
+  // Permitted string values — enumeration or regex pattern (mutually exclusive).
+  oneof constraint {
+    TokenList value_list = 1;
+    string pattern = 2;
+  }
+
+  message TokenList {
+    repeated string values = 1;
+  }
+}
+
+message TimeInterval {
+  DateTimeOrNumber low = 1;
+  DateTimeOrNumber high = 2;
+}
+
+message AllowedTimes {
+  // Enumerated permitted time values.
+  repeated DateTimeOrNumber values = 1;
+  // Inclusive temporal intervals.
+  repeated TimeInterval intervals = 2;
+  uint32 significant_figures = 3;
+}
+
+// ── Associations ───────────────────────────────────────────────────────
+
+message AssociationAttributeGroup {
+  // XLink-style by-reference association.
+  string href = 1;          // URI-reference (required)
+  string role = 2;          // URI
+  string arcrole = 3;       // URI
+  string title = 4;
+}
+
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Package 2 — Abstract Data Component hierarchy
+// ═══════════════════════════════════════════════════════════════════════════
+
+message AbstractDataComponent {
+  AbstractSWEIdentifiable identifiable = 1;
+  // Can value change externally?
+  bool updatable = 2;
+  // Can data be omitted in stream?
+  optional bool is_optional = 3;
+  // URI — semantic link to observed property.
+  string definition = 4;
+}
+
+message AbstractSimpleComponent {
+  AbstractDataComponent data_component = 1;
+  // URI-reference — CRS or temporal reference frame.
+  string reference_frame = 2;
+  // CRS axis identifier.
+  string axis_id = 3;
+}
