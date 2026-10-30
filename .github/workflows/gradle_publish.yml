@@ -62,7 +62,7 @@ jobs:
           echo "Publishing ${{ matrix.project }}"
           VERSION=$(./gradlew --quiet :${{ matrix.project }}:printVersion)
           if [ "${{ github.event_name }}" = "push" ]; then
-            ./gradlew :${{ matrix.project }}:publish -PbuildType="dev"
+            ./gradlew :${{ matrix.project }}:publish -PbuildType="dev" -PpublishProject="${{ matrix.project }}"
           else
             ./gradlew :${{ matrix.project }}:publish
           fi
