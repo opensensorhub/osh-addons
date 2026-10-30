@@ -1,0 +1,64 @@
+// OGC Connected Systems API — SamplingFeature resource (Part 1, clause 13)
+//
+// Models the `SamplingFeature` resource — a sampling strategy or
+// geometry associated with a specific `System` (e.g., a sampling
+// point, line, polygon, sphere, statistical sample, …). Maps to
+// `sosa:Sampler` outputs.
+//
+// Per the spec, SamplingFeature has only the GeoJSON encoding (no
+// SensorML-JSON form), so the typed payload is only `feature`.
+// Part 4 of the spec defines concrete sampling geometry refinements
+// (specimen, profile, sphere, frustum, …) — modeled via the
+// `sampling_feature_type` URI for now; structured refinements slot
+// into 30–49 if needed.
+
+syntax = "proto3";
+
+package georobotix.csapi;
+
+option java_package = "com.georobotix.csapi";
+option java_outer_classname = "SamplingFeatureProto";
+option go_package = "github.com/georobotix/csapi";
+
+import "connectedsystems/cs_common.proto";
+import "swecommon/geometry.proto";
+import "geojson/geojson.proto";
+
+// SamplingFeature resource — a sampling strategy or geometry.
+message SamplingFeature {
+  // ─── Identity (1–9) ───────────────────────────────────────────────
+  string          id          = 1;
+  string          unique_id   = 2;
+  string          name        = 3;  // required
+  optional string description = 4;
+
+  reserved 5 to 9;
+
+  // ─── Type, lifecycle, geometry (10–19) ────────────────────────────
+  string                        sampling_feature_type = 10;  // URI / CURIE
+                                                             // (required;
+                                                             // Part 4 vocab)
+  TimePeriod                    valid_time            = 12;
+  georobotix.swecommon.GeoJsonGeometry geometry              = 13;  // sampling
+                                                             // geometry
+
+  reserved 11, 14 to 19;
+
+  // ─── Links / associations (20–29) ─────────────────────────────────
+  //
+  // Required: `sampled_feature` — Link to the ultimate feature of
+  // interest. Rendered as a Link with `rel = "ogc-rel:sampledFeature"`,
+  // or as a dedicated typed field below.
+  Link          sampled_feature = 20;  // required per spec
+                                       // (samplingFeature.json:
+                                       // sampledFeature@link)
+  repeated Link links           = 21;  // other associations
+
+  reserved 22 to 29;
+
+  // ─── Typed encoding-form payload (30–49) ──────────────────────────
+  georobotix.geojson.Feature feature = 31;
+
+  reserved 30, 32 to 49;
+  reserved 50 to 99;
+}

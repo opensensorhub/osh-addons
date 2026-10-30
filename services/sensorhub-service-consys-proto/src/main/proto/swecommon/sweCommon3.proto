@@ -1,0 +1,221 @@
+// OGC SWE Common Data Model 3.0 — Protocol Buffers Schema
+// Standard: OGC 24-014  (https://docs.ogc.org/is/24-014/24-014.html)
+//
+// Root file: composite component types (Packages 5–8).  Independent
+// sub-schemas are imported below:
+//
+//   basic_types.proto       — Packages 1 & 2  (value types, abstract bases)
+//   scalar_components.proto — Packages 3 & 4  (scalar and range components)
+//   geometry.proto          — Package 9        (ISO-19107 geometry)
+//   encodings.proto         — Package 10       (text, JSON, XML, binary)
+//
+// Packages 5–8 are kept together here because AnyComponent, NamedComponent,
+// DataRecord, Vector, DataArray, DataChoice, and Matrix form a mutually-
+// referential cycle (proto3 does not permit circular imports).
+//
+// Proto3 conventions:
+//   • Message names:    PascalCase
+//   • Field names:      snake_case
+//   • Enum value names: SCREAMING_SNAKE_CASE prefixed with the enum name
+//   • oneof for all OGC polymorphic associations
+
+syntax = "proto3";
+
+package georobotix.swecommon;
+
+option java_package = "com.georobotix.swecommon";
+option java_outer_classname = "SweCommonProto";
+option go_package = "github.com/georobotix/swecommon";
+
+import "swecommon/basic_types.proto";
+import "swecommon/scalar_components.proto";
+import "swecommon/geometry.proto";
+import "swecommon/encodings.proto";
+
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Package 5 — Polymorphic component unions
+// ═══════════════════════════════════════════════════════════════════════════
+
+// Top-level discriminated union over all concrete component types.
+message AnyComponent {
+  oneof component {
+    Boolean boolean_component = 1;
+    Count count_component = 2;
+    Quantity quantity_component = 3;
+    Time time_component = 4;
+    Category category_component = 5;
+    Text text_component = 6;
+    CountRange count_range = 7;
+    QuantityRange quantity_range = 8;
+    TimeRange time_range = 9;
+    CategoryRange category_range = 10;
+    DataRecord data_record = 11;
+    Vector vector = 12;
+    DataArray data_array = 13;
+    Matrix matrix = 14;
+    DataChoice data_choice = 15;
+    Geometry geometry = 16;
+  }
+}
+
+// Convenience union restricted to scalar types only.
+message AnyScalarComponent {
+  oneof component {
+    Boolean boolean_component = 1;
+    Count count_component = 2;
+    Quantity quantity_component = 3;
+    Time time_component = 4;
+    Category category_component = 5;
+    Text text_component = 6;
+  }
+}
+
+// Convenience union restricted to simple types (scalars + ranges).
+message AnySimpleComponent {
+  oneof component {
+    Boolean boolean_component = 1;
+    Count count_component = 2;
+    Quantity quantity_component = 3;
+    Time time_component = 4;
+    Category category_component = 5;
+    Text text_component = 6;
+    CountRange count_range = 7;
+    QuantityRange quantity_range = 8;
+    TimeRange time_range = 9;
+    CategoryRange category_range = 10;
+  }
+}
+
+// A component provided inline or by XLink reference.
+message ComponentOrRef {
+  oneof kind {
+    AnyComponent inline = 1;
+    AssociationAttributeGroup ref = 2;
+  }
+}
+
+// A soft-named data component (used in DataRecord fields, etc.).
+message NamedComponent {
+  // Name token: [A-Za-z][A-Za-z0-9_-]*
+  string name = 1;
+  ComponentOrRef component = 2;
+}
+
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Package 6 — Record Components
+// ═══════════════════════════════════════════════════════════════════════════
+
+message DataRecord {
+  // ISO-11404 Record — ordered sequence of named fields.
+  AbstractDataComponent data_component = 1;
+  repeated NamedComponent fields = 2;
+}
+
+// Coordinates may be Count, Quantity, or Time.
+message CoordinateComponent {
+  oneof coordinate {
+    Count count = 1;
+    Quantity quantity = 2;
+    Time time = 3;
+  }
+}
+
+message NamedCoordinate {
+  string name = 1;
+  CoordinateComponent coordinate = 2;
+}
+
+message Vector {
+  // Mathematical vector — scalar coordinates in a reference frame.
+  AbstractDataComponent data_component = 1;
+  // URI-reference (required by OGC spec).
+  string reference_frame = 2;
+  // URI-reference — frame located by this vector.
+  string local_frame = 3;
+  repeated NamedCoordinate coordinates = 4;
+}
+
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Package 7 — Choice Components
+// ═══════════════════════════════════════════════════════════════════════════
+
+message DataChoice {
+  // Disjoint union — one of several named alternatives.
+  AbstractDataComponent data_component = 1;
+  // Category component acting as discriminator in the data stream.
+  Category choice_value = 2;
+  repeated NamedComponent items = 3;
+}
+
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Package 8 — Block Components (Arrays & Streams)
+// ═══════════════════════════════════════════════════════════════════════════
+
+message ElementCount {
+  AbstractSimpleComponent base = 1;
+  AllowedValues constraint = 2;
+  int64 value = 3;
+}
+
+message ElementCountOrRef {
+  oneof kind {
+    ElementCount inline = 1;
+    AssociationAttributeGroup ref = 2;
+  }
+}
+
+message EncodedValues {
+  oneof kind {
+    bytes inline_data = 1;                  // Opaque encoded payload.
+    AssociationAttributeGroup ref = 2;      // External link.
+  }
+}
+
+message DataArray {
+  // ISO-11404 Array — homogeneous collection of identically-typed elements.
+  AbstractDataComponent data_component = 1;
+  ElementCountOrRef element_count = 2;
+  NamedComponent element_type = 3;
+  AnyEncoding encoding = 4;
+  EncodedValues values = 5;
+}
+
+message Matrix {
+  // Specialisation of DataArray with a reference frame
+  // (e.g. rotation matrices or affine transforms).
+  AbstractDataComponent data_component = 1;
+  ElementCountOrRef element_count = 2;
+  NamedComponent element_type = 3;
+  AnyEncoding encoding = 4;
+  EncodedValues values = 5;
+  // URI-reference.
+  string reference_frame = 6;
+  // URI-reference.
+  string local_frame = 7;
+}
+
+message DataStream {
+  // Descriptor for a stream of identically-structured observation records.
+  // Note: extends AbstractSWEIdentifiable, NOT AbstractDataComponent.
+  AbstractSWEIdentifiable identifiable = 1;
+  NamedComponent element_type = 2;
+  AnyEncoding encoding = 3;
+  // Out-of-band link to stream values.
+  AssociationAttributeGroup values = 4;
+}
+
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Root — a top-level SWE Common object is either a component or a stream.
+// ═══════════════════════════════════════════════════════════════════════════
+
+message SweCommonMessage {
+  oneof root {
+    AnyComponent component = 1;
+    DataStream data_stream = 2;
+  }
+}

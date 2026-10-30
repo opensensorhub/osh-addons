@@ -1,0 +1,158 @@
+// OGC Connected Systems API — DataStream resource (Part 2, clause 8)
+//
+// Models the `DataStream` resource type from the OGC CS API Standard,
+// Part 2: Dynamic Data Resources. A `DataStream` describes a channel of
+// observations produced by a `System`: who produces them, what they
+// observe, how often, and the schema observations conform to.
+//
+// ── Wire-size optimization ────────────────────────────────────────
+//
+// The spec has two built-in mechanisms for reducing per-observation
+// wire size; both are surfaced as direct analogues here:
+//
+//   1. **Shared-field declaration.** The fields `procedure`,
+//      `deployment`, `feature_of_interest`, and `sampling_feature`
+//      are populated *only if all observations in the stream share
+//      the same value* (per the spec's "only provided if all
+//      observations in the datastream share the same X" language).
+//      Individual observations may then omit those fields; receivers
+//      reconstruct the full observation by combining the
+//      DataStream-level constants with the per-observation message.
+//
+//   2. **Per-DataStream observation schema.** The `schema` field
+//      carries a pre-compiled `FileDescriptorProto` describing the
+//      per-observation message shape. Receivers add it to their
+//      descriptor pool and decode observation bytes against it
+//      directly. The per-DataStream message can omit fields that
+//      are constant across the stream, further reducing wire size.
+//      An external `.proto` reference is also supported via a Link.
+//
+// ── Field-number layout ─────────────────────────────────────────────
+//
+//   1 – 9    Identity & basic descriptive attributes
+//            (id, name, description, validTime, formats)
+//   10 – 19  Producing system & output name
+//   20 – 29  Shared cross-resource references (only set when all obs
+//            share the same value)
+//   30 – 39  Time extents and sampling/result intervals
+//   40 – 49  Observed properties, stream type, result type, live flag
+//   50 – 59  Per-DataStream protobuf observation schema
+//   60 – 69  Additional links
+//   70 – 99  Reserved for future canonical attributes from the spec
+//
+// Field numbers are wire format: never renumber, never reuse. Deprecated
+// fields use the `reserved` keyword.
+
+syntax = "proto3";
+
+package georobotix.csapi;
+
+option java_package = "com.georobotix.csapi";
+option java_outer_classname = "DataStreamProto";
+option go_package = "github.com/georobotix/csapi";
+
+import "google/protobuf/duration.proto";
+import "connectedsystems/cs_common.proto";
+
+// DataStream resource — a channel of observations produced by a System.
+message DataStream {
+
+  // ─── Identity (1–9) ───────────────────────────────────────────────
+  string          id          = 1;  // local resource ID (server-assigned,
+                                    // read-only on retrieval)
+  string          name        = 2;  // required per spec
+  optional string description = 3;  // optional
+  TimePeriod      valid_time  = 4;  // optional validity period
+  repeated string formats     = 5;  // content types this DataStream's
+                                    // observations can be encoded in
+
+  reserved 6 to 9;
+
+  // ─── Producing system & output (10–19) ────────────────────────────
+  Link   system      = 10;  // required link to the producing System
+  string output_name = 11;  // name of the System output feeding this
+                            // datastream
+
+  reserved 12 to 19;
+
+  // ─── Shared cross-resource references (20–29) ─────────────────────
+  //
+  // Populated only when ALL observations in this stream share the same
+  // value (per the spec). Observations whose constant equals the
+  // DataStream-level value may then omit their own corresponding
+  // field; receivers fill it in from this DataStream.
+  Link procedure           = 20;  // procedure used to acquire observations
+  Link deployment          = 21;  // deployment under which obs were collected
+  Link feature_of_interest = 22;  // ultimate feature of interest
+  Link sampling_feature    = 23;  // sampling feature targeted by the obs
+
+  reserved 24 to 29;
+
+  // ─── Time (30–39) ─────────────────────────────────────────────────
+  TimePeriod               phenomenon_time          = 30;  // extent over all obs
+  google.protobuf.Duration phenomenon_time_interval = 31;  // sampling cadence
+  TimePeriod               result_time              = 32;  // extent over all
+                                                           // result times
+  google.protobuf.Duration result_time_interval     = 33;  // result cadence
+
+  reserved 34 to 39;
+
+  // ─── Properties & type (40–49) ────────────────────────────────────
+  repeated ObservedProperty observed_properties = 40;  // required per spec
+  StreamType                type                = 41;  // status | observation
+  ResultType                result_type         = 42;  // measure | vector |
+                                                       // record | coverage |
+                                                       // complex
+  optional bool             live                = 43;  // optional per spec
+                                                       // (null | bool) — use
+                                                       // `optional` to
+                                                       // preserve unset
+
+  reserved 44 to 49;
+
+  // ─── Per-DataStream observation schema (50–59) ────────────────────
+  //
+  // The protobuf form of the spec's per-DataStream observation
+  // `schema`. Shared `ProtoMessageSchema` (from cs_common.proto) carries
+  // a serialized FileDescriptorProto + the fully-qualified message type
+  // name. The same type is reused by ControlStream for commands.
+  ProtoMessageSchema schema = 50;
+
+  reserved 51 to 59;
+
+  // ─── Additional links (60–69) ─────────────────────────────────────
+  //
+  // Self / canonical / alternate / etc. The required cross-resource
+  // references above (system, procedure, …) have dedicated fields.
+  repeated Link links = 60;
+
+  reserved 61 to 69;
+  reserved 70 to 99;  // future canonical attributes from the spec
+}
+
+// One observed property in a DataStream. Direct analogue of the
+// per-item shape under `observedProperties` in `dataStream.json`:
+// a definition URI plus optional label and description. Reused by
+// ControlStream's `controlled_properties` (same JSON shape).
+message ObservedProperty {
+  string          definition  = 1;  // URI of the property concept
+  optional string label       = 2;
+  optional string description = 3;
+}
+
+// Stream type per the spec (`dataStream.json` `type` enum).
+enum StreamType {
+  STREAM_TYPE_UNSPECIFIED = 0;
+  STREAM_TYPE_STATUS      = 1;
+  STREAM_TYPE_OBSERVATION = 2;
+}
+
+// Result type per the spec (`dataStream.json` `resultType` enum).
+enum ResultType {
+  RESULT_TYPE_UNSPECIFIED = 0;
+  RESULT_TYPE_MEASURE     = 1;
+  RESULT_TYPE_VECTOR      = 2;
+  RESULT_TYPE_RECORD      = 3;
+  RESULT_TYPE_COVERAGE    = 4;
+  RESULT_TYPE_COMPLEX     = 5;
+}
