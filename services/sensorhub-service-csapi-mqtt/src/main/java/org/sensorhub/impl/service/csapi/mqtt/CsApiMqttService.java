@@ -33,7 +33,7 @@ import org.sensorhub.impl.service.mqtt.AbstractMqttServiceModule;
  */
 public class CsApiMqttService extends AbstractMqttServiceModule<CsApiMqttServiceConfig> implements IServiceModule<CsApiMqttServiceConfig>
 {
-    protected CsApiMqttConnector mqttConnector;
+    protected volatile CsApiMqttConnector mqttConnector;
 
 
     @Override
@@ -71,6 +71,11 @@ public class CsApiMqttService extends AbstractMqttServiceModule<CsApiMqttService
                     var topics = new TopicMapper(config.nodeId, formats);
                     mqttConnector = new CsApiMqttConnector(servlet, topics);
                     mqttServer.registerHandler(topics.getPrefix(), mqttConnector);
+
+                    // AsyncAPI service description at {apiRoot}/asyncapi/mqtt
+                    var version = new CsApiMqttServiceDescriptor().getModuleVersion();
+                    servlet.getRootHandler().addSubResource(new AsyncApiHandler(version, () -> config,
+                        () -> mqttConnector != null ? mqttConnector.topics : null));
                     getLogger().info("CS API MQTT handler registered on '{}', format subtopics {}", topics.getPrefix(), topics.formats.keySet());
                     setState(ModuleState.STARTED);
                 }
