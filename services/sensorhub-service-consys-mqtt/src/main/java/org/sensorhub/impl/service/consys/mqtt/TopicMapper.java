@@ -16,6 +16,7 @@ package org.sensorhub.impl.service.consys.mqtt;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.regex.Pattern;
 import org.sensorhub.api.comm.mqtt.InvalidTopicException;
 
 
@@ -23,12 +24,27 @@ import org.sensorhub.api.comm.mqtt.InvalidTopicException;
  * <p>
  * Maps MQTT topics to CS API resource paths, per the OGC CS API Part 3
  * topic grammar: every topic starts with {@code {nodeId}/}, followed by
- * the resource path. Topics do not carry query strings. Wildcard topic
- * filters are rejected until wildcard subscriptions are supported.
+ * the resource path. Topics do not carry query strings.
+ * </p><p>
+ * Only Resource Data topics are accepted, for example
+ * {@code node1/systems/134/datastreams/12/observations:data}. The topic
+ * shape is checked here; that each ID belongs to its parent is left to the
+ * CS API. Resource Event topics, format subtopics and wildcard topic
+ * filters are rejected until they are supported.
  * </p>
  */
 final class TopicMapper
 {
+    static final String DATA_MARKER = ":data";
+
+    // Resource Data topic templates (OGC CS API Part 3, Resource Data Topics
+    // table), without '{nodeId}/' and ':data'. An ID is one level with no ':'.
+    static final Pattern DATA_PATH = Pattern.compile(
+        "systems(/[^/:]+(/subsystems/[^/:]+)*/("
+        + "subsystems|datastreams|controlstreams|events"
+        + "|datastreams/[^/:]+/observations"
+        + "|controlstreams/[^/:]+/commands(/[^/:]+/(status|result))?))?");
+
     final String prefix;
 
 
@@ -75,9 +91,11 @@ final class TopicMapper
 
     /**
      * @param topic an MQTT topic name
-     * @return the URI of the CS API resource that the topic identifies
+     * @return the URI of the CS API resource that the topic identifies,
+     *         without {@code :data}
      * @throws InvalidTopicException if the topic is not under this node,
-     *         has no resource path, has a query string, or is a wildcard filter
+     *         has a query string, is a wildcard filter, or is not a
+     *         Resource Data topic
      */
     URI toResourceUri(String topic) throws InvalidTopicException
     {
@@ -95,6 +113,16 @@ final class TopicMapper
         // 'node1/systems/134/#' to the parent resource '/systems/134/'.
         if (path.indexOf('+') >= 0 || path.indexOf('#') >= 0)
             throw new InvalidTopicException("Wildcard topic filters are not supported");
+
+        // Only Resource Data topics are supported. Resource Event topics
+        // (no ':data') and format subtopics come later (see #249).
+        if (path.contains(DATA_MARKER + "/"))
+            throw new InvalidTopicException("Format subtopics are not supported");
+        if (!path.endsWith(DATA_MARKER))
+            throw new InvalidTopicException("Only Resource Data topics (ending with '" + DATA_MARKER + "') are supported");
+        path = path.substring(0, path.length() - DATA_MARKER.length());
+        if (!DATA_PATH.matcher(path).matches())
+            throw new InvalidTopicException("Not a Resource Data topic: " + topic);
 
         try
         {

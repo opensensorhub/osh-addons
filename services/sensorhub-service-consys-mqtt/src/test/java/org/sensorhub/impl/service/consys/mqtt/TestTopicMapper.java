@@ -57,9 +57,25 @@ public class TestTopicMapper
     @Test
     public void testToResourceUri() throws InvalidTopicException
     {
+        // designated topics from the Part 3 Resource Data Topics table
         var topics = new TopicMapper("node1");
-        assertEquals("/systems/134", topics.toResourceUri("node1/systems/134").toString());
-        assertEquals("/datastreams/abc/observations", topics.toResourceUri("node1/datastreams/abc/observations").toString());
+        var sys = "systems/134/subsystems/7";
+        for (var path: new String[] {
+            "systems",
+            "systems/134/subsystems",
+            sys + "/subsystems",
+            sys + "/datastreams",
+            sys + "/controlstreams",
+            sys + "/events",
+            "systems/134/datastreams/12/observations",
+            sys + "/datastreams/12/observations",
+            sys + "/controlstreams/3/commands",
+            sys + "/controlstreams/3/commands/99/status",
+            sys + "/controlstreams/3/commands/99/result"
+        })
+        {
+            assertEquals("/" + path, topics.toResourceUri("node1/" + path + ":data").toString());
+        }
     }
 
 
@@ -69,15 +85,29 @@ public class TestTopicMapper
         var topics = new TopicMapper("node1");
         for (var topic: new String[] {
             null,
-            "node1",                                    // no resource path
-            "node1/",                                   // no resource path
-            "node2/systems/134",                        // other node
-            "/api/systems/134",                         // 1.x topic
-            "node1x/systems/134",                       // prefix of a longer level
-            "node1/datastreams/abc/observations?f=json", // query string
-            "node1/systems/+",                          // wildcard, not supported yet
-            "node1/systems/134/#",                      // wildcard, not supported yet
-            "node1/systems/+/datastreams/+/observations"
+            "node1",                                        // no resource path
+            "node1/",                                       // no resource path
+            "node2/systems:data",                           // other node
+            "/api/systems:data",                            // 1.x topic
+            "node1x/systems:data",                          // prefix of a longer level
+            "node1/systems/1/datastreams/2/observations:data?f=json", // query string
+            "node1/systems/+/datastreams:data",             // wildcard, not supported yet
+            "node1/systems/134/#",                          // wildcard, not supported yet
+            "node1/systems/1/datastreams/2/observations",   // event topic, not supported yet
+            "node1/systems/134",                            // event topic, not supported yet
+            "node1/systems/1/datastreams/2/observations:data/swe-json", // format, not supported yet
+            "node1/systems:data/subsystems",                // ':data' not on the last level
+            "node1/systems/134:data",                       // ':data' on an ID
+            "node1/systems/1:x/datastreams:data",           // ':' in an ID
+            "node1/systems/1/datastreams/2:data",           // ':data' on an ID
+            "node1/observations:data",                      // flat, not allowed
+            "node1/commands:data",                          // flat, not allowed
+            "node1/datastreams/2/observations:data",        // no system path
+            "node1/systems/1/samplingFeatures:data",        // not an allowed type
+            "node1/systems/1/datastreams/2/schema:data",    // not an allowed type
+            "node1/systems/1/subsystems:data/x",            // trailing level
+            "node1/systems/1//datastreams:data",            // empty ID
+            "node1/:data"                                   // no collection
         })
         {
             try
