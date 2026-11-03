@@ -15,12 +15,19 @@ Copyright (C) 2026 GeoRobotix Innovative Research. All Rights Reserved.
 package org.sensorhub.impl.service.consys.mqtt;
 
 import static org.junit.Assert.*;
+import java.util.List;
 import org.junit.Test;
 import org.sensorhub.api.comm.mqtt.InvalidTopicException;
 
 
 public class TestTopicMapper
 {
+    static TopicMapper mapper()
+    {
+        return new TopicMapper("node1", TopicMapper.STANDARD_FORMATS);
+    }
+
+
     @Test
     public void testValidNodeIds()
     {
@@ -50,7 +57,7 @@ public class TestTopicMapper
     @Test
     public void testPrefix()
     {
-        assertEquals("node1/", new TopicMapper("node1").getPrefix());
+        assertEquals("node1/", mapper().getPrefix());
     }
 
 
@@ -58,7 +65,7 @@ public class TestTopicMapper
     public void testToResourceUri() throws InvalidTopicException
     {
         // designated topics from the Part 3 Resource Data Topics table
-        var topics = new TopicMapper("node1");
+        var topics = mapper();
         var sys = "systems/134/subsystems/7";
         for (var path: new String[] {
             "systems",
@@ -74,15 +81,55 @@ public class TestTopicMapper
             sys + "/controlstreams/3/commands/99/result"
         })
         {
-            assertEquals("/" + path, topics.toResourceUri("node1/" + path + ":data").toString());
+            var res = topics.parse("node1/" + path + ":data");
+            assertEquals("/" + path, res.uri().toString());
+            assertNull(res.format());
         }
+    }
+
+
+    @Test
+    public void testFormatTokens()
+    {
+        assertEquals("json", TopicMapper.formatToken("application/json"));
+        assertEquals("om-json", TopicMapper.formatToken("application/om+json"));
+        assertEquals("swe-binary", TopicMapper.formatToken("application/swe+binary"));
+        assertEquals("swe-csv", TopicMapper.formatToken("application/swe+csv"));
+        assertEquals("geo-json", TopicMapper.formatToken("application/geo+json"));
+        assertEquals("sml-xml", TopicMapper.formatToken("Application/SML+XML; version=2.0"));
+        assertEquals("text/csv", TopicMapper.formatToken("text/csv"));
+    }
+
+
+    @Test
+    public void testFormatSubtopics() throws InvalidTopicException
+    {
+        var topics = mapper();
+        var obs = "node1/systems/1/datastreams/2/observations:data/";
+        for (var type: TopicMapper.STANDARD_FORMATS)
+        {
+            var res = topics.parse(obs + TopicMapper.formatToken(type));
+            assertEquals(type, res.format());
+            assertEquals("/systems/1/datastreams/2/observations", res.uri().getPath());
+            assertEquals("f=" + type, res.uri().getQuery());
+        }
+    }
+
+
+    @Test
+    public void testFormatsWithoutSubtopic()
+    {
+        // tokens with '/' and tokens shared by two types get no subtopic
+        var topics = new TopicMapper("node1", List.of(
+            "application/json", "video/x-motion-jpeg", "text/csv", "application/a+b", "application/a-b"));
+        assertEquals(List.of("json"), List.copyOf(topics.formats.keySet()));
     }
 
 
     @Test
     public void testRejectedTopics()
     {
-        var topics = new TopicMapper("node1");
+        var topics = mapper();
         for (var topic: new String[] {
             null,
             "node1",                                        // no resource path
@@ -95,7 +142,11 @@ public class TestTopicMapper
             "node1/systems/134/#",                          // wildcard, not supported yet
             "node1/systems/1/datastreams/2/observations",   // event topic, not supported yet
             "node1/systems/134",                            // event topic, not supported yet
-            "node1/systems/1/datastreams/2/observations:data/swe-json", // format, not supported yet
+            "node1/systems/1/datastreams/2/observations:data/swe-proto", // unknown format
+            "node1/systems/1/datastreams/2/observations:data/",  // empty format
+            "node1/systems/1/datastreams/2/observations:data/SWE-JSON", // tokens are lowercase
+            "node1/systems/1/datastreams/2/observations:data/swe-json/x", // format is one level
+            "node1/systems/1/datastreams/2/observations:datax",  // not ':data'
             "node1/systems:data/subsystems",                // ':data' not on the last level
             "node1/systems/134:data",                       // ':data' on an ID
             "node1/systems/1:x/datastreams:data",           // ':' in an ID
@@ -105,14 +156,14 @@ public class TestTopicMapper
             "node1/datastreams/2/observations:data",        // no system path
             "node1/systems/1/samplingFeatures:data",        // not an allowed type
             "node1/systems/1/datastreams/2/schema:data",    // not an allowed type
-            "node1/systems/1/subsystems:data/x",            // trailing level
+            "node1/systems/1/subsystems:data/x",            // unknown format
             "node1/systems/1//datastreams:data",            // empty ID
             "node1/:data"                                   // no collection
         })
         {
             try
             {
-                topics.toResourceUri(topic);
+                topics.parse(topic);
                 fail("Accepted invalid topic: " + topic);
             }
             catch (InvalidTopicException e)

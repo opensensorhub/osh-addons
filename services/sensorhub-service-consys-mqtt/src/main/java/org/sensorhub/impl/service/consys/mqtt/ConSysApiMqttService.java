@@ -14,6 +14,7 @@ Copyright (C) 2021 Sensia Software LLC. All Rights Reserved.
 
 package org.sensorhub.impl.service.consys.mqtt;
 
+import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.module.ModuleEvent.ModuleState;
@@ -33,7 +34,6 @@ import org.sensorhub.impl.service.mqtt.AbstractMqttServiceModule;
 public class ConSysApiMqttService extends AbstractMqttServiceModule<ConSysApiMqttServiceConfig> implements IServiceModule<ConSysApiMqttServiceConfig>
 {
     protected ConSysApiMqttConnector mqttConnector;
-    protected TopicMapper topics;
 
 
     @Override
@@ -43,7 +43,7 @@ public class ConSysApiMqttService extends AbstractMqttServiceModule<ConSysApiMqt
 
         try
         {
-            topics = new TopicMapper(config.nodeId);
+            TopicMapper.checkNodeId(config.nodeId);
         }
         catch (IllegalArgumentException e)
         {
@@ -64,9 +64,14 @@ public class ConSysApiMqttService extends AbstractMqttServiceModule<ConSysApiMqt
 
                 if (mqttServer != null)
                 {
+                    // format subtopics: standard formats and the API's custom formats
+                    var formats = new ArrayList<>(TopicMapper.STANDARD_FORMATS);
+                    for (var f: service.getConfiguration().customFormats)
+                        formats.add(f.mimeType);
+                    var topics = new TopicMapper(config.nodeId, formats);
                     mqttConnector = new ConSysApiMqttConnector(servlet, topics);
                     mqttServer.registerHandler(topics.getPrefix(), mqttConnector);
-                    getLogger().info("CONSYS API MQTT handler registered on '{}'", topics.getPrefix());
+                    getLogger().info("CONSYS API MQTT handler registered on '{}', format subtopics {}", topics.getPrefix(), topics.formats.keySet());
                     setState(ModuleState.STARTED);
                 }
             })
