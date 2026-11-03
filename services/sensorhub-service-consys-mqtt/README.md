@@ -146,6 +146,43 @@ Not done yet:
 
 ## Change in version 3.0.0
 
-This is a breaking change.
-Earlier versions used the HTTP path as the topic, for example `/api/datastreams/12/observations`.
-These topics do not work now. Use `{nodeId}/{systemPath}/...:data` topics.
+This is a breaking change. Clients of version 2.x and earlier must change their topics.
+The module version was inherited from osh-core before (2.0.1). Now the module has its own version.
+
+### Topics
+
+Old topics used the HTTP endpoint of the CS API service (default `/api`) and the HTTP path.
+New topics use `{nodeId}`, the full `{systemPath}` and `:data`.
+
+- `/api/datastreams/{dsId}/observations`
+  - becomes `{nodeId}/systems/{sysId}/datastreams/{dsId}/observations:data`
+- `/api/controlstreams/{csId}/commands`
+  - becomes `{nodeId}/systems/{sysId}/controlstreams/{csId}/commands:data`
+- `/api/controlstreams/{csId}/status`
+  - becomes `{nodeId}/systems/{sysId}/controlstreams/{csId}/commands/{cmdId}/status:data`
+- `/api/systems` (publish)
+  - becomes `{nodeId}/systems:data`
+- `/api/systems/{sysId}/datastreams` (publish)
+  - becomes `{nodeId}/systems/{sysId}/datastreams:data`
+- `...?f=application/swe+csv`
+  - becomes `...:data/swe-csv`
+
+To find `{sysId}` for a datastream or control stream, read `system@id` from the HTTP API, for example `GET /api/datastreams/{dsId}`.
+For a subsystem, use the full path: `systems/{sysId}/subsystems/{subId}/...`.
+
+### Steps
+
+1. Set `nodeId` in the Connected Systems API MQTT Service config.
+   - If you do not set it, the value is `api`. Topics then start with `api/` (no leading `/`).
+   - Use a different `nodeId` for each node on a shared broker.
+2. Change each client topic. Use the list above.
+3. Remove query strings from topics. Use a format subtopic to select a format.
+4. Check JSON commands. Put the fields in `parameters`.
+5. For command status, subscribe per command. You get the command ID from the HTTP API.
+
+### What stops working
+
+- Topics that start with `/` or with the HTTP endpoint.
+- Query strings in topics. Filters such as `?resultTime=` are not available on MQTT.
+- Topics without `:data`. In a later version, these topics carry Resource Events.
+- The control stream status topic `/api/controlstreams/{csId}/status`. Use the per-command status topic.
