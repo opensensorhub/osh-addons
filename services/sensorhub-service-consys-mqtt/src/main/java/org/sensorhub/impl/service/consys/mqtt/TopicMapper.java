@@ -16,8 +16,15 @@ package org.sensorhub.impl.service.consys.mqtt;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Collection;
+import java.util.TreeMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import java.util.regex.Pattern;
 import org.sensorhub.api.comm.mqtt.InvalidTopicException;
+import org.sensorhub.impl.service.consys.resource.ResourceFormat;
 
 
 /**
@@ -27,10 +34,13 @@ import org.sensorhub.api.comm.mqtt.InvalidTopicException;
  * the resource path. Topics do not carry query strings.
  * </p><p>
  * Only Resource Data topics are accepted, for example
- * {@code node1/systems/134/datastreams/12/observations:data}. The topic
- * shape is checked here; that each ID belongs to its parent is left to the
- * CS API. Resource Event topics, format subtopics and wildcard topic
- * filters are rejected until they are supported.
+ * {@code node1/systems/134/datastreams/12/observations:data}. The plain
+ * {@code :data} topic selects the default representation, and
+ * {@code :data/{format}} selects another one by its format token. The
+ * topic shape is checked here; that each ID belongs to its parent, and
+ * that the resource offers the format, is left to the CS API. Resource
+ * Event topics and wildcard topic filters are rejected until they are
+ * supported.
  * </p>
  */
 final class TopicMapper
@@ -45,16 +55,66 @@ final class TopicMapper
         + "|datastreams/[^/:]+/observations"
         + "|controlstreams/[^/:]+/commands(/[^/:]+/(status|result))?))?");
 
+    // formats that the CS API offers without custom formats
+    static final List<String> STANDARD_FORMATS = List.of(
+        ResourceFormat.JSON.getMimeType(),
+        ResourceFormat.GEOJSON.getMimeType(),
+        ResourceFormat.SML_JSON.getMimeType(),
+        ResourceFormat.SML_XML.getMimeType(),
+        ResourceFormat.OM_JSON.getMimeType(),
+        ResourceFormat.SWE_JSON.getMimeType(),
+        ResourceFormat.SWE_TEXT.getMimeType(),
+        ResourceFormat.SWE_XML.getMimeType(),
+        ResourceFormat.SWE_BINARY.getMimeType());
+
+    /** A topic mapped to a CS API resource. {@code format} is null for the default. */
+    record ResourceTopic(URI uri, String format) {}
+
     final String prefix;
+    final Map<String, String> formats = new TreeMap<>(); // token -> media type
 
 
     /**
      * @param nodeId the node identifier, see {@link #checkNodeId(String)}
+     * @param mediaTypes the media types that format subtopics can select.
+     *        Types with no valid token, or with the same token as another
+     *        type, get no subtopic.
      * @throws IllegalArgumentException if the node identifier is not valid
      */
-    TopicMapper(String nodeId)
+    TopicMapper(String nodeId, Collection<String> mediaTypes)
     {
         this.prefix = checkNodeId(nodeId) + "/";
+
+        var duplicates = new HashSet<String>();
+        for (var type: mediaTypes)
+        {
+            var token = formatToken(type);
+            if (token.isEmpty() || token.indexOf('/') >= 0 || token.indexOf('#') >= 0)
+                continue;
+            var other = formats.put(token, type);
+            if (other != null && !other.equals(type))
+                duplicates.add(token);
+        }
+        formats.keySet().removeAll(duplicates);
+    }
+
+
+    /**
+     * Make the format token of a media type (CS API Part 3 format name):
+     * remove parameters and the {@code application/} prefix, change
+     * {@code +} to {@code -}, and use lowercase.
+     */
+    static String formatToken(String mediaType)
+    {
+        var token = mediaType;
+        var sep = token.indexOf(';');
+        if (sep >= 0)
+            token = token.substring(0, sep);
+        // media types are case-insensitive, so lowercase first
+        token = token.trim().toLowerCase(Locale.ROOT);
+        if (token.startsWith("application/"))
+            token = token.substring("application/".length());
+        return token.replace('+', '-');
     }
 
 
@@ -91,13 +151,14 @@ final class TopicMapper
 
     /**
      * @param topic an MQTT topic name
-     * @return the URI of the CS API resource that the topic identifies,
-     *         without {@code :data}
+     * @return the CS API resource that the topic identifies. The URI has no
+     *         {@code :data}, and has an {@code f} parameter if the topic has
+     *         a format subtopic.
      * @throws InvalidTopicException if the topic is not under this node,
-     *         has a query string, is a wildcard filter, or is not a
-     *         Resource Data topic
+     *         has a query string, is a wildcard filter, is not a Resource
+     *         Data topic, or has an unknown format token
      */
-    URI toResourceUri(String topic) throws InvalidTopicException
+    ResourceTopic parse(String topic) throws InvalidTopicException
     {
         if (topic == null || !topic.startsWith(prefix))
             throw new InvalidTopicException("Topic must start with '" + prefix + "'");
@@ -115,18 +176,29 @@ final class TopicMapper
             throw new InvalidTopicException("Wildcard topic filters are not supported");
 
         // Only Resource Data topics are supported. Resource Event topics
-        // (no ':data') and format subtopics come later (see #249).
-        if (path.contains(DATA_MARKER + "/"))
-            throw new InvalidTopicException("Format subtopics are not supported");
-        if (!path.endsWith(DATA_MARKER))
-            throw new InvalidTopicException("Only Resource Data topics (ending with '" + DATA_MARKER + "') are supported");
-        path = path.substring(0, path.length() - DATA_MARKER.length());
+        // (no ':data') come later (see #249).
+        var marker = path.lastIndexOf(DATA_MARKER);
+        if (marker < 0)
+            throw new InvalidTopicException("Only Resource Data topics (with '" + DATA_MARKER + "') are supported");
+        var tail = path.substring(marker + DATA_MARKER.length());
+        path = path.substring(0, marker);
         if (!DATA_PATH.matcher(path).matches())
             throw new InvalidTopicException("Not a Resource Data topic: " + topic);
 
+        // plain ':data' or ':data/{format}', with no fallback for an unknown token
+        String format = null;
+        if (!tail.isEmpty())
+        {
+            var token = tail.startsWith("/") ? tail.substring(1) : "";
+            format = formats.get(token);
+            if (format == null)
+                throw new InvalidTopicException("Unknown format subtopic: " + tail);
+        }
+
         try
         {
-            return new URI("/" + path);
+            var uri = new URI(null, null, "/" + path, format == null ? null : "f=" + format, null);
+            return new ResourceTopic(uri, format);
         }
         catch (URISyntaxException e)
         {

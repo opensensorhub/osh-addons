@@ -126,7 +126,8 @@ public class ConSysApiMqttConnector implements IMqttHandler
     public void onSubscribe(String userID, String topic, IMqttServer server) throws InvalidTopicException
     {
         // reject invalid topics before a subscriber is created
-        var resourceUri = topics.toResourceUri(topic);
+        var resource = topics.parse(topic);
+        var accepted = false;
 
         try
         {
@@ -140,12 +141,13 @@ public class ConSysApiMqttConnector implements IMqttHandler
             
             // always evaluate request because we need to check for permissions
             // even if subscriber was already created
-            var ctx = new RequestContext(servlet, resourceUri, sub);
+            var ctx = new RequestContext(servlet, resource.uri(), sub);
             servlet.getSecurityHandler().setCurrentUser(userID);
             servlet.getRootHandler().doGet(ctx);
             
             // start stream if all went well
             sub.numSubscribers.incrementAndGet();
+            accepted = true;
             sub.maybeStart();
         }
         catch (SecurityException e)
@@ -163,11 +165,28 @@ public class ConSysApiMqttConnector implements IMqttHandler
         }
         catch (Exception e)
         {
+            // the CS API can wrap a request error, for example an unsupported format
+            for (var cause = e.getCause(); cause != null; cause = cause.getCause())
+            {
+                if (cause instanceof InvalidRequestException)
+                    throw new InvalidTopicException(cause.getMessage());
+            }
             throw new IllegalStateException("Internal error subscribing to topic " + topic, e);
         }
         finally
         {
             servlet.getSecurityHandler().clearCurrentUser();
+
+            // do not keep a subscriber that no client uses
+            if (!accepted)
+            {
+                subscribers.computeIfPresent(topic, (k, sub) -> {
+                    if (sub.numSubscribers.get() > 0)
+                        return sub;
+                    sub.close();
+                    return null;
+                });
+            }
         }
     }
     
@@ -195,8 +214,10 @@ public class ConSysApiMqttConnector implements IMqttHandler
     {
         try
         {
-            var ctx = getResourceContext(topic, payload);
-            ctx.setRequestContentType(ResourceFormat.AUTO.getMimeType());
+            // the format subtopic selects the payload format, else detect it
+            var resource = topics.parse(topic);
+            var ctx = new RequestContext(servlet, resource.uri(), new ByteBufferInputStream(payload));
+            ctx.setRequestContentType(resource.format() != null ? resource.format() : ResourceFormat.AUTO.getMimeType());
             
             if (correlData != null)
             {
@@ -238,15 +259,6 @@ public class ConSysApiMqttConnector implements IMqttHandler
         {
             servlet.getSecurityHandler().clearCurrentUser();
         }
-    }
-    
-    
-    private RequestContext getResourceContext(String topic, ByteBuffer payload) throws InvalidTopicException
-    {
-        return new RequestContext(
-            servlet,
-            topics.toResourceUri(topic),
-            new ByteBufferInputStream(payload));
     }
     
     

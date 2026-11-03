@@ -46,12 +46,64 @@ Supported Resource Data topics:
 
 The service rejects all other topics.
 
+## Formats
+
+The plain `:data` topic uses the default format of the resource.
+To use a different format, add `/{format}` after `:data`:
+
+```
+node1/systems/134/datastreams/12/observations:data/swe-csv
+```
+
+The format name comes from the media type:
+
+1. Remove parameters (`;` and after).
+2. Remove `application/`.
+3. Change `+` to `-`.
+4. Use lowercase.
+
+Format names:
+
+- `json`: `application/json`
+- `geo-json`: `application/geo+json`
+- `sml-json`: `application/sml+json`
+- `sml-xml`: `application/sml+xml`
+- `om-json`: `application/om+json`
+- `swe-json`: `application/swe+json`
+- `swe-csv`: `application/swe+csv`
+- `swe-xml`: `application/swe+xml`
+- `swe-binary`: `application/swe+binary`
+- Custom formats of the CS API service also get a name, if the name has no `/` or `#`.
+  For example, `video/x-motion-jpeg` gets no format subtopic.
+
+On a format subtopic:
+
+- A subscription gets the data in that format only.
+- A publication must use that format. The service does not detect the format.
+- The service rejects an unknown format name. It does not use the default format.
+- The service rejects a format that the resource does not support.
+  Each datastream lists its formats in `formats` over HTTP.
+
+Formats found to work in tests:
+
+- Observations, subscribe: `json`, `om-json`, `swe-json`, `swe-csv`, `swe-xml`, `swe-binary`
+- Video observations (Axis camera), subscribe: `swe-binary` (MJPEG and H264 frames), `om-json` (no frame data)
+- Observations, publish: `om-json`, `swe-json`, `swe-csv`
+- Commands, publish: `json`, `swe-json`, `swe-csv`
+- Systems, publish: `geo-json`, `sml-json`
+
 ## Examples
 
 Get observations from datastream `12` of system `134`:
 
 ```
 subscribe  node1/systems/134/datastreams/12/observations:data
+```
+
+Get the same observations as CSV:
+
+```
+subscribe  node1/systems/134/datastreams/12/observations:data/swe-csv
 ```
 
 Send a command to control stream `3` of system `134`:
@@ -69,10 +121,10 @@ Done:
 
 - `{nodeId}` topic prefix
 - Resource Data topics (`:data`) with the full `{systemPath}`
+- Format subtopics (`:data/{format}`)
 
 Not done yet:
 
-- Format subtopics (`:data/{format}`). Each topic uses the default format.
 - Resource Event topics (topics without `:data`) and CloudEvents messages
 - Wildcard subscriptions (`+`, `#`)
 - MQTT 5 Content Type
@@ -88,7 +140,9 @@ Not done yet:
 - Subscriptions to `systems:data`, `subsystems:data`, `datastreams:data`, `controlstreams:data` and `result:data` are rejected. The CS API cannot stream these resources yet. You can publish to the first four to create resources.
 - Error replies (MQTT 5 reason codes) come only from the embedded OSH broker. MQTT 3.1.1 clients get no reason. Asynchronous error reports are not done yet.
 - A JSON command must put its fields in `parameters`. If it does not, the service rejects the command.
-- Each topic uses the default JSON format of its resource. Other formats need format subtopics, which are not done yet.
+- A default format can also be used on its format subtopic. The Part 3 draft says this SHOULD NOT be offered, because data is then sent twice. Here data is sent only to topics with subscribers.
+- A `swe-xml` publication creates the resource, but the reply says "invalid payload". The CS API reads past the end of the record. HTTP has the same problem.
+- Video datastreams offer only `om-json` and `swe-binary`. In `om-json`, the result does not include the frame.
 
 ## Change in version 3.0.0
 
