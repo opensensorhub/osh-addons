@@ -16,8 +16,6 @@ package org.sensorhub.impl.service.consys.mqtt;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.nio.ByteBuffer;
 import java.security.AccessControlException;
 import java.util.Map;
@@ -52,7 +50,7 @@ import org.vast.util.Asserts;
 public class ConSysApiMqttConnector implements IMqttHandler
 {
     ConSysApiServlet servlet;
-    String endpoint;
+    TopicMapper topics;
     Map<String, MqttSubscriber> subscribers = new ConcurrentHashMap<>();
     
     
@@ -117,16 +115,19 @@ public class ConSysApiMqttConnector implements IMqttHandler
     }
     
     
-    public ConSysApiMqttConnector(ConSysApiServlet servlet, String endpoint)
+    public ConSysApiMqttConnector(ConSysApiServlet servlet, TopicMapper topics)
     {
         this.servlet = servlet;
-        this.endpoint = endpoint;
+        this.topics = topics;
     }
 
 
     @Override
     public void onSubscribe(String userID, String topic, IMqttServer server) throws InvalidTopicException
     {
+        // reject invalid topics before a subscriber is created
+        var resourceUri = topics.toResourceUri(topic);
+
         try
         {
             // register new subscription if needed
@@ -139,7 +140,7 @@ public class ConSysApiMqttConnector implements IMqttHandler
             
             // always evaluate request because we need to check for permissions
             // even if subscriber was already created
-            var ctx = getResourceContext(topic, sub);
+            var ctx = new RequestContext(servlet, resourceUri, sub);
             servlet.getSecurityHandler().setCurrentUser(userID);
             servlet.getRootHandler().doGet(ctx);
             
@@ -147,7 +148,7 @@ public class ConSysApiMqttConnector implements IMqttHandler
             sub.numSubscribers.incrementAndGet();
             sub.maybeStart();
         }
-        catch (SecurityException | InvalidTopicException e)
+        catch (SecurityException e)
         {
             throw e;
         }
@@ -217,6 +218,13 @@ public class ConSysApiMqttConnector implements IMqttHandler
         {
             handleInvalidRequestException(e);
         }
+        catch (NullPointerException e)
+        {
+            // Resource builders reject a missing required field with an NPE,
+            // for example a command without 'parameters'. Report it as a bad
+            // payload, not an internal error.
+            throw new InvalidPayloadException(e.getMessage());
+        }
         catch (Exception e)
         {
             throw new IllegalStateException("Internal error publishing to topic " + topic, e);
@@ -228,38 +236,12 @@ public class ConSysApiMqttConnector implements IMqttHandler
     }
     
     
-    private RequestContext getResourceContext(String topic, MqttSubscriber streamHandler) throws InvalidTopicException
-    {
-        return new RequestContext(
-            servlet,
-            getResourceUri(topic),
-            streamHandler);
-    }
-    
-    
     private RequestContext getResourceContext(String topic, ByteBuffer payload) throws InvalidTopicException
     {
         return new RequestContext(
             servlet,
-            getResourceUri(topic),
+            topics.toResourceUri(topic),
             new ByteBufferInputStream(payload));
-    }
-    
-    
-    private URI getResourceUri(String topic) throws InvalidTopicException
-    {
-        try
-        {
-            // remove the base URL part
-            topic = topic.replaceFirst(endpoint, "");
-            
-            // parse URI (this also URL decodes the query string)
-            return new URI(topic);
-        }
-        catch (URISyntaxException e)
-        {
-            throw new InvalidTopicException("Invalid SWE API resource URI");
-        }        
     }
     
     

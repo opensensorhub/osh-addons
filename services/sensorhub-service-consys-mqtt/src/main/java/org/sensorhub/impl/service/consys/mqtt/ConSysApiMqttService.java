@@ -33,25 +33,40 @@ import org.sensorhub.impl.service.mqtt.AbstractMqttServiceModule;
 public class ConSysApiMqttService extends AbstractMqttServiceModule<ConSysApiMqttServiceConfig> implements IServiceModule<ConSysApiMqttServiceConfig>
 {
     protected ConSysApiMqttConnector mqttConnector;
-    protected String endPoint;
+    protected TopicMapper topics;
+
+
+    @Override
+    protected void doInit() throws SensorHubException
+    {
+        super.doInit();
+
+        try
+        {
+            topics = new TopicMapper(config.nodeId);
+        }
+        catch (IllegalArgumentException e)
+        {
+            throw new SensorHubException("Invalid configuration: " + e.getMessage());
+        }
+    }
 
 
     @Override
     protected void doStart() throws SensorHubException
     {
         super.doStart();
-        
+
         // try to attach to CONSYS API REST service
         getParentHub().getModuleRegistry().waitForModuleType(ConSysApiService.class, ModuleState.STARTED)
             .thenAccept(service -> {
                 var servlet = service.getServlet();
-                endPoint = service.getConfiguration().endPoint;
-                
+
                 if (mqttServer != null)
                 {
-                    mqttConnector = new ConSysApiMqttConnector(servlet, endPoint);
-                    mqttServer.registerHandler(endPoint, mqttConnector);
-                    getLogger().info("CONSYS API MQTT handler registered");
+                    mqttConnector = new ConSysApiMqttConnector(servlet, topics);
+                    mqttServer.registerHandler(topics.getPrefix(), mqttConnector);
+                    getLogger().info("CONSYS API MQTT handler registered on '{}'", topics.getPrefix());
                     setState(ModuleState.STARTED);
                 }
             })
@@ -71,10 +86,11 @@ public class ConSysApiMqttService extends AbstractMqttServiceModule<ConSysApiMqt
         // stop MQTT extension
         if (mqttConnector != null && mqttServer != null)
         {
-            mqttServer.unregisterHandler(endPoint, mqttConnector);
-                getLogger().info("CONSYS API MQTT handler unregistered");
-                mqttConnector.stop();
-                mqttConnector = null;
+            // the connector keeps the prefix it was registered with
+            mqttServer.unregisterHandler(mqttConnector.topics.getPrefix(), mqttConnector);
+            getLogger().info("CONSYS API MQTT handler unregistered");
+            mqttConnector.stop();
+            mqttConnector = null;
         }
     }
 }
