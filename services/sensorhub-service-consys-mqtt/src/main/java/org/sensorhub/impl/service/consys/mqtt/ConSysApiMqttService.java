@@ -33,7 +33,7 @@ import org.sensorhub.impl.service.mqtt.AbstractMqttServiceModule;
  */
 public class ConSysApiMqttService extends AbstractMqttServiceModule<ConSysApiMqttServiceConfig> implements IServiceModule<ConSysApiMqttServiceConfig>
 {
-    protected ConSysApiMqttConnector mqttConnector;
+    protected volatile ConSysApiMqttConnector mqttConnector;
 
 
     @Override
@@ -71,6 +71,11 @@ public class ConSysApiMqttService extends AbstractMqttServiceModule<ConSysApiMqt
                     var topics = new TopicMapper(config.nodeId, formats);
                     mqttConnector = new ConSysApiMqttConnector(servlet, topics);
                     mqttServer.registerHandler(topics.getPrefix(), mqttConnector);
+
+                    // AsyncAPI service description at {apiRoot}/asyncapi/mqtt
+                    var version = new ConSysApiMqttServiceDescriptor().getModuleVersion();
+                    servlet.getRootHandler().addSubResource(new AsyncApiHandler(version, config.brokerAddress,
+                        () -> mqttConnector != null ? mqttConnector.topics : null));
                     getLogger().info("CONSYS API MQTT handler registered on '{}', format subtopics {}", topics.getPrefix(), topics.formats.keySet());
                     setState(ModuleState.STARTED);
                 }

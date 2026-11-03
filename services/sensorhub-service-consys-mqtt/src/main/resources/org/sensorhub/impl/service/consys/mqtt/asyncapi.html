@@ -1,0 +1,64 @@
+<!-- No DOCTYPE, like the CS API pages: OSH serves /static CSS as application/json,
+     and browsers accept that only in quirks mode. -->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AsyncAPI - MQTT binding</title>
+  <link rel="stylesheet" href="${apiRoot}/static/css/bootstrap.min.css" crossorigin="">
+</head>
+<body>
+<div class="container bg-light">
+  <nav class="navbar navbar-light navbar-collapse d-flex justify-content-between align-items-center">
+    <div><span><a href="${apiRoot}">api</a></span> / <span>asyncapi</span> / <span>mqtt</span></div>
+    <span>View as <a href="${yamlUrl}">YAML</a></span>
+  </nav>
+</div>
+
+<!-- AsyncAPI viewer, shown only when it loads from unpkg.com -->
+<div id="viewer"></div>
+
+<!-- Fallback, shown when the viewer cannot load -->
+<div id="fallback" class="container py-4">
+  <h3>AsyncAPI - MQTT binding</h3>
+  <p>AsyncAPI 3.0 description of the MQTT binding of this API. Clients and tools use the
+    <a href="${yamlUrl}">YAML document</a> (<code>application/asyncapi+yaml</code>).</p>
+  <div class="card mt-3"><div class="card-body">
+    <h5 class="card-title text-primary">Broker</h5>
+    <p class="card-text"><code>${brokerHost}</code>, MQTT 5 and MQTT 3.1.1 over TCP. Topics start with <code>${nodeId}/</code>.</p>
+  </div></div>
+  <div class="card mt-3"><div class="card-body">
+    <h5 class="card-title text-primary">Document</h5>
+    <pre class="card-text"><code id="doc">${doc}</code></pre>
+  </div></div>
+</div>
+
+<script>
+  (function () {
+    var cdn = 'https://unpkg.com/@asyncapi/react-component@${viewerVersion}';
+    var done = false;
+    var timer = setTimeout(function () { done = true; }, 5000);
+    var js = document.createElement('script');
+    js.src = cdn + '/browser/standalone/index.js';
+    js.onload = function () {
+      if (done || typeof AsyncApiStandalone === 'undefined') return;
+      clearTimeout(timer);
+      try {
+        var css = document.createElement('link');
+        css.rel = 'stylesheet';
+        css.href = cdn + '/styles/default.min.css';
+        document.head.appendChild(css);
+        AsyncApiStandalone.render({
+          schema: document.getElementById('doc').textContent,
+          config: { show: { sidebar: true } }
+        }, document.getElementById('viewer'));
+        document.getElementById('fallback').style.display = 'none';
+      } catch (e) {
+        document.getElementById('viewer').innerHTML = '';
+      }
+    };
+    document.head.appendChild(js);
+  })();
+</script>
+</body>
+</html>

@@ -33,4 +33,8 @@ public class ConSysApiMqttServiceConfig extends ServiceConfig
         + "It must be one topic level: no '/', '+', '#' or NUL, and it must not start with '$'. "
         + "Use a different value for each CS API server that shares the MQTT broker.")
     public String nodeId = "api";
+
+    @DisplayInfo(label="Broker Address", desc="Broker host and port to advertise in the AsyncAPI description, "
+        + "as in 'broker.example.org:1883'. Leave empty to use the HTTP host and port 1883.")
+    public String brokerAddress;
 }
