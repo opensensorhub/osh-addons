@@ -24,8 +24,12 @@ Configuration:
 - `nodeId`: the first level of every topic. The default is `api`.
   - Use one topic level only. Do not use `/`, `+`, `#` or NUL. Do not start it with `$`.
   - Give each CS API server on the same broker a different `nodeId`.
-- `brokerAddress`: the broker host and port in the AsyncAPI description, for example `broker.example.org:1883`.
-  If it is empty, the service uses the HTTP host and port 1883.
+- `brokerAddress`: the broker host and port (MQTT over TCP) in the AsyncAPI description, for example `broker.example.org:1883`.
+  If it is empty, the service uses the HTTP host and port 1883. Port 1883 is the port of the bundled HiveMQ config. Set this value if the node's HiveMQ config uses another port.
+- `webSocketAddress`: the broker address for MQTT over WebSocket in the AsyncAPI description, for example `broker.example.org:8083/mqtt` or `wss://broker.example.org/mqtt`.
+  If it is empty, the description lists TCP only.
+- `asyncApiViewerUrl`: the base URL of the AsyncAPI viewer for the HTML page. The default is `https://unpkg.com/@asyncapi/react-component@3.2.2`.
+  If it is empty, the HTML page shows only the YAML text.
 
 ## Service description
 
@@ -39,7 +43,7 @@ For example, `http://localhost:8181/sensorhub/api/asyncapi/mqtt`.
 The media type is `application/asyncapi+yaml`.
 The description shows the topics, formats, delivery settings and known limits of this version.
 
-- A browser gets an HTML page that shows the document. You can also use `?f=html`. The page loads the AsyncAPI viewer from `unpkg.com`. If it cannot load the viewer, it shows the YAML text.
+- A browser gets an HTML page that shows the document. You can also use `?f=html`. The page loads the AsyncAPI viewer from `asyncApiViewerUrl`. If it cannot load the viewer, it shows the YAML text.
 - Other clients get YAML. You can also use `?f=yaml`.
 
 ## Topics
@@ -163,7 +167,8 @@ Not done yet:
 - Video datastreams offer only `om-json` and `swe-binary`. In `om-json`, the result does not include the frame.
 - The CS API landing page does not link to the AsyncAPI description yet. Use the path above.
 - The AsyncAPI description is YAML and HTML only. There is no JSON version (`f=json`).
-- The AsyncAPI description lists TCP servers only. It does not list the WebSocket listener.
+- The AsyncAPI description lists WebSocket servers only when `webSocketAddress` is set.
+- The service cannot read the HiveMQ settings. The description states the delivery settings (QoS 1, retain false, sessions in memory) of the bundled HiveMQ config. Authentication is not stated.
 
 ## Change in version 3.0.0
 

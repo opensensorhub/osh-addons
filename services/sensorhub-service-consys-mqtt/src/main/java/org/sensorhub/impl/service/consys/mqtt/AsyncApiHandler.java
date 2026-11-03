@@ -49,27 +49,26 @@ class AsyncApiHandler implements IResourceHandler
     static final String TEMPLATE = "asyncapi-mqtt.yaml";
     static final String HTML_TEMPLATE = "asyncapi.html";
     static final int DEFAULT_MQTT_PORT = 1883;
-    static final String VIEWER_VERSION = "3.2.2"; // @asyncapi/react-component
+    static final String[][] MQTT_VERSIONS = {{"5", "MQTT 5"}, {"3.1.1", "MQTT 3.1.1"}};
 
     final String template;
     final String htmlTemplate;
     final String version;
-    final String brokerHost;
+    final Supplier<ConSysApiMqttServiceConfig> config;
     final Supplier<TopicMapper> topics;
 
 
     /**
      * @param version the module version
-     * @param brokerHost the advertised broker host and port, or null to use
-     *        the HTTP host and the default MQTT port
+     * @param config the module config, read for each request
      * @param topics the active topic mapper, or null when the service is stopped
      */
-    AsyncApiHandler(String version, String brokerHost, Supplier<TopicMapper> topics)
+    AsyncApiHandler(String version, Supplier<ConSysApiMqttServiceConfig> config, Supplier<TopicMapper> topics)
     {
         this.template = readResource(TEMPLATE);
         this.htmlTemplate = readResource(HTML_TEMPLATE);
         this.version = version != null ? version : "unknown";
-        this.brokerHost = brokerHost;
+        this.config = config;
         this.topics = topics;
     }
 
@@ -137,7 +136,7 @@ class AsyncApiHandler implements IResourceHandler
             .replace("${nodeId}", nodeId(mapper))
             .replace("${apiRoot}", apiRoot)
             .replace("${version}", version)
-            .replace("${brokerHost}", brokerHost(apiRoot))
+            .replace("${servers}", servers(apiRoot))
             .replace("${formatEnum}", String.join(", ", mapper.formats.keySet()))
             .replace("${formatList}", formatList);
     }
@@ -151,10 +150,10 @@ class AsyncApiHandler implements IResourceHandler
     String renderHtml(TopicMapper mapper, String apiRoot, String doc)
     {
         return htmlTemplate
-            .replace("${viewerVersion}", VIEWER_VERSION)
+            .replace("${viewerUrl}", escapeHtml(trim(config.get().asyncApiViewerUrl)))
             .replace("${apiRoot}", escapeHtml(apiRoot))
             .replace("${yamlUrl}", escapeHtml(apiRoot + "/" + NAME + "/" + BINDING + "?f=" + SHORT_YAML))
-            .replace("${brokerHost}", escapeHtml(brokerHost(apiRoot)))
+            .replace("${brokerList}", brokerList(apiRoot))
             .replace("${nodeId}", escapeHtml(nodeId(mapper)))
             .replace("${doc}", escapeHtml(doc));
     }
@@ -167,12 +166,71 @@ class AsyncApiHandler implements IResourceHandler
     }
 
 
+    /** The TCP broker address from the config, or the HTTP host and the default MQTT port */
     String brokerHost(String apiRoot)
     {
-        if (brokerHost != null && !brokerHost.isBlank())
-            return brokerHost;
+        var address = trim(config.get().brokerAddress);
+        if (!address.isEmpty())
+            return address;
         var host = URI.create(apiRoot).getHost();
         return (host != null ? host : "localhost") + ":" + DEFAULT_MQTT_PORT;
+    }
+
+
+    /** HTML list of the advertised broker addresses */
+    String brokerList(String apiRoot)
+    {
+        var list = "TCP at <code>" + escapeHtml(brokerHost(apiRoot)) + "</code>";
+        var ws = trim(config.get().webSocketAddress);
+        if (!ws.isEmpty())
+            list += " and WebSocket at <code>" + escapeHtml(ws) + "</code>";
+        return list;
+    }
+
+
+    /** Server Objects: TCP, and WebSocket if the config has a WebSocket address */
+    String servers(String apiRoot)
+    {
+        var sb = new StringBuilder();
+        var tcpHost = brokerHost(apiRoot);
+        for (var v: MQTT_VERSIONS)
+            appendServer(sb, "mqtt" + v[0].replace(".", ""), tcpHost, null, "mqtt", v, "TCP");
+
+        var ws = trim(config.get().webSocketAddress);
+        if (!ws.isEmpty())
+        {
+            var protocol = "ws";
+            if (ws.startsWith("wss://"))
+                protocol = "wss";
+            ws = ws.replaceFirst("^wss?://", "");
+            var slash = ws.indexOf('/');
+            var host = slash < 0 ? ws : ws.substring(0, slash);
+            var path = slash < 0 ? null : ws.substring(slash);
+            for (var v: MQTT_VERSIONS)
+                appendServer(sb, "mqtt" + v[0].replace(".", "") + "-" + protocol, host, path, protocol, v, protocol.equals("wss") ? "secure WebSocket" : "WebSocket");
+        }
+        return sb.toString();
+    }
+
+
+    static void appendServer(StringBuilder sb, String name, String host, String path, String protocol, String[] mqttVersion, String transport)
+    {
+        sb.append("  ").append(name).append(":\n")
+          .append("    host: '").append(host.replace("'", "''")).append("'\n");
+        if (path != null)
+            sb.append("    pathname: '").append(path.replace("'", "''")).append("'\n");
+        sb.append("    protocol: ").append(protocol).append('\n')
+          .append("    protocolVersion: '").append(mqttVersion[0]).append("'\n")
+          .append("    description: ").append(mqttVersion[1]).append(" over ").append(transport).append('.');
+        if ("5".equals(mqttVersion[0]))
+            sb.append(" Rejections carry a reason code and reason string.");
+        sb.append('\n');
+    }
+
+
+    static String trim(String s)
+    {
+        return s != null ? s.trim() : "";
     }
 
 

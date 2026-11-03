@@ -15,8 +15,8 @@
   </nav>
 </div>
 
-<!-- AsyncAPI viewer, shown only when it loads from unpkg.com -->
-<div id="viewer"></div>
+<!-- AsyncAPI viewer (module config), shown only when it loads -->
+<div id="viewer" data-viewer-url="${viewerUrl}"></div>
 
 <!-- Fallback, shown when the viewer cannot load -->
 <div id="fallback" class="container py-4">
@@ -25,7 +25,7 @@
     <a href="${yamlUrl}">YAML document</a> (<code>application/asyncapi+yaml</code>).</p>
   <div class="card mt-3"><div class="card-body">
     <h5 class="card-title text-primary">Broker</h5>
-    <p class="card-text"><code>${brokerHost}</code>, MQTT 5 and MQTT 3.1.1 over TCP. Topics start with <code>${nodeId}/</code>.</p>
+    <p class="card-text">MQTT 5 and MQTT 3.1.1 over ${brokerList}. Topics start with <code>${nodeId}/</code>.</p>
   </div></div>
   <div class="card mt-3"><div class="card-body">
     <h5 class="card-title text-primary">Document</h5>
@@ -35,7 +35,8 @@
 
 <script>
   (function () {
-    var cdn = 'https://unpkg.com/@asyncapi/react-component@${viewerVersion}';
+    var cdn = document.getElementById('viewer').dataset.viewerUrl;
+    if (!cdn) return;
     var done = false;
     var timer = setTimeout(function () { done = true; }, 5000);
     var js = document.createElement('script');

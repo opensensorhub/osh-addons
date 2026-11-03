@@ -80,17 +80,7 @@ info:
 defaultContentType: application/json
 
 servers:
-  mqtt5:
-    host: ${brokerHost}
-    protocol: mqtt
-    protocolVersion: '5'
-    description: MQTT 5 over TCP. Rejections carry a reason code and reason string.
-  mqtt311:
-    host: ${brokerHost}
-    protocol: mqtt
-    protocolVersion: 3.1.1
-    description: MQTT 3.1.1 over TCP.
-
+${servers}
 channels:
   observations:
     address: '${nodeId}/systems/{systemId}/datastreams/{dataStreamId}/observations:data'

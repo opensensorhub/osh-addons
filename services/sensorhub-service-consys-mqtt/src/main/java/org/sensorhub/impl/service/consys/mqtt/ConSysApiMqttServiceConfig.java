@@ -34,7 +34,16 @@ public class ConSysApiMqttServiceConfig extends ServiceConfig
         + "Use a different value for each CS API server that shares the MQTT broker.")
     public String nodeId = "api";
 
-    @DisplayInfo(label="Broker Address", desc="Broker host and port to advertise in the AsyncAPI description, "
-        + "as in 'broker.example.org:1883'. Leave empty to use the HTTP host and port 1883.")
+    @DisplayInfo(label="Broker Address", desc="Broker host and port (MQTT over TCP) to advertise in the AsyncAPI description, "
+        + "as in 'broker.example.org:1883'. Leave empty to use the HTTP host and port 1883, the port of the bundled "
+        + "HiveMQ config. Set it if the node's HiveMQ config uses another port.")
     public String brokerAddress;
+
+    @DisplayInfo(label="WebSocket Address", desc="Broker address for MQTT over WebSocket to advertise in the AsyncAPI description, "
+        + "as in 'broker.example.org:8083/mqtt' or 'wss://broker.example.org/mqtt'. Leave empty to advertise TCP only.")
+    public String webSocketAddress;
+
+    @DisplayInfo(label="AsyncAPI Viewer URL", desc="Base URL of the AsyncAPI viewer (@asyncapi/react-component) "
+        + "used by the HTML page of the AsyncAPI description. Leave empty to show only the YAML text.")
+    public String asyncApiViewerUrl = "https://unpkg.com/@asyncapi/react-component@3.2.2";
 }

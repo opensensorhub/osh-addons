@@ -74,7 +74,7 @@ public class ConSysApiMqttService extends AbstractMqttServiceModule<ConSysApiMqt
 
                     // AsyncAPI service description at {apiRoot}/asyncapi/mqtt
                     var version = new ConSysApiMqttServiceDescriptor().getModuleVersion();
-                    servlet.getRootHandler().addSubResource(new AsyncApiHandler(version, config.brokerAddress,
+                    servlet.getRootHandler().addSubResource(new AsyncApiHandler(version, () -> config,
                         () -> mqttConnector != null ? mqttConnector.topics : null));
                     getLogger().info("CONSYS API MQTT handler registered on '{}', format subtopics {}", topics.getPrefix(), topics.formats.keySet());
                     setState(ModuleState.STARTED);
