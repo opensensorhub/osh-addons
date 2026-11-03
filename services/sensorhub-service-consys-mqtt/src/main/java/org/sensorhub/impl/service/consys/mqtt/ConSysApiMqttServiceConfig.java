@@ -14,6 +14,7 @@ Copyright (C) 2021 Sensia Software LLC. All Rights Reserved.
 
 package org.sensorhub.impl.service.consys.mqtt;
 
+import org.sensorhub.api.config.DisplayInfo;
 import org.sensorhub.api.service.ServiceConfig;
 
 
@@ -27,5 +28,9 @@ import org.sensorhub.api.service.ServiceConfig;
  */
 public class ConSysApiMqttServiceConfig extends ServiceConfig
 {
-
+    @DisplayInfo.Required
+    @DisplayInfo(label="Node ID", desc="Prefix of all MQTT topics, as in '{nodeId}/systems/{id}'. "
+        + "It must be one topic level: no '/', '+', '#' or NUL, and it must not start with '$'. "
+        + "Use a different value for each CS API server that shares the MQTT broker.")
+    public String nodeId = "api";
 }
