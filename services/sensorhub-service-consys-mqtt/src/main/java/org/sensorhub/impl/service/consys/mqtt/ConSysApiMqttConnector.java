@@ -156,6 +156,11 @@ public class ConSysApiMqttConnector implements IMqttHandler
         {
             throw new InvalidTopicException(e.getMessage());
         }
+        catch (UnsupportedOperationException e)
+        {
+            // some resources cannot be streamed yet (for example command results)
+            throw new InvalidTopicException("Streaming not supported on this resource");
+        }
         catch (Exception e)
         {
             throw new IllegalStateException("Internal error subscribing to topic " + topic, e);
@@ -251,6 +256,7 @@ public class ConSysApiMqttConnector implements IMqttHandler
         {
             case NOT_FOUND:
             case BAD_REQUEST:
+            case UNSUPPORTED_OPERATION: // topic is not writable
                 throw new InvalidTopicException(e.getMessage());
                 
             case BAD_PAYLOAD:
