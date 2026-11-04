@@ -1,0 +1,33 @@
+description = 'Sensor Replay'
+ext.details = 'Allows for archived data streams to be played back as realtime'
+
+version = '1.2.5'
+if (project.hasProperty("snapshot") && project.property("snapshot") == "true") {
+    version = "${version}-SNAPSHOT"
+}
+
+dependencies {
+    implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
+    implementation 'org.sensorhub:sensorhub-datastore-h2:' + oshCoreVersion
+    implementation 'org.sensorhub:sensorhub-service-consys:' + oshCoreVersion
+}
+
+// add info to OSGI manifest
+osgi {
+    manifest {
+        attributes('Bundle-Vendor': 'Botts Innovative Research, Inc.')
+        attributes('Bundle-Activator': 'com.botts.impl.sensor.replay.osgi.Activator')
+    }
+}
+
+// add info to maven pom
+ext.pom >>= {
+    developers {
+        developer {
+            id 'nickgaray'
+            name 'Nicolas Garay'
+            organization 'Botts Innovative Research, Inc.'
+            organizationUrl 'http://www.botts-inc.com'
+        }
+    }
+}
