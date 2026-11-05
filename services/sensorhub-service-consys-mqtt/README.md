@@ -24,6 +24,27 @@ Configuration:
 - `nodeId`: the first level of every topic. The default is `api`.
   - Use one topic level only. Do not use `/`, `+`, `#` or NUL. Do not start it with `$`.
   - Give each CS API server on the same broker a different `nodeId`.
+- `brokerAddress`: the broker host and port (MQTT over TCP) in the AsyncAPI description, for example `broker.example.org:1883`.
+  If it is empty, the service uses the HTTP host and port 1883. Port 1883 is the port of the bundled HiveMQ config. Set this value if the node's HiveMQ config uses another port.
+- `webSocketAddress`: the broker address for MQTT over WebSocket in the AsyncAPI description, for example `broker.example.org:8083/mqtt` or `wss://broker.example.org/mqtt`.
+  If it is empty, the description lists TCP only.
+- `asyncApiViewerUrl`: the base URL of the AsyncAPI viewer for the HTML page. The default is `https://unpkg.com/@asyncapi/react-component@3.2.2`.
+  If it is empty, the HTML page shows only the YAML text.
+
+## Service description
+
+The service publishes an AsyncAPI 3.0 description of its topics at:
+
+```
+{apiRoot}/asyncapi/mqtt
+```
+
+For example, `http://localhost:8181/sensorhub/api/asyncapi/mqtt`.
+The media type is `application/asyncapi+yaml`.
+The description shows the topics, formats, delivery settings and known limits of this version.
+
+- A browser gets an HTML page that shows the document. You can also use `?f=html`. The page loads the AsyncAPI viewer from `asyncApiViewerUrl`. If it cannot load the viewer, it shows the YAML text.
+- Other clients get YAML. You can also use `?f=yaml`.
 
 ## Topics
 
@@ -122,13 +143,14 @@ Done:
 - `{nodeId}` topic prefix
 - Resource Data topics (`:data`) with the full `{systemPath}`
 - Format subtopics (`:data/{format}`)
+- AsyncAPI service description at `{apiRoot}/asyncapi/mqtt`
 
 Not done yet:
 
 - Resource Event topics (topics without `:data`) and CloudEvents messages
 - Wildcard subscriptions (`+`, `#`)
 - MQTT 5 Content Type
-- AsyncAPI service description
+- A link to the AsyncAPI description from the CS API landing page
 
 ## Known limits
 
@@ -143,6 +165,10 @@ Not done yet:
 - A default format can also be used on its format subtopic. The Part 3 draft says this SHOULD NOT be offered, because data is then sent twice. Here data is sent only to topics with subscribers.
 - A `swe-xml` publication creates the resource, but the reply says "invalid payload". The CS API reads past the end of the record. HTTP has the same problem.
 - Video datastreams offer only `om-json` and `swe-binary`. In `om-json`, the result does not include the frame.
+- The CS API landing page does not link to the AsyncAPI description yet. Use the path above.
+- The AsyncAPI description is YAML and HTML only. There is no JSON version (`f=json`).
+- The AsyncAPI description lists WebSocket servers only when `webSocketAddress` is set.
+- The service cannot read the HiveMQ settings. The description states the delivery settings (QoS 1, retain false, sessions in memory) of the bundled HiveMQ config. Authentication is not stated.
 
 ## Change in version 3.0.0
 
