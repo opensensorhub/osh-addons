@@ -14,6 +14,7 @@ Copyright (C) 2021 Sensia Software LLC. All Rights Reserved.
 
 package org.sensorhub.impl.service.consys.mqtt;
 
+import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.module.ModuleEvent.ModuleState;
@@ -33,25 +34,44 @@ import org.sensorhub.impl.service.mqtt.AbstractMqttServiceModule;
 public class ConSysApiMqttService extends AbstractMqttServiceModule<ConSysApiMqttServiceConfig> implements IServiceModule<ConSysApiMqttServiceConfig>
 {
     protected ConSysApiMqttConnector mqttConnector;
-    protected String endPoint;
+
+
+    @Override
+    protected void doInit() throws SensorHubException
+    {
+        super.doInit();
+
+        try
+        {
+            TopicMapper.checkNodeId(config.nodeId);
+        }
+        catch (IllegalArgumentException e)
+        {
+            throw new SensorHubException("Invalid configuration: " + e.getMessage());
+        }
+    }
 
 
     @Override
     protected void doStart() throws SensorHubException
     {
         super.doStart();
-        
+
         // try to attach to CONSYS API REST service
         getParentHub().getModuleRegistry().waitForModuleType(ConSysApiService.class, ModuleState.STARTED)
             .thenAccept(service -> {
                 var servlet = service.getServlet();
-                endPoint = service.getConfiguration().endPoint;
-                
+
                 if (mqttServer != null)
                 {
-                    mqttConnector = new ConSysApiMqttConnector(servlet, endPoint);
-                    mqttServer.registerHandler(endPoint, mqttConnector);
-                    getLogger().info("CONSYS API MQTT handler registered");
+                    // format subtopics: standard formats and the API's custom formats
+                    var formats = new ArrayList<>(TopicMapper.STANDARD_FORMATS);
+                    for (var f: service.getConfiguration().customFormats)
+                        formats.add(f.mimeType);
+                    var topics = new TopicMapper(config.nodeId, formats);
+                    mqttConnector = new ConSysApiMqttConnector(servlet, topics);
+                    mqttServer.registerHandler(topics.getPrefix(), mqttConnector);
+                    getLogger().info("CONSYS API MQTT handler registered on '{}', format subtopics {}", topics.getPrefix(), topics.formats.keySet());
                     setState(ModuleState.STARTED);
                 }
             })
@@ -71,10 +91,11 @@ public class ConSysApiMqttService extends AbstractMqttServiceModule<ConSysApiMqt
         // stop MQTT extension
         if (mqttConnector != null && mqttServer != null)
         {
-            mqttServer.unregisterHandler(endPoint, mqttConnector);
-                getLogger().info("CONSYS API MQTT handler unregistered");
-                mqttConnector.stop();
-                mqttConnector = null;
+            // the connector keeps the prefix it was registered with
+            mqttServer.unregisterHandler(mqttConnector.topics.getPrefix(), mqttConnector);
+            getLogger().info("CONSYS API MQTT handler unregistered");
+            mqttConnector.stop();
+            mqttConnector = null;
         }
     }
 }
