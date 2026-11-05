@@ -84,6 +84,31 @@ public class TestTopicMapper
             var res = topics.parse("node1/" + path + ":data");
             assertEquals("/" + path, res.uri().toString());
             assertNull(res.format());
+            assertFalse(res.event());
+        }
+    }
+
+
+    @Test
+    public void testEventTopics() throws InvalidTopicException
+    {
+        // designated topics from the Part 3 Resource Event Topics table
+        var topics = mapper();
+        var sys = "systems/134/subsystems/7";
+        for (var path: new String[] {
+            "systems/134",
+            "systems/134/subsystems/7",
+            sys + "/subsystems/8",
+            "systems/134/datastreams/12",
+            sys + "/datastreams/12",
+            "systems/134/controlstreams/3",
+            sys + "/controlstreams/3"
+        })
+        {
+            var res = topics.parse("node1/" + path);
+            assertEquals("/" + path, res.uri().toString());
+            assertNull(res.format());
+            assertTrue(res.event());
         }
     }
 
@@ -140,8 +165,17 @@ public class TestTopicMapper
             "node1/systems/1/datastreams/2/observations:data?f=json", // query string
             "node1/systems/+/datastreams:data",             // wildcard, not supported yet
             "node1/systems/134/#",                          // wildcard, not supported yet
-            "node1/systems/1/datastreams/2/observations",   // event topic, not supported yet
-            "node1/systems/134",                            // event topic, not supported yet
+            "node1/systems",                                // event topic of a collection
+            "node1/systems/1/datastreams",                  // event topic of a collection
+            "node1/systems/1/datastreams/2/observations",   // batch event topic, not supported yet
+            "node1/systems/1/datastreams/2/observations/9", // no observation events yet
+            "node1/systems/1/controlstreams/3/commands/9",  // no command events yet
+            "node1/systems/1/events/5",                     // no system events yet
+            "node1/systems/1/samplingFeatures/5",           // no sampling feature events yet
+            "node1/procedures/5",                           // no procedure events yet
+            "node1/datastreams/2",                          // no system path
+            "node1/systems/1/",                             // empty level
+            "node1/systems/1:x",                            // ':' in an ID
             "node1/systems/1/datastreams/2/observations:data/swe-proto", // unknown format
             "node1/systems/1/datastreams/2/observations:data/",  // empty format
             "node1/systems/1/datastreams/2/observations:data/SWE-JSON", // tokens are lowercase

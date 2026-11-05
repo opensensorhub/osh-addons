@@ -33,14 +33,16 @@ import org.sensorhub.impl.service.consys.resource.ResourceFormat;
  * topic grammar: every topic starts with {@code {nodeId}/}, followed by
  * the resource path. Topics do not carry query strings.
  * </p><p>
- * Only Resource Data topics are accepted, for example
+ * Resource Data topics end with {@code :data}, for example
  * {@code node1/systems/134/datastreams/12/observations:data}. The plain
  * {@code :data} topic selects the default representation, and
- * {@code :data/{format}} selects another one by its format token. The
- * topic shape is checked here; that each ID belongs to its parent, and
- * that the resource offers the format, is left to the CS API. Resource
- * Event topics and wildcard topic filters are rejected until they are
- * supported.
+ * {@code :data/{format}} selects another one by its format token.
+ * Resource Event topics have no {@code :data}, for example
+ * {@code node1/systems/134/datastreams/12}. They are accepted for
+ * systems, subsystems, datastreams and control streams. The topic shape
+ * is checked here; that each ID belongs to its parent, and that the
+ * resource offers the format, is left to the CS API. Wildcard topic
+ * filters are rejected until they are supported.
  * </p>
  */
 final class TopicMapper
@@ -55,6 +57,11 @@ final class TopicMapper
         + "|datastreams/[^/:]+/observations"
         + "|controlstreams/[^/:]+/commands(/[^/:]+/(status|result))?))?");
 
+    // Resource Event topic templates (OGC CS API Part 3, Resource Event Topics
+    // table), without '{nodeId}/', for the resource types that have events
+    static final Pattern EVENT_PATH = Pattern.compile(
+        "systems/[^/:]+(/subsystems/[^/:]+)*(/(datastreams|controlstreams)/[^/:]+)?");
+
     // formats that the CS API offers without custom formats
     static final List<String> STANDARD_FORMATS = List.of(
         ResourceFormat.JSON.getMimeType(),
@@ -67,8 +74,11 @@ final class TopicMapper
         ResourceFormat.SWE_XML.getMimeType(),
         ResourceFormat.SWE_BINARY.getMimeType());
 
-    /** A topic mapped to a CS API resource. {@code format} is null for the default. */
-    record ResourceTopic(URI uri, String format) {}
+    /**
+     * A topic mapped to a CS API resource. {@code format} is null for the
+     * default. {@code event} is true for a Resource Event topic.
+     */
+    record ResourceTopic(URI uri, String format, boolean event) {}
 
     final String prefix;
     final Map<String, String> formats = new TreeMap<>(); // token -> media type
@@ -156,7 +166,7 @@ final class TopicMapper
      *         a format subtopic.
      * @throws InvalidTopicException if the topic is not under this node,
      *         has a query string, is a wildcard filter, is not a Resource
-     *         Data topic, or has an unknown format token
+     *         Data or Resource Event topic, or has an unknown format token
      */
     ResourceTopic parse(String topic) throws InvalidTopicException
     {
@@ -169,17 +179,20 @@ final class TopicMapper
         if (path.indexOf('?') >= 0)
             throw new InvalidTopicException("Topics must not have a query string");
 
-        // Wildcard filters are not supported yet (see #249, wildcard subscriptions).
+        // Wildcard filters are not supported yet (see #255).
         // Reject them here: URI would read '#' as a fragment, and map
         // 'node1/systems/134/#' to the parent resource '/systems/134/'.
         if (path.indexOf('+') >= 0 || path.indexOf('#') >= 0)
             throw new InvalidTopicException("Wildcard topic filters are not supported");
 
-        // Only Resource Data topics are supported. Resource Event topics
-        // (no ':data') come later (see #249).
+        // a topic without ':data' is a Resource Event topic
         var marker = path.lastIndexOf(DATA_MARKER);
         if (marker < 0)
-            throw new InvalidTopicException("Only Resource Data topics (with '" + DATA_MARKER + "') are supported");
+        {
+            if (!EVENT_PATH.matcher(path).matches())
+                throw new InvalidTopicException("Not a Resource Data or Resource Event topic: " + topic);
+            return new ResourceTopic(toUri(topic, path, null), null, true);
+        }
         var tail = path.substring(marker + DATA_MARKER.length());
         path = path.substring(0, marker);
         if (!DATA_PATH.matcher(path).matches())
@@ -195,10 +208,15 @@ final class TopicMapper
                 throw new InvalidTopicException("Unknown format subtopic: " + tail);
         }
 
+        return new ResourceTopic(toUri(topic, path, format), format, false);
+    }
+
+
+    static URI toUri(String topic, String path, String format) throws InvalidTopicException
+    {
         try
         {
-            var uri = new URI(null, null, "/" + path, format == null ? null : "f=" + format, null);
-            return new ResourceTopic(uri, format);
+            return new URI(null, null, "/" + path, format == null ? null : "f=" + format, null);
         }
         catch (URISyntaxException e)
         {
