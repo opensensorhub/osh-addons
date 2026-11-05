@@ -37,6 +37,12 @@ public class TestAsyncApiHandler
         assertTrue(doc.contains("href: 'http://host.example:8181/sensorhub/api/datastreams'"));
         assertTrue(doc.contains("enum: [geo-json, json, om-json, sml-json, sml-xml, swe-binary, swe-csv, swe-json, swe-xml]"));
         assertTrue(doc.contains("- `swe-csv`: `application/swe+csv`"));
+
+        // Resource Events: topics, media type and the event types published
+        assertTrue(doc.contains("address: 'node1/systems/{systemId}/datastreams/{dataStreamId}'"));
+        assertTrue(doc.contains("contentType: application/cloudevents+json"));
+        for (var type: new String[] {"system", "datastream", "controlstream"})
+            assertTrue(doc.contains("org.ogc.api.csapi." + type + ".create, org.ogc.api.csapi." + type + ".update, org.ogc.api.csapi." + type + ".delete"));
     }
 
 

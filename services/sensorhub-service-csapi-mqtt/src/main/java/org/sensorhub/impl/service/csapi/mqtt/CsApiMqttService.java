@@ -34,6 +34,7 @@ import org.sensorhub.impl.service.mqtt.AbstractMqttServiceModule;
 public class CsApiMqttService extends AbstractMqttServiceModule<CsApiMqttServiceConfig> implements IServiceModule<CsApiMqttServiceConfig>
 {
     protected volatile CsApiMqttConnector mqttConnector;
+    protected volatile ResourceEventPublisher eventPublisher;
 
 
     @Override
@@ -72,6 +73,13 @@ public class CsApiMqttService extends AbstractMqttServiceModule<CsApiMqttService
                     mqttConnector = new CsApiMqttConnector(servlet, topics);
                     mqttServer.registerHandler(topics.getPrefix(), mqttConnector);
 
+                    // Resource Events of the systems in the hub database
+                    var hub = getParentHub();
+                    var systems = hub.getDatabaseRegistry().getFederatedDatabase().getSystemDescStore();
+                    eventPublisher = new ResourceEventPublisher(mqttServer, topics.getPrefix(), service.getPublicEndpointUrl(),
+                        ResourceEventPublisher.lookup(systems), hub.getIdEncoders(), getLogger());
+                    eventPublisher.start(hub.getEventBus());
+
                     // AsyncAPI service description at {apiRoot}/asyncapi/mqtt
                     var version = new CsApiMqttServiceDescriptor().getModuleVersion();
                     servlet.getRootHandler().addSubResource(new AsyncApiHandler(version, () -> config,
@@ -93,6 +101,12 @@ public class CsApiMqttService extends AbstractMqttServiceModule<CsApiMqttService
     {
         super.doStop();
         
+        if (eventPublisher != null)
+        {
+            eventPublisher.stop();
+            eventPublisher = null;
+        }
+
         // stop MQTT extension
         if (mqttConnector != null && mqttServer != null)
         {
