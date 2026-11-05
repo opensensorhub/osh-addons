@@ -7,6 +7,7 @@ The work is not complete. See [Status](#status) and [Known limits](#known-limits
 ## What it does
 
 - You subscribe to a topic to get live data. Examples are observations and command status.
+- You subscribe to a Resource Event topic to know when a system, subsystem, datastream or control stream is created, updated or deleted.
 - You publish to a topic to create a resource. Examples are a system, an observation or a command.
 - Each publication is one create operation. MQTT cannot update or delete resources.
 - The CS API checks each request. The same users and permissions apply as for HTTP.
@@ -65,7 +66,42 @@ Supported Resource Data topics:
 - `{nodeId}/{systemPath}/controlstreams/{id}/commands/{id}/status:data`
 - `{nodeId}/{systemPath}/controlstreams/{id}/commands/{id}/result:data`
 
+Supported Resource Event topics (no `:data`):
+
+- `{nodeId}/systems/{id}`: a top-level system
+- `{nodeId}/{systemPath}/subsystems/{id}`
+- `{nodeId}/{systemPath}/datastreams/{id}`
+- `{nodeId}/{systemPath}/controlstreams/{id}`
+
 The service rejects all other topics.
+
+## Resource Events
+
+Each message on a Resource Event topic is one CloudEvent (CloudEvents 1.0, JSON).
+The service sends an event when a resource is created, updated or deleted.
+Each event goes on the topic of the resource only. It does not go on the topics of parent systems.
+
+```
+topic    node1/systems/134/subsystems/7/datastreams/42
+payload  {"specversion": "1.0",
+          "id": "7e8d7083-7682-466f-b600-b274ac94ac74",
+          "type": "org.ogc.api.csapi.datastream.delete",
+          "source": "http://localhost:8181/sensorhub/api",
+          "subject": "http://localhost:8181/sensorhub/api/datastreams/42",
+          "time": "2026-11-04T23:07:00.458Z",
+          "resourceparent": "http://localhost:8181/sensorhub/api/systems/7"}
+```
+
+- `type` is `org.ogc.api.csapi.{resource}.{operation}`.
+  - `{resource}` is `system`, `datastream` or `controlstream`. Subsystems use `system`.
+  - `{operation}` is `create`, `update` or `delete`.
+- `source` is the CS API root URL.
+- `subject` is the HTTP URL of the resource, for example `{apiRoot}/datastreams/42`. It is not the topic path.
+- `resourceparent` is the HTTP URL of the parent system. A top-level system has no `resourceparent`.
+- `id` is different for each event.
+- Events have no `data` member. Get the resource over HTTP.
+
+You can subscribe only to a resource that exists and that you can read. The service rejects publications on Resource Event topics.
 
 ## Formats
 
@@ -143,11 +179,13 @@ Done:
 - `{nodeId}` topic prefix
 - Resource Data topics (`:data`) with the full `{systemPath}`
 - Format subtopics (`:data/{format}`)
+- Resource Events for systems, subsystems, datastreams and control streams
 - AsyncAPI service description at `{apiRoot}/asyncapi/mqtt`
 
 Not done yet:
 
-- Resource Event topics (topics without `:data`) and CloudEvents messages
+- Resource Events for other resources, for example observations, commands and system events
+- Batch Resource Events
 - Wildcard subscriptions (`+`, `#`)
 - MQTT 5 Content Type
 - A link to the AsyncAPI description from the CS API landing page
@@ -155,7 +193,12 @@ Not done yet:
 ## Known limits
 
 - The service rejects topics with `+` or `#`.
-- The service rejects topics without `:data`.
+- Without wildcards, you cannot get the `create` event of a new resource. You can subscribe only to a resource that exists.
+- An update of a system sends an event only if it adds a new version (a later `validTime`). An update in place sends no event. This is an osh-core limit.
+- When you delete a system, osh-core deletes its datastreams and control streams with it. These send no events. Its subsystems send events.
+- Enabling or disabling a system, datastream or control stream sends no event.
+- Events have no MQTT 5 Content Type. The payload is `application/cloudevents+json`.
+- The service sends events for all systems on the node. If the CS API shows only some resources, clients can subscribe only to those.
 - The service checks the topic shape only. The CS API does not check that each ID in the path belongs to the resource before it. For example, a command sent under the wrong system path still runs.
 - A subscription to the status of one command gets the status of all commands on that control stream.
 - Publications to `status:data` and `result:data` are rejected. The CS API accepts them only at `/controlstreams/{id}/status` over HTTP.
@@ -210,5 +253,5 @@ For a subsystem, use the full path: `systems/{sysId}/subsystems/{subId}/...`.
 
 - Topics that start with `/` or with the HTTP endpoint.
 - Query strings in topics. Filters such as `?resultTime=` are not available on MQTT.
-- Topics without `:data`. In a later version, these topics carry Resource Events.
+- Data on topics without `:data`. These topics now carry Resource Events.
 - The control stream status topic `/api/controlstreams/{csId}/status`. Use the per-command status topic.
