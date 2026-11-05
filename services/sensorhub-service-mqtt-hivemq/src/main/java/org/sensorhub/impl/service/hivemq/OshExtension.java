@@ -17,13 +17,11 @@ package org.sensorhub.impl.service.hivemq;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
-import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 import org.sensorhub.api.ISensorHub;
 import org.sensorhub.api.comm.mqtt.IMqttServer;
 import org.sensorhub.api.comm.mqtt.MqttException;
@@ -199,19 +197,19 @@ public class OshExtension implements ExtensionMain, EmbeddedExtension, IMqttServ
         var handler = handlers.get(topic);
         if (handler != null)
         {
-            AtomicBoolean notSubscribed = new AtomicBoolean();
-            clientTopics.compute(clientId, (k,v) -> {
-                if (v == null)
-                    v = Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>());
-                notSubscribed.set(v.add(topic));
-                return v;
-            });
-            
-            if (notSubscribed.get())
+            var topics = clientTopics.computeIfAbsent(clientId, k -> ConcurrentHashMap.newKeySet());
+            if (!topics.contains(topic))
             {
                 log.debug(LOG_SUBSCRIBE_MSG + "Handled by {}",
                     clientId, topic, handler.getClass().getSimpleName());
+
+                // record the topic only after the handler accepts it,
+                // so a retry of a rejected subscribe is checked again
                 handler.onSubscribe(userId, topic, this);
+
+                // a parallel subscribe to the same topic was recorded first
+                if (!topics.add(topic))
+                    handler.onUnsubscribe(userId, topic, this);
             }
             
             return true;
