@@ -34,6 +34,11 @@ public class CsApiMqttServiceConfig extends ServiceConfig
         + "Use a different value for each CS API server that shares the MQTT broker.")
     public String nodeId = "api";
 
+    @DisplayInfo(label="Batch Event Window (ms)", desc="Length of the time window for the Batch Resource Events "
+        + "of observations. Each datastream gets at most one event in each window. After a quiet window, the first "
+        + "event is published at once. Set 0 to publish one event each time the datastream gets observations.")
+    public int batchEventWindowMs = 1000;
+
     @DisplayInfo(label="Broker Address", desc="Broker host and port (MQTT over TCP) to advertise in the AsyncAPI description, "
         + "as in 'broker.example.org:1883'. Leave empty to use the HTTP host and port 1883, the port of the bundled "
         + "HiveMQ config. Set it if the node's HiveMQ config uses another port.")
