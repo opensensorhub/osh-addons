@@ -8,6 +8,7 @@ The work is not complete. See [Status](#status) and [Known limits](#known-limits
 
 - You subscribe to a topic to get live data. Examples are observations and command status.
 - You subscribe to a Resource Event topic to know when a system, subsystem, datastream or control stream is created, updated or deleted.
+- You subscribe to a Batch Resource Event topic to know how many observations a datastream got in each time window.
 - You publish to a topic to create a resource. Examples are a system, an observation or a command.
 - Each publication is one create operation. MQTT cannot update or delete resources.
 - The CS API checks each request. The same users and permissions apply as for HTTP.
@@ -25,6 +26,8 @@ Configuration:
 - `nodeId`: the first level of every topic. The default is `api`.
   - Use one topic level only. Do not use `/`, `+`, `#` or NUL. Do not start it with `$`.
   - Give each CS API server on the same broker a different `nodeId`.
+- `batchEventWindowMs`: the time window of the Batch Resource Events, in milliseconds. The default is `1000`.
+  Each datastream gets at most one event in each window. Set `0` to publish one event each time a datastream gets observations.
 - `brokerAddress`: the broker host and port (MQTT over TCP) in the AsyncAPI description, for example `broker.example.org:1883`.
   If it is empty, the service uses the HTTP host and port 1883. Port 1883 is the port of the bundled HiveMQ config. Set this value if the node's HiveMQ config uses another port.
 - `webSocketAddress`: the broker address for MQTT over WebSocket in the AsyncAPI description, for example `broker.example.org:8083/mqtt` or `wss://broker.example.org/mqtt`.
@@ -73,6 +76,10 @@ Supported Resource Event topics (no `:data`):
 - `{nodeId}/{systemPath}/datastreams/{id}`
 - `{nodeId}/{systemPath}/controlstreams/{id}`
 
+Supported Batch Resource Event topics (no `:data`):
+
+- `{nodeId}/{systemPath}/datastreams/{id}/observations`
+
 The service rejects all other topics.
 
 ## Resource Events
@@ -102,6 +109,34 @@ payload  {"specversion": "1.0",
 - Events have no `data` member. Get the resource over HTTP.
 
 You can subscribe only to a resource that exists and that you can read. The service rejects publications on Resource Event topics.
+
+## Batch Resource Events
+
+A datastream can get many observations each second. The service does not send one event for each observation.
+It sends one Batch Resource Event with the number of new observations in a time window.
+
+```
+topic    node1/systems/134/datastreams/42/observations
+payload  {"specversion": "1.0",
+          "id": "0b5c2f4e-5d0e-4d8e-9f43-2b1f0f6f7a10",
+          "type": "org.ogc.api.csapi.observation.create",
+          "source": "http://localhost:8181/sensorhub/api",
+          "subject": "http://localhost:8181/sensorhub/api/datastreams/42/observations",
+          "time": "2026-11-05T18:00:01.002Z",
+          "resourceparent": "http://localhost:8181/sensorhub/api/datastreams/42",
+          "datacontenttype": "application/json",
+          "data": {"timerange": ["2026-11-05T18:00:00.034Z", "2026-11-05T18:00:00.967Z"],
+                   "count": 29}}
+```
+
+- Each datastream gets at most one event in each window (`batchEventWindowMs`).
+- After a quiet window, the service sends the first event at once. It sends the next events at the end of the window.
+- A window with no new observations sends no event.
+- `subject` is the HTTP URL of the observations of the datastream. `resourceparent` is the HTTP URL of the datastream.
+- `data.timerange` gives the times of the first and last observation event in the batch. `data.count` is the number of observations.
+- Get the observations over HTTP, for example `GET {subject}?resultTime=...`, or subscribe to the `:data` topic.
+
+You can subscribe only to a datastream that exists and that you can read. The service rejects publications on Batch Resource Event topics.
 
 ## Formats
 
@@ -181,11 +216,12 @@ Done:
 - Format subtopics (`:data/{format}`)
 - Resource Events for systems, subsystems, datastreams and control streams
 - AsyncAPI service description at `{apiRoot}/asyncapi/mqtt`
+- Batch Resource Events for observations
 
 Not done yet:
 
 - Resource Events for other resources, for example observations, commands and system events
-- Batch Resource Events
+- Batch Resource Events for commands, command status, command results and system events
 - Wildcard subscriptions (`+`, `#`)
 - MQTT 5 Content Type
 - A link to the AsyncAPI description from the CS API landing page
@@ -199,6 +235,9 @@ Not done yet:
 - Enabling or disabling a system, datastream or control stream sends no event.
 - Events have no MQTT 5 Content Type. The payload is `application/cloudevents+json`.
 - The service sends events for all systems on the node. If the CS API shows only some resources, clients can subscribe only to those.
+- The service sends Batch Resource Events for each datastream that gets observations, also when no client subscribes.
+- When the service stops, observations that are not yet in an event are not sent.
+- Topics `.../observations/{id}` are rejected. There are no events for one observation.
 - The service checks the topic shape only. The CS API does not check that each ID in the path belongs to the resource before it. For example, a command sent under the wrong system path still runs.
 - A subscription to the status of one command gets the status of all commands on that control stream.
 - Publications to `status:data` and `result:data` are rejected. The CS API accepts them only at `/controlstreams/{id}/status` over HTTP.

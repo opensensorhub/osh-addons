@@ -35,6 +35,7 @@ public class ConSysApiMqttService extends AbstractMqttServiceModule<ConSysApiMqt
 {
     protected volatile ConSysApiMqttConnector mqttConnector;
     protected volatile ResourceEventPublisher eventPublisher;
+    protected volatile BatchEventPublisher batchPublisher;
 
 
     @Override
@@ -50,6 +51,9 @@ public class ConSysApiMqttService extends AbstractMqttServiceModule<ConSysApiMqt
         {
             throw new SensorHubException("Invalid configuration: " + e.getMessage());
         }
+
+        if (config.batchEventWindowMs < 0)
+            throw new SensorHubException("Invalid configuration: batchEventWindowMs must not be negative");
     }
 
 
@@ -80,6 +84,13 @@ public class ConSysApiMqttService extends AbstractMqttServiceModule<ConSysApiMqt
                         ResourceEventPublisher.lookup(systems), hub.getIdEncoders(), getLogger());
                     eventPublisher.start(hub.getEventBus());
 
+                    // Batch Resource Events of the observations of each datastream
+                    var dataStreams = hub.getDatabaseRegistry().getFederatedDatabase().getDataStreamStore();
+                    batchPublisher = new BatchEventPublisher(mqttServer, topics.getPrefix(), service.getPublicEndpointUrl(),
+                        eventPublisher::systemPath, BatchEventPublisher.lookup(dataStreams), hub.getIdEncoders(),
+                        config.batchEventWindowMs, getLogger());
+                    batchPublisher.start(hub.getEventBus(), dataStreams);
+
                     // AsyncAPI service description at {apiRoot}/asyncapi/mqtt
                     var version = new ConSysApiMqttServiceDescriptor().getModuleVersion();
                     servlet.getRootHandler().addSubResource(new AsyncApiHandler(version, () -> config,
@@ -105,6 +116,12 @@ public class ConSysApiMqttService extends AbstractMqttServiceModule<ConSysApiMqt
         {
             eventPublisher.stop();
             eventPublisher = null;
+        }
+
+        if (batchPublisher != null)
+        {
+            batchPublisher.stop();
+            batchPublisher = null;
         }
 
         // stop MQTT extension

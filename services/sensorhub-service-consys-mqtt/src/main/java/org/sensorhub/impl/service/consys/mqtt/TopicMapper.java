@@ -39,7 +39,10 @@ import org.sensorhub.impl.service.consys.resource.ResourceFormat;
  * {@code :data/{format}} selects another one by its format token.
  * Resource Event topics have no {@code :data}, for example
  * {@code node1/systems/134/datastreams/12}. They are accepted for
- * systems, subsystems, datastreams and control streams. The topic shape
+ * systems, subsystems, datastreams and control streams. The Batch Resource
+ * Event topic of the observations of a datastream also has no
+ * {@code :data}: {@code node1/systems/134/datastreams/12/observations}.
+ * The topic shape
  * is checked here; that each ID belongs to its parent, and that the
  * resource offers the format, is left to the CS API. Wildcard topic
  * filters are rejected until they are supported.
@@ -62,6 +65,11 @@ final class TopicMapper
     static final Pattern EVENT_PATH = Pattern.compile(
         "systems/[^/:]+(/subsystems/[^/:]+)*(/(datastreams|controlstreams)/[^/:]+)?");
 
+    // Batch Resource Event topic of the observations of one datastream
+    static final Pattern BATCH_PATH = Pattern.compile(
+        "systems/[^/:]+(/subsystems/[^/:]+)*/datastreams/[^/:]+/observations");
+    static final String BATCH_SUFFIX = "/observations";
+
     // formats that the CS API offers without custom formats
     static final List<String> STANDARD_FORMATS = List.of(
         ResourceFormat.JSON.getMimeType(),
@@ -76,7 +84,9 @@ final class TopicMapper
 
     /**
      * A topic mapped to a CS API resource. {@code format} is null for the
-     * default. {@code event} is true for a Resource Event topic.
+     * default. {@code event} is true for a Resource Event or Batch Resource
+     * Event topic. For a Batch Resource Event topic, {@code uri} is the
+     * datastream, which a subscriber must be able to read.
      */
     record ResourceTopic(URI uri, String format, boolean event) {}
 
@@ -185,11 +195,13 @@ final class TopicMapper
         if (path.indexOf('+') >= 0 || path.indexOf('#') >= 0)
             throw new InvalidTopicException("Wildcard topic filters are not supported");
 
-        // a topic without ':data' is a Resource Event topic
+        // a topic without ':data' is a Resource Event or Batch Resource Event topic
         var marker = path.lastIndexOf(DATA_MARKER);
         if (marker < 0)
         {
-            if (!EVENT_PATH.matcher(path).matches())
+            if (BATCH_PATH.matcher(path).matches())
+                path = path.substring(0, path.length() - BATCH_SUFFIX.length());
+            else if (!EVENT_PATH.matcher(path).matches())
                 throw new InvalidTopicException("Not a Resource Data or Resource Event topic: " + topic);
             return new ResourceTopic(toUri(topic, path, null), null, true);
         }

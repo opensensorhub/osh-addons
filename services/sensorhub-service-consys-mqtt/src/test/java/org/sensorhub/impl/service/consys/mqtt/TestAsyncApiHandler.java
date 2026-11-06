@@ -43,6 +43,13 @@ public class TestAsyncApiHandler
         assertTrue(doc.contains("contentType: application/cloudevents+json"));
         for (var type: new String[] {"system", "datastream", "controlstream"})
             assertTrue(doc.contains("org.ogc.api.csapi." + type + ".create, org.ogc.api.csapi." + type + ".update, org.ogc.api.csapi." + type + ".delete"));
+
+        // Batch Resource Events of observations, with the configured window
+        assertTrue(doc.contains("address: 'node1/systems/{systemId}/datastreams/{dataStreamId}/observations'"));
+        assertTrue(doc.contains("enum: [org.ogc.api.csapi.observation.create]"));
+        assertTrue(doc.contains("window of 1000 ms"));
+        config.batchEventWindowMs = 250;
+        assertTrue(handler.render(mapper, API_ROOT).contains("window of 250 ms"));
     }
 
 
