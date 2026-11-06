@@ -138,7 +138,8 @@ class AsyncApiHandler implements IResourceHandler
             .replace("${version}", version)
             .replace("${servers}", servers(apiRoot))
             .replace("${formatEnum}", String.join(", ", mapper.formats.keySet()))
-            .replace("${formatList}", formatList);
+            .replace("${formatList}", formatList)
+            .replace("${batchWindowMs}", Long.toString(config.get().batchEventWindowMs));
     }
 
 
