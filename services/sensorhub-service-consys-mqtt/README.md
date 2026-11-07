@@ -9,6 +9,7 @@ The work is not complete. See [Status](#status) and [Known limits](#known-limits
 - You subscribe to a topic to get live data. Examples are observations and command status.
 - You subscribe to a Resource Event topic to know when a system, subsystem, datastream or control stream is created, updated or deleted.
 - You subscribe to a Batch Resource Event topic to know how many observations a datastream got in each time window.
+- You subscribe with wildcards (`+`, `#`) to get the events of many resources, also of resources that are created later.
 - You publish to a topic to create a resource. Examples are a system, an observation or a command.
 - Each publication is one create operation. MQTT cannot update or delete resources.
 - The CS API checks each request. The same users and permissions apply as for HTTP.
@@ -18,7 +19,7 @@ The work is not complete. See [Status](#status) and [Known limits](#known-limits
 You need these modules on the node:
 
 - Connected Systems API Service
-- MQTT Server (`sensorhub-service-mqtt-hivemq`)
+- MQTT Server (`sensorhub-service-mqtt-hivemq` 0.2.0 or later for wildcard subscriptions)
 - Connected Systems API MQTT Service (this module)
 
 Configuration:
@@ -80,7 +81,7 @@ Supported Batch Resource Event topics (no `:data`):
 
 - `{nodeId}/{systemPath}/datastreams/{id}/observations`
 
-The service rejects all other topics.
+The service rejects all other topics. Wildcard topic filters are accepted on Resource Event and Batch Resource Event topics only. See [Wildcard subscriptions](#wildcard-subscriptions).
 
 ## Resource Events
 
@@ -108,7 +109,8 @@ payload  {"specversion": "1.0",
 - `id` is different for each event.
 - Events have no `data` member. Get the resource over HTTP.
 
-You can subscribe only to a resource that exists and that you can read. The service rejects publications on Resource Event topics.
+With an exact topic, you can subscribe only to a resource that exists and that you can read.
+To get the `create` events of new resources, use a wildcard filter. The service rejects publications on Resource Event topics.
 
 ## Batch Resource Events
 
@@ -137,6 +139,38 @@ payload  {"specversion": "1.0",
 - Get the observations over HTTP, for example `GET {subject}?resultTime=...`, or subscribe to the `:data` topic.
 
 You can subscribe only to a datastream that exists and that you can read. The service rejects publications on Batch Resource Event topics.
+
+## Wildcard subscriptions
+
+You can use `+` and `#` in a topic filter to get the events of many resources.
+The filter also gets the events of resources that are created later.
+
+```
+node1/systems/+                              events of all top-level systems
+node1/systems/134/datastreams/+              events of the datastreams of system 134
+node1/systems/+/datastreams/+/observations   Batch Resource Events of the datastreams of all top-level systems
+node1/systems/134/#                          all events of system 134 and of the resources below it
+```
+
+- Wildcards are accepted on Resource Event and Batch Resource Event topics only.
+- A filter with `:data` is rejected. Subscribe to each Resource Data topic exactly.
+- A filter that ends with `#` also matches `:data` topics. The service does not send Resource Data through wildcard subscriptions.
+- A filter that cannot match an event topic is rejected, for example `node1/systems/134/+` or `node1/deployments/+`.
+- MQTT cannot select one resource type at all subsystem levels. Use `#`, and select the events by topic or by CloudEvents `type`.
+
+Access:
+
+- When you subscribe, you must be able to read the resource before the first wildcard, for example system 134 in `node1/systems/134/#`.
+  If the filter has no resource before the first wildcard, you must be able to list systems.
+- The service checks each message. You get an event only if you can read its resource over HTTP.
+  For a deleted resource, you must have the permission to read it, directly or from a system above it.
+- The service keeps each access decision for 10 seconds. A permission change applies to wildcard subscriptions after 10 seconds or less.
+
+Broker:
+
+- The broker must allow wildcards. The bundled HiveMQ config allows them.
+- At start, the MQTT Server replaces an unchanged earlier default config in its config folder with the new one.
+- If you changed the config, the MQTT Server keeps it and logs a warning. Set `<wildcard-subscriptions><enabled>true</enabled>` in it.
 
 ## Formats
 
@@ -217,19 +251,24 @@ Done:
 - Resource Events for systems, subsystems, datastreams and control streams
 - AsyncAPI service description at `{apiRoot}/asyncapi/mqtt`
 - Batch Resource Events for observations
+- Wildcard subscriptions (`+`, `#`) on Resource Event and Batch Resource Event topics
 
 Not done yet:
 
 - Resource Events for other resources, for example observations, commands and system events
 - Batch Resource Events for commands, command status, command results and system events
-- Wildcard subscriptions (`+`, `#`)
+- Wildcard subscriptions on Resource Data topics
 - MQTT 5 Content Type
 - A link to the AsyncAPI description from the CS API landing page
 
 ## Known limits
 
-- The service rejects topics with `+` or `#`.
-- Without wildcards, you cannot get the `create` event of a new resource. You can subscribe only to a resource that exists.
+- Wildcard filters with `:data` are rejected. Wildcard subscriptions get no Resource Data.
+- `{nodeId}/systems/{id}` carries the events of top-level systems only. A subscription to `{nodeId}/systems/{subsystemId}` is accepted, but gets no events. Use the full `{systemPath}`.
+- For a deleted resource, a wildcard subscription checks the permission only. If the CS API hides the resource (`exposedResources`), a user with the permission still gets its `delete` event.
+- Access decisions for wildcard subscriptions are kept for 10 seconds.
+- A filter that ends with `#` also matches the `:data` topics that other clients subscribe to. Each of these messages is checked, then not sent. With high-rate data (for example video), many `#` subscriptions add load.
+- Exact subscriptions are checked when you subscribe only. A later permission change does not stop them.
 - An update of a system sends an event only if it adds a new version (a later `validTime`). An update in place sends no event. This is an osh-core limit.
 - When you delete a system, osh-core deletes its datastreams and control streams with it. These send no events. Its subsystems send events.
 - Enabling or disabling a system, datastream or control stream sends no event.
