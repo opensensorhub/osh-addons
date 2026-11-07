@@ -24,6 +24,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import org.sensorhub.api.ISensorHub;
 import org.sensorhub.api.comm.mqtt.IMqttServer;
+import org.sensorhub.api.comm.mqtt.InvalidTopicException;
 import org.sensorhub.api.comm.mqtt.MqttException;
 import org.sensorhub.api.module.ModuleEvent.ModuleState;
 import org.sensorhub.api.service.IHttpServer;
@@ -91,6 +92,7 @@ public class OshExtension implements ExtensionMain, EmbeddedExtension, IMqttServ
         // set client initializer to handle UNSUBSCRIBE and prevent direct PUBLISH
         var unsubHandler = new OshUnsubscribeHandler(this);
         var publishHandler = new OshPublishHandler(this);
+        var deliveryFilter = new OshDeliveryFilter(this);
         Services.initializerRegistry().setClientInitializer(new ClientInitializer() {
             @Override
             public void initialize(InitializerInput initializerInput, ClientContext clientContext)
@@ -98,6 +100,7 @@ public class OshExtension implements ExtensionMain, EmbeddedExtension, IMqttServ
                 // add interceptors to the context of the connecting client
                 clientContext.addUnsubscribeInboundInterceptor(unsubHandler);
                 clientContext.addPublishInboundInterceptor(publishHandler);
+                clientContext.addPublishOutboundInterceptor(deliveryFilter);
             }
         });
 
@@ -197,6 +200,10 @@ public class OshExtension implements ExtensionMain, EmbeddedExtension, IMqttServ
         var handler = handlers.get(topic);
         if (handler != null)
         {
+            // only handlers that check each message can take wildcard filters
+            if (isFilter(topic) && !handler.supportsWildcards())
+                throw new InvalidTopicException("Wildcard topic filters are not supported on this topic");
+
             var topics = clientTopics.computeIfAbsent(clientId, k -> ConcurrentHashMap.newKeySet());
             if (!topics.contains(topic))
             {
@@ -238,6 +245,45 @@ public class OshExtension implements ExtensionMain, EmbeddedExtension, IMqttServ
         }
         
         return false;
+    }
+
+
+    static boolean isFilter(String topic)
+    {
+        return topic.indexOf('+') >= 0 || topic.indexOf('#') >= 0;
+    }
+    
+    
+    /**
+     * @return true if the client subscribed to this exact topic. Its handler
+     * checked the subscription, so its messages can be sent without a new check.
+     */
+    boolean isExactSubscription(String clientId, String topic)
+    {
+        var topics = clientTopics.get(clientId);
+        return topics != null && topics.contains(topic);
+    }
+
+
+    /**
+     * Check a message that a client gets only through a wildcard topic filter
+     * @return true if the handler of the topic allows it, false otherwise
+     */
+    boolean canDeliverToWildcard(String userId, String clientId, String topic)
+    {
+        var handler = handlers.get(topic);
+        if (handler == null)
+            return false;
+
+        try
+        {
+            return handler.canDeliver(userId, topic);
+        }
+        catch (RuntimeException e)
+        {
+            log.error("Cannot check delivery of {} to client {}", topic, clientId, e);
+            return false;
+        }
     }
 
 
