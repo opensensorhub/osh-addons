@@ -27,6 +27,7 @@ import org.sensorhub.api.comm.mqtt.IMqttServer;
 import org.sensorhub.api.comm.mqtt.InvalidTopicException;
 import org.sensorhub.api.comm.mqtt.MqttException;
 import org.sensorhub.api.module.ModuleEvent.ModuleState;
+import org.sensorhub.api.security.ISecurityManager;
 import org.sensorhub.api.service.IHttpServer;
 import org.sensorhub.utils.MapWithWildcards;
 import org.slf4j.Logger;
@@ -63,6 +64,7 @@ public class OshExtension implements ExtensionMain, EmbeddedExtension, IMqttServ
     MqttServer service;
     MapWithWildcards<IMqttHandler> handlers = new MapWithWildcards<>();
     Map<String, Set<String>> clientTopics = new ConcurrentHashMap<>();
+    Map<String, String> clientUsers = new ConcurrentHashMap<>();
     volatile WebSocketProxyServlet webSocketProxy;
     Logger log;
     
@@ -129,6 +131,7 @@ public class OshExtension implements ExtensionMain, EmbeddedExtension, IMqttServ
                         var clientId = disconnectEventInput.getClientInformation().getClientId();
                         log.debug("Client {} disconnected", clientId);
                         
+                        clientUsers.remove(clientId);
                         var topicList = clientTopics.remove(clientId);
                         if (topicList != null)
                         {
@@ -217,6 +220,9 @@ public class OshExtension implements ExtensionMain, EmbeddedExtension, IMqttServ
                 // a parallel subscribe to the same topic was recorded first
                 if (!topics.add(topic))
                     handler.onUnsubscribe(userId, topic, this);
+
+                // keep the user to subscribe again if the handler restarts
+                clientUsers.put(clientId, userId);
             }
             
             return true;
@@ -310,6 +316,64 @@ public class OshExtension implements ExtensionMain, EmbeddedExtension, IMqttServ
     public void registerHandler(String topicPrefix, IMqttHandler handler)
     {
         handlers.put(topicPrefix + "*", handler);
+        restoreSubscriptions(handler);
+    }
+
+
+    /**
+     * Give a new handler the subscriptions that clients made before it was
+     * registered. HiveMQ keeps them when a handler module restarts, but the
+     * handler only learns about a topic through onSubscribe().
+     */
+    void restoreSubscriptions(IMqttHandler handler)
+    {
+        int restored = 0, dropped = 0;
+
+        for (var entry: clientTopics.entrySet())
+        {
+            var clientId = entry.getKey();
+            var topics = entry.getValue();
+            var userId = clientUsers.getOrDefault(clientId, ISecurityManager.ANONYMOUS_USER);
+
+            for (var topic: topics)
+            {
+                if (handlers.get(topic) != handler)
+                    continue;
+
+                try
+                {
+                    // same check as a new SUBSCRIBE
+                    if (isFilter(topic) && !handler.supportsWildcards())
+                        throw new InvalidTopicException("Wildcard topic filters are not supported on this topic");
+
+                    handler.onSubscribe(userId, topic, this);
+                    restored++;
+                    log.debug("Restored subscription of {} to {}", clientId, topic);
+                }
+                catch (Exception e)
+                {
+                    // for example, the resource is gone or the user lost the permission
+                    log.debug("Cannot restore subscription of {} to {}: {}", clientId, topic, e.getMessage());
+                    topics.remove(topic);
+                    removeBrokerSubscription(clientId, topic);
+                    dropped++;
+                }
+            }
+        }
+
+        if (restored + dropped > 0)
+            log.info("Restored {} client subscription(s) for {}, removed {}", restored, handler.getClass().getSimpleName(), dropped);
+    }
+
+
+    /** Remove a subscription from the client in HiveMQ */
+    void removeBrokerSubscription(String clientId, String topic)
+    {
+        Services.subscriptionStore().removeSubscription(clientId, topic)
+            .exceptionally(e -> {
+                log.warn("Cannot remove subscription of {} to {}", clientId, topic, e);
+                return null;
+            });
     }
 
 
