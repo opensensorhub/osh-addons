@@ -217,6 +217,24 @@ public class TestOshExtension
     }
 
 
+    @Test
+    public void testRestoreRemovesFilterIfNewHandlerHasNoWildcards() throws Exception
+    {
+        assertTrue(ext.subscribeToTopic("user", "client1", TOPIC));
+        assertTrue(ext.subscribeToTopic("user", "client1", "api/systems/+"));
+
+        ext.unregisterHandler("api/", handler);
+        var restarted = new CountingHandler();
+        restarted.wildcards = false;
+        ext.registerHandler("api/", restarted);
+
+        assertEquals(1, restarted.subscribes);
+        assertTrue(ext.clientTopics.get("client1").contains(TOPIC));
+        assertFalse(ext.clientTopics.get("client1").contains("api/systems/+"));
+        assertEquals(List.of("client1 api/systems/+"), removedFromBroker);
+    }
+
+
     static class CountingHandler implements IMqttHandler
     {
         volatile boolean allow = true;
