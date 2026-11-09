@@ -7,6 +7,8 @@ info:
     MQTT binding of the OSH Connected Systems (CS) API, module
     `sensorhub-service-csapi-mqtt`. It follows the MQTT binding of
     OGC API - Connected Systems Part 3 (draft). The work is not complete.
+    The legacy topics, under the CS API HTTP endpoint, are in the module
+    `sensorhub-service-consys-mqtt`.
 
     CS API HTTP server: ${apiRoot}
 

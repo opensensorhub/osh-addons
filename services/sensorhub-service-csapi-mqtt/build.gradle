@@ -1,6 +1,6 @@
-description = 'Connected Systems API MQTT Extension'
-ext.details = 'MQTT Extension for OGC API Connected Systems'
-version = '3.0.0'
+description = 'Connected Systems API Part 3 MQTT Service'
+ext.details = 'MQTT binding of OGC API Connected Systems Part 3'
+version = '0.1.0'
 
 
 dependencies {
