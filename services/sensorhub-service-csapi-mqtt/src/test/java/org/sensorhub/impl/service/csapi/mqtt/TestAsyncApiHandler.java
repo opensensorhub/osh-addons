@@ -12,7 +12,7 @@ Copyright (C) 2026 GeoRobotix Innovative Research. All Rights Reserved.
 
 ******************************* END LICENSE BLOCK ***************************/
 
-package org.sensorhub.impl.service.consys.mqtt;
+package org.sensorhub.impl.service.csapi.mqtt;
 
 import static org.junit.Assert.*;
 import org.junit.Test;
@@ -22,8 +22,8 @@ public class TestAsyncApiHandler
 {
     static final String API_ROOT = "http://host.example:8181/sensorhub/api";
     final TopicMapper mapper = new TopicMapper("node1", TopicMapper.STANDARD_FORMATS);
-    final ConSysApiMqttServiceConfig config = new ConSysApiMqttServiceConfig();
-    final AsyncApiHandler handler = new AsyncApiHandler("3.0.0", () -> config, () -> mapper);
+    final CsApiMqttServiceConfig config = new CsApiMqttServiceConfig();
+    final AsyncApiHandler handler = new AsyncApiHandler("0.1.0", () -> config, () -> mapper);
 
 
     @Test
@@ -32,7 +32,7 @@ public class TestAsyncApiHandler
         var doc = handler.render(mapper, API_ROOT);
 
         assertFalse("unfilled placeholder", doc.contains("${"));
-        assertTrue(doc.contains("version: 3.0.0"));
+        assertTrue(doc.contains("version: 0.1.0"));
         assertTrue(doc.contains("address: 'node1/systems/{systemId}/datastreams/{dataStreamId}/observations:data/{format}'"));
         assertTrue(doc.contains("href: 'http://host.example:8181/sensorhub/api/datastreams'"));
         assertTrue(doc.contains("enum: [geo-json, json, om-json, sml-json, sml-xml, swe-binary, swe-csv, swe-json, swe-xml]"));

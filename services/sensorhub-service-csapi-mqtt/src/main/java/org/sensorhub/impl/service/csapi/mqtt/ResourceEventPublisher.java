@@ -12,7 +12,7 @@ Copyright (C) 2026 GeoRobotix Innovative Research. All Rights Reserved.
 
 ******************************* END LICENSE BLOCK ***************************/
 
-package org.sensorhub.impl.service.consys.mqtt;
+package org.sensorhub.impl.service.csapi.mqtt;
 
 import java.io.IOException;
 import java.io.StringWriter;
