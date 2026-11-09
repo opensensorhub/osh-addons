@@ -12,7 +12,7 @@ Copyright (C) 2026 GeoRobotix Innovative Research. All Rights Reserved.
 
 ******************************* END LICENSE BLOCK ***************************/
 
-package org.sensorhub.impl.service.consys.mqtt;
+package org.sensorhub.impl.service.csapi.mqtt;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -54,7 +54,7 @@ class AsyncApiHandler implements IResourceHandler
     final String template;
     final String htmlTemplate;
     final String version;
-    final Supplier<ConSysApiMqttServiceConfig> config;
+    final Supplier<CsApiMqttServiceConfig> config;
     final Supplier<TopicMapper> topics;
 
 
@@ -63,7 +63,7 @@ class AsyncApiHandler implements IResourceHandler
      * @param config the module config, read for each request
      * @param topics the active topic mapper, or null when the service is stopped
      */
-    AsyncApiHandler(String version, Supplier<ConSysApiMqttServiceConfig> config, Supplier<TopicMapper> topics)
+    AsyncApiHandler(String version, Supplier<CsApiMqttServiceConfig> config, Supplier<TopicMapper> topics)
     {
         this.template = readResource(TEMPLATE);
         this.htmlTemplate = readResource(HTML_TEMPLATE);

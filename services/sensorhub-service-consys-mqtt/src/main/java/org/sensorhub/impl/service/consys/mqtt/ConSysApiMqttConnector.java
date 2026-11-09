@@ -16,6 +16,8 @@ package org.sensorhub.impl.service.consys.mqtt;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.ByteBuffer;
 import java.security.AccessControlException;
 import java.util.Map;
@@ -50,7 +52,7 @@ import org.vast.util.Asserts;
 public class ConSysApiMqttConnector implements IMqttHandler
 {
     ConSysApiServlet servlet;
-    TopicMapper topics;
+    String endpoint;
     Map<String, MqttSubscriber> subscribers = new ConcurrentHashMap<>();
     
     
@@ -115,20 +117,16 @@ public class ConSysApiMqttConnector implements IMqttHandler
     }
     
     
-    public ConSysApiMqttConnector(ConSysApiServlet servlet, TopicMapper topics)
+    public ConSysApiMqttConnector(ConSysApiServlet servlet, String endpoint)
     {
         this.servlet = servlet;
-        this.topics = topics;
+        this.endpoint = endpoint;
     }
 
 
     @Override
     public void onSubscribe(String userID, String topic, IMqttServer server) throws InvalidTopicException
     {
-        // reject invalid topics before a subscriber is created
-        var resource = topics.parse(topic);
-        var accepted = false;
-
         try
         {
             // register new subscription if needed
@@ -141,16 +139,15 @@ public class ConSysApiMqttConnector implements IMqttHandler
             
             // always evaluate request because we need to check for permissions
             // even if subscriber was already created
-            var ctx = new RequestContext(servlet, resource.uri(), sub);
+            var ctx = getResourceContext(topic, sub);
             servlet.getSecurityHandler().setCurrentUser(userID);
             servlet.getRootHandler().doGet(ctx);
             
             // start stream if all went well
             sub.numSubscribers.incrementAndGet();
-            accepted = true;
             sub.maybeStart();
         }
-        catch (SecurityException e)
+        catch (SecurityException | InvalidTopicException e)
         {
             throw e;
         }
@@ -158,35 +155,13 @@ public class ConSysApiMqttConnector implements IMqttHandler
         {
             throw new InvalidTopicException(e.getMessage());
         }
-        catch (UnsupportedOperationException e)
-        {
-            // some resources cannot be streamed yet (for example command results)
-            throw new InvalidTopicException("Streaming not supported on this resource");
-        }
         catch (Exception e)
         {
-            // the CS API can wrap a request error, for example an unsupported format
-            for (var cause = e.getCause(); cause != null; cause = cause.getCause())
-            {
-                if (cause instanceof InvalidRequestException)
-                    throw new InvalidTopicException(cause.getMessage());
-            }
             throw new IllegalStateException("Internal error subscribing to topic " + topic, e);
         }
         finally
         {
             servlet.getSecurityHandler().clearCurrentUser();
-
-            // do not keep a subscriber that no client uses
-            if (!accepted)
-            {
-                subscribers.computeIfPresent(topic, (k, sub) -> {
-                    if (sub.numSubscribers.get() > 0)
-                        return sub;
-                    sub.close();
-                    return null;
-                });
-            }
         }
     }
     
@@ -214,10 +189,8 @@ public class ConSysApiMqttConnector implements IMqttHandler
     {
         try
         {
-            // the format subtopic selects the payload format, else detect it
-            var resource = topics.parse(topic);
-            var ctx = new RequestContext(servlet, resource.uri(), new ByteBufferInputStream(payload));
-            ctx.setRequestContentType(resource.format() != null ? resource.format() : ResourceFormat.AUTO.getMimeType());
+            var ctx = getResourceContext(topic, payload);
+            ctx.setRequestContentType(ResourceFormat.AUTO.getMimeType());
             
             if (correlData != null)
             {
@@ -244,13 +217,6 @@ public class ConSysApiMqttConnector implements IMqttHandler
         {
             handleInvalidRequestException(e);
         }
-        catch (NullPointerException e)
-        {
-            // Resource builders reject a missing required field with an NPE,
-            // for example a command without 'parameters'. Report it as a bad
-            // payload, not an internal error.
-            throw new InvalidPayloadException(e.getMessage());
-        }
         catch (Exception e)
         {
             throw new IllegalStateException("Internal error publishing to topic " + topic, e);
@@ -262,13 +228,47 @@ public class ConSysApiMqttConnector implements IMqttHandler
     }
     
     
+    private RequestContext getResourceContext(String topic, MqttSubscriber streamHandler) throws InvalidTopicException
+    {
+        return new RequestContext(
+            servlet,
+            getResourceUri(topic),
+            streamHandler);
+    }
+    
+    
+    private RequestContext getResourceContext(String topic, ByteBuffer payload) throws InvalidTopicException
+    {
+        return new RequestContext(
+            servlet,
+            getResourceUri(topic),
+            new ByteBufferInputStream(payload));
+    }
+    
+    
+    private URI getResourceUri(String topic) throws InvalidTopicException
+    {
+        try
+        {
+            // remove the base URL part
+            topic = topic.replaceFirst(endpoint, "");
+            
+            // parse URI (this also URL decodes the query string)
+            return new URI(topic);
+        }
+        catch (URISyntaxException e)
+        {
+            throw new InvalidTopicException("Invalid SWE API resource URI");
+        }        
+    }
+    
+    
     private void handleInvalidRequestException(InvalidRequestException e) throws MqttException, SecurityException
     {
         switch (e.getErrorCode())
         {
             case NOT_FOUND:
             case BAD_REQUEST:
-            case UNSUPPORTED_OPERATION: // topic is not writable
                 throw new InvalidTopicException(e.getMessage());
                 
             case BAD_PAYLOAD:

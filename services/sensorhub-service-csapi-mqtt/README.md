@@ -1,8 +1,11 @@
-# Connected Systems API MQTT Service
+# Connected Systems API Part 3 MQTT Service
 
 This module adds MQTT to the OSH Connected Systems (CS) API.
 It follows the MQTT binding in OGC CS API Part 3 (draft).
 The work is not complete. See [Status](#status) and [Known limits](#known-limits).
+
+The legacy MQTT topics stay in the module `sensorhub-service-consys-mqtt`.
+You can use the two modules on the same node. See [Legacy module](#legacy-module).
 
 ## What it does
 
@@ -17,7 +20,7 @@ You need these modules on the node:
 
 - Connected Systems API Service
 - MQTT Server (`sensorhub-service-mqtt-hivemq`)
-- Connected Systems API MQTT Service (this module)
+- Connected Systems API Part 3 MQTT Service (this module)
 
 Configuration:
 
@@ -170,15 +173,18 @@ Not done yet:
 - The AsyncAPI description lists WebSocket servers only when `webSocketAddress` is set.
 - The service cannot read the HiveMQ settings. The description states the delivery settings (QoS 1, retain false, sessions in memory) of the bundled HiveMQ config. Authentication is not stated.
 
-## Change in version 3.0.0
+## Legacy module
 
-This is a breaking change. Clients of version 2.x and earlier must change their topics.
-The module version was inherited from osh-core before (2.0.1). Now the module has its own version.
+This module was split from `sensorhub-service-consys-mqtt`. That module keeps the legacy topics and does not change.
+
+- Nodes that use the legacy topics keep `sensorhub-service-consys-mqtt`. Their config does not change.
+- To use the Part 3 topics, add this module. Its classes are in `org.sensorhub.impl.service.csapi.mqtt`.
+- You can use the two modules on the same node and broker. Legacy topics start with the HTTP endpoint (`/api/`). Part 3 topics start with `{nodeId}/` (`api/`).
 
 ### Topics
 
-Old topics used the HTTP endpoint of the CS API service (default `/api`) and the HTTP path.
-New topics use `{nodeId}`, the full `{systemPath}` and `:data`.
+Legacy topics use the HTTP endpoint of the CS API service (default `/api`) and the HTTP path.
+Part 3 topics use `{nodeId}`, the full `{systemPath}` and `:data`.
 
 - `/api/datastreams/{dsId}/observations`
   - becomes `{nodeId}/systems/{sysId}/datastreams/{dsId}/observations:data`
@@ -196,9 +202,9 @@ New topics use `{nodeId}`, the full `{systemPath}` and `:data`.
 To find `{sysId}` for a datastream or control stream, read `system@id` from the HTTP API, for example `GET /api/datastreams/{dsId}`.
 For a subsystem, use the full path: `systems/{sysId}/subsystems/{subId}/...`.
 
-### Steps
+### Move a client to Part 3 topics
 
-1. Set `nodeId` in the Connected Systems API MQTT Service config.
+1. Add this module to the node. Set `nodeId` in its config.
    - If you do not set it, the value is `api`. Topics then start with `api/` (no leading `/`).
    - Use a different `nodeId` for each node on a shared broker.
 2. Change each client topic. Use the list above.
@@ -206,9 +212,9 @@ For a subsystem, use the full path: `systems/{sysId}/subsystems/{subId}/...`.
 4. Check JSON commands. Put the fields in `parameters`.
 5. For command status, subscribe per command. You get the command ID from the HTTP API.
 
-### What stops working
+### What this module does not support
 
-- Topics that start with `/` or with the HTTP endpoint.
+- Topics that start with `/` or with the HTTP endpoint. Use `sensorhub-service-consys-mqtt` for these.
 - Query strings in topics. Filters such as `?resultTime=` are not available on MQTT.
 - Topics without `:data`. In a later version, these topics carry Resource Events.
 - The control stream status topic `/api/controlstreams/{csId}/status`. Use the per-command status topic.
