@@ -49,12 +49,14 @@ public abstract class AbstractMqttServiceModule<ConfigType extends ModuleConfig>
         if (mqttServer == null)
             throw new SensorHubException("MQTT server module is not loaded");
 
-        // subscribe to server lifecycle events
-        ((IModule<?>)mqttServer).registerListener(this);
-
+        // set the status first: if the MQTT server is already started,
+        // registerListener() starts this service and clears the status
         reportStatus("Waiting for MQTT server...");
+
+        // subscribe to server lifecycle events
         // we actually start in the handleEvent() method when
-        // a STARTED event is received from HTTP server
+        // a STARTED event is received from MQTT server
+        ((IModule<?>)mqttServer).registerListener(this);
     }
     
     
