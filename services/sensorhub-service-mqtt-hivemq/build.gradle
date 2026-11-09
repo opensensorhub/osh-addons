@@ -1,6 +1,6 @@
 description = 'MQTT Server (HiveMQ)'
 ext.details = 'Implementation of MQTT client/server API using HiveMQ'
-version = '0.1.1'
+version = '0.1.2'
 
 
 dependencies {
