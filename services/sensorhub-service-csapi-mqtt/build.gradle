@@ -1,0 +1,35 @@
+description = 'Connected Systems API Part 3 MQTT Service'
+ext.details = 'MQTT binding of OGC API Connected Systems Part 3'
+version = '0.1.0'
+
+
+dependencies {
+  implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
+  implementation 'org.sensorhub:sensorhub-service-consys:' + oshCoreVersion
+  implementation project(':sensorhub-comm-mqtt')
+}
+
+// put README.md next to the config class, for the Admin UI README tab
+processResources {
+  from('README.md') { into 'org/sensorhub/impl/service/csapi/mqtt' }
+}
+
+// add info to OSGI manifest
+osgi {
+  manifest {
+    attributes('Bundle-Vendor': 'Sensia Software LLC')
+    attributes('Bundle-Activator': 'org.sensorhub.impl.service.csapi.mqtt.Activator')
+  }
+}
+
+// add info to maven pom
+ext.pom >>= {
+  developers {
+    developer {
+      id 'alexrobin'
+      name 'Alex Robin'
+      organization 'Sensia Software LLC'
+      organizationUrl 'http://www.sensiasoftware.com'
+    }
+  }
+}
