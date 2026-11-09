@@ -342,6 +342,10 @@ public class OshExtension implements ExtensionMain, EmbeddedExtension, IMqttServ
 
                 try
                 {
+                    // same check as a new SUBSCRIBE
+                    if (isFilter(topic) && !handler.supportsWildcards())
+                        throw new InvalidTopicException("Wildcard topic filters are not supported on this topic");
+
                     handler.onSubscribe(userId, topic, this);
                     restored++;
                     log.debug("Restored subscription of {} to {}", clientId, topic);
