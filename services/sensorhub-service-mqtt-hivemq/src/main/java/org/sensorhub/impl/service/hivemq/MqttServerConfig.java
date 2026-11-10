@@ -42,4 +42,8 @@ public class MqttServerConfig extends ServiceConfig
     
     @DisplayInfo(label="Require Authentication", desc="Set to require remote users to be authentified before they can use this service")
     public boolean requireAuth = false;
+
+
+    @DisplayInfo(label="Token Login", desc="Settings to accept access tokens (for example from Keycloak) as the MQTT password")
+    public TokenAuthConfig tokenAuth = new TokenAuthConfig();
 }
