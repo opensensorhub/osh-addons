@@ -17,6 +17,7 @@ package org.sensorhub.impl.service.hivemq;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
+import java.time.Clock;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -50,6 +51,7 @@ import com.hivemq.extension.sdk.api.parameter.ExtensionStartInput;
 import com.hivemq.extension.sdk.api.parameter.ExtensionStartOutput;
 import com.hivemq.extension.sdk.api.parameter.ExtensionStopInput;
 import com.hivemq.extension.sdk.api.parameter.ExtensionStopOutput;
+import com.hivemq.extension.sdk.api.packets.disconnect.DisconnectReasonCode;
 import com.hivemq.extension.sdk.api.services.Services;
 import com.hivemq.extension.sdk.api.services.builder.Builders;
 import com.hivemq.extension.sdk.api.services.intializer.ClientInitializer;
@@ -66,6 +68,7 @@ public class OshExtension implements ExtensionMain, EmbeddedExtension, IMqttServ
     Map<String, Set<String>> clientTopics = new ConcurrentHashMap<>();
     Map<String, String> clientUsers = new ConcurrentHashMap<>();
     volatile WebSocketProxyServlet webSocketProxy;
+    volatile TokenExpiryMonitor tokenExpiryMonitor;
     Logger log;
     
     
@@ -80,7 +83,12 @@ public class OshExtension implements ExtensionMain, EmbeddedExtension, IMqttServ
     public void extensionStart(ExtensionStartInput extensionStartInput, ExtensionStartOutput extensionStartOutput)
     {
         // set authenticator to validate credentials on CONNECT
+        // token logins are disconnected when the token expires
+        tokenExpiryMonitor = new TokenExpiryMonitor(
+            (task, delayMs) -> Services.extensionExecutorService().schedule(task, delayMs, TimeUnit.MILLISECONDS),
+            this::disconnectExpiredClient, Clock.systemUTC(), log);
         var oshAuth = new OshAuthenticator(this);
+        oshAuth.expiryMonitor = tokenExpiryMonitor;
         Services.securityRegistry().setAuthenticatorProvider(authProviderInput -> {
             return oshAuth;
         });
@@ -131,6 +139,10 @@ public class OshExtension implements ExtensionMain, EmbeddedExtension, IMqttServ
                         var clientId = disconnectEventInput.getClientInformation().getClientId();
                         log.debug("Client {} disconnected", clientId);
                         
+                        // cancel the token expiry timer of this connection only
+                        tokenExpiryMonitor.onDisconnect(disconnectEventInput.getConnectionInformation()
+                            .getConnectionAttributeStore().getAsString(OshAuthenticator.TOKEN_CONN_PROP).orElse(null));
+                        
                         clientUsers.remove(clientId);
                         var topicList = clientTopics.remove(clientId);
                         if (topicList != null)
@@ -168,6 +180,19 @@ public class OshExtension implements ExtensionMain, EmbeddedExtension, IMqttServ
                 }
             }
         }
+    }
+    
+    
+    void disconnectExpiredClient(String clientId)
+    {
+        Services.clientService()
+            .disconnectClient(clientId, false, DisconnectReasonCode.NOT_AUTHORIZED, "The access token expired")
+            .whenComplete((found, e) -> {
+                if (e != null)
+                    log.error("Cannot disconnect client {} with an expired token", clientId, e);
+                else if (!Boolean.TRUE.equals(found))
+                    log.debug("Client {} with an expired token is not connected", clientId);
+            });
     }
     
     
@@ -296,6 +321,9 @@ public class OshExtension implements ExtensionMain, EmbeddedExtension, IMqttServ
     @Override
     public void extensionStop(ExtensionStopInput extensionStopInput, ExtensionStopOutput extensionStopOutput)
     {
+        if (tokenExpiryMonitor != null)
+            tokenExpiryMonitor.stop();
+        
         // stop websocket proxy if enabled
         if (webSocketProxy != null)
         {

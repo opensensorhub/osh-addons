@@ -16,6 +16,8 @@ package org.sensorhub.impl.service.hivemq;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.time.Instant;
+import java.util.UUID;
 import org.eclipse.jetty.util.security.Credential;
 import org.sensorhub.api.security.ISecurityManager;
 import org.slf4j.Logger;
@@ -31,12 +33,30 @@ import com.hivemq.extension.sdk.api.services.Services;
 public class OshAuthenticator implements SimpleAuthenticator
 {
     final static String MQTT_USER_PROP = "MQTT_USER";
+    final static String TOKEN_CONN_PROP = "TOKEN_CONN";
     final static int AUTH_TIMEOUT_MS = 5000;
     
     final ISecurityManager securityMgr;
     final MqttServerConfig config;
     final TokenVerifier tokenVerifier;
     final Logger log;
+    volatile TokenExpiryMonitor expiryMonitor;
+    
+    
+    /**
+     * The result of a successful login
+     */
+    static class Login
+    {
+        final String user;
+        final Instant tokenExpiry; // null if the login did not use a token
+        
+        Login(String user, Instant tokenExpiry)
+        {
+            this.user = user;
+            this.tokenExpiry = tokenExpiry;
+        }
+    }
     
     
     OshAuthenticator(OshExtension oshExt)
@@ -73,10 +93,21 @@ public class OshAuthenticator implements SimpleAuthenticator
                     .map(buf -> StandardCharsets.UTF_8.decode(buf).toString())
                     .orElse("");
                 
-                var mqttUser = authenticate(userID, pwd);
-                if (mqttUser != null)
+                var login = authenticate(userID, pwd);
+                if (login != null)
                 {
-                    authInput.getConnectionInformation().getConnectionAttributeStore().putAsString(MQTT_USER_PROP, mqttUser);
+                    var attrs = authInput.getConnectionInformation().getConnectionAttributeStore();
+                    attrs.putAsString(MQTT_USER_PROP, login.user);
+                    
+                    // close the connection when its token expires
+                    var monitor = expiryMonitor;
+                    if (login.tokenExpiry != null && monitor != null)
+                    {
+                        var connId = UUID.randomUUID().toString();
+                        attrs.putAsString(TOKEN_CONN_PROP, connId);
+                        monitor.onTokenLogin(connId, authInput.getClientInformation().getClientId(), login.tokenExpiry);
+                    }
+                    
                     authOutput.authenticateSuccessfully();
                 }
                 else
@@ -97,17 +128,18 @@ public class OshAuthenticator implements SimpleAuthenticator
 
     /**
      * Check the credentials of a CONNECT
-     * @return the OSH user of the connection, or null to refuse it
+     * @return the OSH user of the connection and the expiry time of its
+     * token if it has one, or null to refuse the connection
      */
-    String authenticate(String userID, String pwd)
+    Login authenticate(String userID, String pwd)
     {
         // an access token as the password: it must be valid, there is no fallback
         if (userID != null && tokenVerifier != null && TokenVerifier.isJwt(pwd))
         {
             try
             {
-                tokenVerifier.verify(pwd, userID);
-                return userID;
+                var token = tokenVerifier.verify(pwd, userID);
+                return new Login(userID, token.getExpiresAtAsInstant());
             }
             catch (JWTVerificationException | JwkException e)
             {
@@ -123,10 +155,10 @@ public class OshAuthenticator implements SimpleAuthenticator
 
         // check user exists and password matches
         if (userID != null && isAccessControlEnabled())
-            return checkPassword(userID, pwd.toCharArray()) ? userID : null;
+            return checkPassword(userID, pwd.toCharArray()) ? new Login(userID, null) : null;
 
         if (!config.requireAuth)
-            return ISecurityManager.ANONYMOUS_USER;
+            return new Login(ISecurityManager.ANONYMOUS_USER, null);
 
         return null;
     }
