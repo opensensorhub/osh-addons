@@ -24,3 +24,27 @@ A wildcard filter can match the topics of resources that the user cannot read. S
 - A handler accepts wildcard filters only if `IMqttHandler.supportsWildcards` returns true. Otherwise the server rejects them. The default is false.
 
 The check of a wildcard match runs outside the HiveMQ threads. Each message that matches a wildcard filter of a client adds one check for that client.
+
+
+### Token login
+
+Since version 0.3.0, a client can send an OAuth 2.0 access token (for example from Keycloak) as the MQTT password. Password login stays as it is.
+
+To turn it on, set these settings in the MQTT Server config (`tokenAuth`). The names are the same as in the bearer token settings of the OAuth module (`sensorhub-security-oauth`).
+
+- `jwksUri`: URL of the public keys of the issuer. Keycloak: `{realm URL}/protocol/openid-connect/certs`.
+- `issuer`: issuer that the token must have (`iss`). Keycloak: the realm URL. Required.
+- `audience`: audience that the token must have (`aud`). Leave it empty to skip this check.
+- `userIdField`: token claim that must be equal to the MQTT username. Default: `preferred_username`.
+- `cacheSize`, `cacheDuration`: number of public keys to keep, and time in minutes to keep them.
+
+The client sends:
+
+- Username: the value of the username claim. For a Keycloak service account, this is `service-account-<client ID>`.
+- Password: the access token.
+
+The server checks the signature, the issuer, the expiry (`exp` is required) and the audience if set. If the password is a token and one check fails, the server refuses the connection. It does not try the token as a password.
+
+If the server cannot get the public keys (the issuer is down, or it refuses too many requests), it refuses all token logins. Each refusal adds a warning to the log. Other refusals are logged at debug level only.
+
+The connection gets the username as its OSH user, also when OSH access control is off. With access control on, the user must also exist in OSH, or subscribe and publish are refused.
