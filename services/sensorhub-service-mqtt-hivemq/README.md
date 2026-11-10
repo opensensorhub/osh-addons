@@ -48,3 +48,21 @@ The server checks the signature, the issuer, the expiry (`exp` is required) and 
 If the server cannot get the public keys (the issuer is down, or it refuses too many requests), it refuses all token logins. Each refusal adds a warning to the log. Other refusals are logged at debug level only.
 
 The connection gets the username as its OSH user, also when OSH access control is off. With access control on, the user must also exist in OSH, or subscribe and publish are refused.
+
+#### Token expiry
+
+When the token of a connection expires, the server closes the connection. An MQTT 5 client gets a DISCONNECT with the reason code `Not authorized` (0x87). An MQTT 3.1.1 client sees only that the connection closes.
+
+To keep its data, the client must:
+
+1. Get a new token before the old token expires, for example at 80% of the token lifetime.
+2. Connect again with the new token.
+3. Subscribe again to all its topics.
+
+Known limits:
+
+- The client must subscribe again after each new connection, also when it uses a persistent session. The server reports that the session is present, but it sends no data until the client subscribes again.
+- The client cannot send a new token on an open connection (MQTT 5 re-authentication).
+- The server reads the expiry time when the client connects. If the user or the token is revoked at the issuer before that time, the connection stays open until the token expires.
+
+Connections that use a password or no credentials have no expiry.

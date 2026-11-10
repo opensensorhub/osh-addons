@@ -21,6 +21,7 @@ import java.security.KeyPairGenerator;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
@@ -74,7 +75,37 @@ public class TestOshAuthenticator
     }
 
 
-    OshAuthenticator authenticator(TokenAuthConfig tokenConfig, boolean requireAuth)
+    /* authenticator without a security manager: access control on, one user with a password */
+    class TestAuthenticator extends OshAuthenticator
+    {
+        TestAuthenticator(MqttServerConfig config, TokenVerifier verifier)
+        {
+            super(null, config, verifier, LoggerFactory.getLogger(TestOshAuthenticator.class));
+        }
+
+        @Override
+        boolean isAccessControlEnabled()
+        {
+            return true;
+        }
+
+        @Override
+        boolean checkPassword(String userID, char[] pwd)
+        {
+            passwordChecks.add(userID);
+            return PASSWORD.equals(new String(pwd));
+        }
+
+        /* the user of the login, or null if refused */
+        String user(String userID, String pwd)
+        {
+            var login = authenticate(userID, pwd);
+            return login != null ? login.user : null;
+        }
+    }
+
+
+    TestAuthenticator authenticator(TokenAuthConfig tokenConfig, boolean requireAuth)
     {
         JwkProvider realmJwks = kid -> {
             if (KID.equals(kid))
@@ -86,31 +117,16 @@ public class TestOshAuthenticator
     }
 
 
-    OshAuthenticator authenticator(TokenAuthConfig tokenConfig, boolean requireAuth, TokenVerifier verifier)
+    TestAuthenticator authenticator(TokenAuthConfig tokenConfig, boolean requireAuth, TokenVerifier verifier)
     {
         var config = new MqttServerConfig();
         config.requireAuth = requireAuth;
         config.tokenAuth = tokenConfig;
-
-        // no security manager: access control on, one user with a password
-        return new OshAuthenticator(null, config, verifier, LoggerFactory.getLogger(TestOshAuthenticator.class)) {
-            @Override
-            boolean isAccessControlEnabled()
-            {
-                return true;
-            }
-
-            @Override
-            boolean checkPassword(String userID, char[] pwd)
-            {
-                passwordChecks.add(userID);
-                return PASSWORD.equals(new String(pwd));
-            }
-        };
+        return new TestAuthenticator(config, verifier);
     }
 
 
-    OshAuthenticator authenticator()
+    TestAuthenticator authenticator()
     {
         return authenticator(tokenConfig(), true);
     }
@@ -161,8 +177,22 @@ public class TestOshAuthenticator
     @Test
     public void testValidToken()
     {
-        assertEquals("alice", authenticator().authenticate("alice", token("alice")));
+        assertEquals("alice", authenticator().user("alice", token("alice")));
         assertTrue(passwordChecks.isEmpty());
+    }
+
+
+    @Test
+    public void testLoginHasTokenExpiry()
+    {
+        var expiry = Instant.now().plusSeconds(300).truncatedTo(ChronoUnit.SECONDS);
+        var login = authenticator().authenticate("alice", token("alice", ISSUER, AUDIENCE, expiry, realmKeys));
+        assertEquals("alice", login.user);
+        assertEquals(expiry, login.tokenExpiry);
+
+        // no expiry for a password or an anonymous login
+        assertNull(authenticator().authenticate("alice", PASSWORD).tokenExpiry);
+        assertNull(authenticator(tokenConfig(), false).authenticate(null, "").tokenExpiry);
     }
 
 
@@ -170,7 +200,7 @@ public class TestOshAuthenticator
     public void testServiceAccount()
     {
         var user = "service-account-osh-client";
-        assertEquals(user, authenticator().authenticate(user, token(user)));
+        assertEquals(user, authenticator().user(user, token(user)));
     }
 
 
@@ -178,7 +208,7 @@ public class TestOshAuthenticator
     public void testExpiredToken()
     {
         var expired = token("alice", ISSUER, AUDIENCE, Instant.now().minusSeconds(60), realmKeys);
-        assertNull(authenticator().authenticate("alice", expired));
+        assertNull(authenticator().user("alice", expired));
     }
 
 
@@ -186,7 +216,7 @@ public class TestOshAuthenticator
     public void testTokenWithoutExpiry()
     {
         var noExpiry = token("alice", ISSUER, AUDIENCE, null, realmKeys);
-        assertNull(authenticator().authenticate("alice", noExpiry));
+        assertNull(authenticator().user("alice", noExpiry));
     }
 
 
@@ -194,7 +224,7 @@ public class TestOshAuthenticator
     public void testWrongIssuer()
     {
         var other = token("alice", "https://keycloak.example/realms/other", AUDIENCE, Instant.now().plusSeconds(300), realmKeys);
-        assertNull(authenticator().authenticate("alice", other));
+        assertNull(authenticator().user("alice", other));
     }
 
 
@@ -202,14 +232,14 @@ public class TestOshAuthenticator
     public void testBadSignature()
     {
         var forged = token("alice", ISSUER, AUDIENCE, Instant.now().plusSeconds(300), otherKeys);
-        assertNull(authenticator().authenticate("alice", forged));
+        assertNull(authenticator().user("alice", forged));
     }
 
 
     @Test
     public void testUsernameNotEqualToClaim()
     {
-        assertNull(authenticator().authenticate("bob", token("alice")));
+        assertNull(authenticator().user("bob", token("alice")));
     }
 
 
@@ -217,12 +247,12 @@ public class TestOshAuthenticator
     public void testAudience()
     {
         var otherAudience = token("alice", ISSUER, "other", Instant.now().plusSeconds(300), realmKeys);
-        assertNull(authenticator().authenticate("alice", otherAudience));
+        assertNull(authenticator().user("alice", otherAudience));
 
         // the audience check is optional
         var config = tokenConfig();
         config.audience = null;
-        assertEquals("alice", authenticator(config, true).authenticate("alice", otherAudience));
+        assertEquals("alice", authenticator(config, true).user("alice", otherAudience));
     }
 
 
@@ -236,14 +266,14 @@ public class TestOshAuthenticator
             .withClaim("preferred_username", "alice")
             .withExpiresAt(Instant.now().plusSeconds(300))
             .sign(Algorithm.RSA256((RSAPublicKey)realmKeys.getPublic(), (RSAPrivateKey)realmKeys.getPrivate()));
-        assertNull(authenticator().authenticate("alice", token));
+        assertNull(authenticator().user("alice", token));
     }
 
 
     @Test
     public void testRefusedTokenIsNotTriedAsPassword()
     {
-        assertNull(authenticator().authenticate("bob", token("alice")));
+        assertNull(authenticator().user("bob", token("alice")));
         assertTrue(passwordChecks.isEmpty());
     }
 
@@ -252,8 +282,8 @@ public class TestOshAuthenticator
     public void testPasswordLoginStillWorks()
     {
         var auth = authenticator();
-        assertEquals("alice", auth.authenticate("alice", PASSWORD));
-        assertNull(auth.authenticate("alice", "wrong"));
+        assertEquals("alice", auth.user("alice", PASSWORD));
+        assertNull(auth.user("alice", "wrong"));
         assertEquals(List.of("alice", "alice"), passwordChecks);
     }
 
@@ -263,7 +293,7 @@ public class TestOshAuthenticator
     {
         // without token settings, a token is checked as a password
         var auth = authenticator(new TokenAuthConfig(), true);
-        assertNull(auth.authenticate("alice", token("alice")));
+        assertNull(auth.user("alice", token("alice")));
         assertEquals(List.of("alice"), passwordChecks);
     }
 
@@ -271,8 +301,8 @@ public class TestOshAuthenticator
     @Test
     public void testAnonymousWhenAuthNotRequired()
     {
-        assertEquals(ISecurityManager.ANONYMOUS_USER, authenticator(tokenConfig(), false).authenticate(null, ""));
-        assertNull(authenticator(tokenConfig(), true).authenticate(null, ""));
+        assertEquals(ISecurityManager.ANONYMOUS_USER, authenticator(tokenConfig(), false).user(null, ""));
+        assertNull(authenticator(tokenConfig(), true).user(null, ""));
     }
 
 
@@ -326,7 +356,7 @@ public class TestOshAuthenticator
 
         // the login is refused, and not tried as a password
         var auth = authenticator(config, true, verifier);
-        assertNull(auth.authenticate("alice", token("alice")));
+        assertNull(auth.user("alice", token("alice")));
         assertTrue(passwordChecks.isEmpty());
     }
 
