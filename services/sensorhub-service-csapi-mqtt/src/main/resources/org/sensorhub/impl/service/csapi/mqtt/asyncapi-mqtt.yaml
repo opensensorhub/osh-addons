@@ -1,0 +1,386 @@
+asyncapi: 3.0.0
+id: urn:osh:csapi-mqtt:${nodeId}
+info:
+  title: OSH Connected Systems API - MQTT binding
+  version: ${version}
+  description: |-
+    MQTT binding of the OSH Connected Systems (CS) API, module
+    `sensorhub-service-csapi-mqtt`. It follows the MQTT binding of
+    OGC API - Connected Systems Part 3 (draft). The work is not complete.
+    The legacy topics, under the CS API HTTP endpoint, are in the module
+    `sensorhub-service-consys-mqtt`.
+
+    CS API HTTP server: ${apiRoot}
+
+    **What it does**
+
+    - Subscribe to a Resource Data topic to get live data.
+    - Publish to a Resource Data topic to create one resource. MQTT cannot
+      update or delete resources.
+    - The CS API checks each request. The same users and permissions apply
+      as for HTTP.
+
+    **Topics**
+
+    - Every topic starts with `${nodeId}/`.
+    - Data topics end with `:data` on the last collection name.
+    - `:data/{format}` selects a format. Plain `:data` uses the default format.
+    - This document lists topics for resources of a top-level system. For a
+      subsystem, insert `/subsystems/{id}` after `systems/{id}`, once for
+      each level, for example
+      `${nodeId}/systems/{id}/subsystems/{id}/datastreams/{id}/observations:data`.
+
+    **Format names**
+
+    ${formatList}
+
+    A format that the resource does not support is rejected. There is no
+    fallback to the default format.
+
+    **Not done yet**
+
+    - Resource Events (topics without `:data`) and CloudEvents messages.
+      These topics are rejected.
+    - Wildcard subscriptions (`+`, `#`). These topics are rejected.
+    - MQTT 5 Content Type. The server does not set it. Clients must use
+      the topic to know the format.
+    - Command result topics (`.../commands/{id}/result:data`).
+
+    **Delivery**
+
+    - The server publishes with QoS 1 and retain false.
+    - The broker keeps sessions in memory. Sessions do not survive a restart.
+    - There are no ordering or replay guarantees beyond MQTT. QoS does not
+      guarantee exactly-once creation of resources or commands.
+    - Data goes only to topics with subscribers. There is no retained state.
+    - The broker uses its default maximum message size.
+
+    **Errors**
+
+    - The embedded OSH broker rejects a bad subscription in SUBACK and a bad
+      publication in PUBACK, with an MQTT 5 reason code and reason string.
+    - MQTT 3.1.1 clients get no reason. QoS 0 publications get no reply.
+    - There is no asynchronous error topic yet.
+
+    **Known limits**
+
+    - The topic shape is checked. That each ID belongs to the resource before
+      it is not checked by the CS API.
+    - The status topic of one command carries the status of all commands on
+      its control stream.
+    - `swe-xml` publications create the resource but are reported as invalid.
+  contact:
+    name: OpenSensorHub
+    url: https://github.com/opensensorhub/osh-addons
+  license:
+    name: Mozilla Public License 2.0
+    url: https://mozilla.org/MPL/2.0/
+  externalDocs:
+    description: OGC API - Connected Systems Part 3 working draft
+    url: https://github.com/opengeospatial/ogcapi-connected-systems/tree/master/api/part3
+
+defaultContentType: application/json
+
+servers:
+${servers}
+channels:
+  observations:
+    address: '${nodeId}/systems/{systemId}/datastreams/{dataStreamId}/observations:data'
+    title: Observations of a datastream (default format)
+    messages:
+      observation:
+        $ref: '#/components/messages/observation'
+    parameters:
+      systemId:
+        $ref: '#/components/parameters/systemId'
+      dataStreamId:
+        $ref: '#/components/parameters/dataStreamId'
+    x-ogc-link:
+      rel: collection
+      type: application/json
+      href: '${apiRoot}/datastreams'
+  observationsFormat:
+    address: '${nodeId}/systems/{systemId}/datastreams/{dataStreamId}/observations:data/{format}'
+    title: Observations of a datastream (selected format)
+    description: The datastream lists its formats in `formats` over HTTP. Video
+      datastreams offer only `om-json` and `swe-binary`.
+    messages:
+      observation:
+        $ref: '#/components/messages/formatted'
+    parameters:
+      systemId:
+        $ref: '#/components/parameters/systemId'
+      dataStreamId:
+        $ref: '#/components/parameters/dataStreamId'
+      format:
+        $ref: '#/components/parameters/format'
+  commands:
+    address: '${nodeId}/systems/{systemId}/controlstreams/{controlStreamId}/commands:data'
+    title: Commands of a control stream (default format)
+    messages:
+      command:
+        $ref: '#/components/messages/command'
+    parameters:
+      systemId:
+        $ref: '#/components/parameters/systemId'
+      controlStreamId:
+        $ref: '#/components/parameters/controlStreamId'
+    x-ogc-link:
+      rel: collection
+      type: application/json
+      href: '${apiRoot}/controlstreams'
+  commandsFormat:
+    address: '${nodeId}/systems/{systemId}/controlstreams/{controlStreamId}/commands:data/{format}'
+    title: Commands of a control stream (selected format)
+    messages:
+      command:
+        $ref: '#/components/messages/formatted'
+    parameters:
+      systemId:
+        $ref: '#/components/parameters/systemId'
+      controlStreamId:
+        $ref: '#/components/parameters/controlStreamId'
+      format:
+        $ref: '#/components/parameters/format'
+  commandStatus:
+    address: '${nodeId}/systems/{systemId}/controlstreams/{controlStreamId}/commands/{commandId}/status:data'
+    title: Status of a command
+    description: Known limit - this topic carries the status of all commands
+      on the control stream, not only command `{commandId}`.
+    messages:
+      status:
+        $ref: '#/components/messages/commandStatus'
+    parameters:
+      systemId:
+        $ref: '#/components/parameters/systemId'
+      controlStreamId:
+        $ref: '#/components/parameters/controlStreamId'
+      commandId:
+        $ref: '#/components/parameters/commandId'
+  systemEvents:
+    address: '${nodeId}/systems/{systemId}/events:data'
+    title: System events of a system
+    messages:
+      event:
+        $ref: '#/components/messages/systemEvent'
+    parameters:
+      systemId:
+        $ref: '#/components/parameters/systemId'
+  systems:
+    address: '${nodeId}/systems:data'
+    title: Top-level systems
+    messages:
+      system:
+        $ref: '#/components/messages/system'
+    x-ogc-link:
+      rel: collection
+      type: application/json
+      href: '${apiRoot}/systems'
+  subsystems:
+    address: '${nodeId}/systems/{systemId}/subsystems:data'
+    title: Subsystems of a system
+    messages:
+      system:
+        $ref: '#/components/messages/system'
+    parameters:
+      systemId:
+        $ref: '#/components/parameters/systemId'
+  dataStreams:
+    address: '${nodeId}/systems/{systemId}/datastreams:data'
+    title: Datastreams of a system
+    messages:
+      dataStream:
+        $ref: '#/components/messages/dataStream'
+    parameters:
+      systemId:
+        $ref: '#/components/parameters/systemId'
+  controlStreams:
+    address: '${nodeId}/systems/{systemId}/controlstreams:data'
+    title: Control streams of a system
+    messages:
+      controlStream:
+        $ref: '#/components/messages/controlStream'
+    parameters:
+      systemId:
+        $ref: '#/components/parameters/systemId'
+
+# Operations are seen from the server: 'send' means the server publishes and
+# clients subscribe; 'receive' means clients publish and the server creates.
+operations:
+  sendObservations:
+    action: send
+    channel:
+      $ref: '#/channels/observations'
+    summary: Stream new observations of a datastream.
+    bindings:
+      mqtt: {qos: 1, retain: false, bindingVersion: 0.2.0}
+  receiveObservations:
+    action: receive
+    channel:
+      $ref: '#/channels/observations'
+    summary: Create one observation per publication.
+    bindings:
+      mqtt: {qos: 1, bindingVersion: 0.2.0}
+  sendObservationsFormat:
+    action: send
+    channel:
+      $ref: '#/channels/observationsFormat'
+    summary: Stream new observations in the selected format.
+    bindings:
+      mqtt: {qos: 1, retain: false, bindingVersion: 0.2.0}
+  receiveObservationsFormat:
+    action: receive
+    channel:
+      $ref: '#/channels/observationsFormat'
+    summary: Create one observation per publication, in the selected format.
+    description: Tested with `om-json`, `swe-json` and `swe-csv`.
+    bindings:
+      mqtt: {qos: 1, bindingVersion: 0.2.0}
+  receiveCommands:
+    action: receive
+    channel:
+      $ref: '#/channels/commands'
+    summary: Send one command per publication to the system.
+    description: Put the command fields in `parameters`. Give all fields of the
+      control stream schema.
+    bindings:
+      mqtt: {qos: 1, bindingVersion: 0.2.0}
+  sendCommands:
+    action: send
+    channel:
+      $ref: '#/channels/commands'
+    summary: Deliver commands to a client that executes them.
+    description: A subscriber becomes the command executor of the control
+      stream. The subscription is rejected if a driver or another client
+      already executes the commands.
+    bindings:
+      mqtt: {qos: 1, retain: false, bindingVersion: 0.2.0}
+  receiveCommandsFormat:
+    action: receive
+    channel:
+      $ref: '#/channels/commandsFormat'
+    summary: Send one command per publication, in the selected format.
+    description: Tested with `json`, `swe-json` and `swe-csv`.
+    bindings:
+      mqtt: {qos: 1, bindingVersion: 0.2.0}
+  sendCommandStatus:
+    action: send
+    channel:
+      $ref: '#/channels/commandStatus'
+    summary: Stream command status reports.
+    bindings:
+      mqtt: {qos: 1, retain: false, bindingVersion: 0.2.0}
+  sendSystemEvents:
+    action: send
+    channel:
+      $ref: '#/channels/systemEvents'
+    summary: Stream new system events.
+    description: The subscription is accepted. Delivery is not tested yet.
+    bindings:
+      mqtt: {qos: 1, retain: false, bindingVersion: 0.2.0}
+  receiveSystems:
+    action: receive
+    channel:
+      $ref: '#/channels/systems'
+    summary: Create a top-level system. Subscriptions are rejected.
+    bindings:
+      mqtt: {qos: 1, bindingVersion: 0.2.0}
+  receiveSubsystems:
+    action: receive
+    channel:
+      $ref: '#/channels/subsystems'
+    summary: Create a subsystem. Subscriptions are rejected.
+    bindings:
+      mqtt: {qos: 1, bindingVersion: 0.2.0}
+  receiveDataStreams:
+    action: receive
+    channel:
+      $ref: '#/channels/dataStreams'
+    summary: Create a datastream. Subscriptions are rejected.
+    bindings:
+      mqtt: {qos: 1, bindingVersion: 0.2.0}
+  receiveControlStreams:
+    action: receive
+    channel:
+      $ref: '#/channels/controlStreams'
+    summary: Create a control stream. Subscriptions are rejected.
+    bindings:
+      mqtt: {qos: 1, bindingVersion: 0.2.0}
+
+components:
+  parameters:
+    systemId:
+      description: Local ID of a system in the CS API.
+    dataStreamId:
+      description: Local ID of a datastream in the CS API.
+    controlStreamId:
+      description: Local ID of a control stream in the CS API.
+    commandId:
+      description: Local ID of a command in the CS API.
+    format:
+      description: Format name, made from the media type (remove parameters and
+        `application/`, change `+` to `-`, use lowercase).
+      enum: [${formatEnum}]
+  messages:
+    observation:
+      name: observation
+      title: Observation
+      contentType: application/json
+      summary: One observation in the default JSON format.
+      payload:
+        type: object
+      externalDocs:
+        description: The result schema of each datastream
+        url: '${apiRoot}/datastreams'
+    formatted:
+      name: formatted
+      title: Resource in the selected format
+      summary: One resource in the format of the `{format}` topic level. The
+        payload is text or binary, as the format sets.
+      payload: {}
+    command:
+      name: command
+      title: Command
+      contentType: application/json
+      summary: One command. The fields go in `parameters`.
+      payload:
+        type: object
+        required: [parameters]
+        properties:
+          parameters:
+            type: object
+    commandStatus:
+      name: commandStatus
+      title: Command status
+      contentType: application/json
+      payload:
+        type: object
+        properties:
+          command@id: {type: string}
+          statusCode: {type: string}
+          reportTime: {type: string, format: date-time}
+    systemEvent:
+      name: systemEvent
+      title: System event
+      contentType: application/json
+      payload:
+        type: object
+    system:
+      name: system
+      title: System
+      contentType: application/geo+json
+      summary: A system in GeoJSON. Use the `sml-json` format subtopic for SensorML.
+      payload:
+        type: object
+    dataStream:
+      name: dataStream
+      title: Datastream
+      contentType: application/json
+      payload:
+        type: object
+    controlStream:
+      name: controlStream
+      title: Control stream
+      contentType: application/json
+      payload:
+        type: object
