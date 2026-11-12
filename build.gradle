@@ -262,7 +262,8 @@ subprojects {
       dep.exclude group: 'org.vast.opengis'
     }
     
-    if(project.buildType && project.buildType.equals('dev')) {
+    // only add -SNAPSHOT to the project being published, not to its project dependencies
+    if (project.findProperty('buildType') == 'dev' && p.name == project.findProperty('publishProject')) {
       p.setVersion(p.version + '-SNAPSHOT')
     }
     
