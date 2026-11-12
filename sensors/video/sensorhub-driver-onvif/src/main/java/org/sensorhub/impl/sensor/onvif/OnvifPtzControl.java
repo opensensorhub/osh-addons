@@ -217,17 +217,21 @@ public class OnvifPtzControl extends AbstractSensorControl<OnvifCameraDriver>
 		commandData.addItem(presetRemove.getName(), presetRemove);
 
 		// Remove components for commands that are not supported
+		boolean absolutePtRemoved = false;
 		if (devicePtzConfig.getDefaultAbsolutePantTiltPositionSpace() == null) {
 			// Remove absolute PTZ
 			commandData.removeComponent(VideoCamHelper.TASKING_PAN);
 			commandData.removeComponent(VideoCamHelper.TASKING_TILT);
 			commandData.removeComponent(VideoCamHelper.TASKING_PTZ_POS);
+			absolutePtRemoved = true;
 			log.debug("Removed absolute pt");
 		}
 		if (devicePtzConfig.getDefaultAbsoluteZoomPositionSpace() == null) {
 			commandData.removeComponent(VideoCamHelper.TASKING_ZOOM);
-			// Zoom is nested in the ptz pos item
-			commandData.getItem(VideoCamHelper.TASKING_PTZ_POS).removeComponent(VideoCamHelper.TASKING_ZOOM);
+			// Zoom is nested in the ptz pos item — only remove if ptzPos still exists
+			if (!absolutePtRemoved) {
+				commandData.getItem(VideoCamHelper.TASKING_PTZ_POS).removeComponent(VideoCamHelper.TASKING_ZOOM);
+			}
 			log.debug("Removed absolute z");
 		}
 		if (devicePtzConfig.getDefaultRelativePanTiltTranslationSpace() == null
@@ -299,10 +303,13 @@ public class OnvifPtzControl extends AbstractSensorControl<OnvifCameraDriver>
 			PTZVector position = null;
 			try {
 				PTZStatus status = ptz.getStatus(ptzProfile.getToken());
-				position = status.getPosition();
+				if (status != null)
+					position = status.getPosition();
 			} catch (Exception e) {
-				position = new PTZVector();
+				// status not available
 			}
+			if (position == null)
+				position = new PTZVector();
 
 			// Note: Some tasking is not supported for certain cameras
 			// ABSOLUTE PAN
