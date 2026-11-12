@@ -1,0 +1,40 @@
+description = 'Mqtt Comm Module'
+ext.details = 'Mqtt comm provider to publish/subscribe on MQTT topics'
+version = '1.0.3'
+
+dependencies {
+    implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
+    embeddedImpl 'org.eclipse.paho:org.eclipse.paho.client.mqttv3:1.2.5'
+
+    api project(':sensorhub-comm-mqtt')
+    testImplementation('junit:junit:4.13.1')
+
+}
+
+test {
+    useJUnit()
+}
+
+osgi {
+    manifest {
+        attributes ('Bundle-Vendor': 'Botts Innovative Research, Inc.')
+        attributes ('Bundle-Activator': 'com.botts.impl.comm.mqtt.Activator')
+    }
+}
+
+ext.pom >>= {
+    developers {
+        developer {
+            id 'earocorn'
+            name 'Alex Almanza'
+            organization 'Botts Innovative Research, Inc'
+            organizationUrl 'https://www.botts-inc.com'
+        }
+        developer {
+            id 'kalynstricklin'
+            name 'Kalyn Stricklin'
+            organization 'Botts Innovative Research, Inc'
+            organizationUrl 'https://www.botts-inc.com'
+        }
+    }
+}
