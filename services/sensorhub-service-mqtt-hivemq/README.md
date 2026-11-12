@@ -14,8 +14,9 @@ The default MQTT server and client implementations provided by this module are b
 Since version 0.2.0, the bundled HiveMQ config (`config.xml`) allows wildcard topic filters (`+`, `#`).
 
 - At start, the MQTT Server copies the bundled config to its config folder (`configFolder`) if there is no config there.
-- If the config in that folder is an unchanged earlier default, the MQTT Server replaces it with the new default. Earlier defaults did not allow wildcards.
-- If you changed the config, the MQTT Server keeps it. If it does not allow wildcards, the MQTT Server logs a warning. To allow them, set `<wildcard-subscriptions><enabled>true</enabled>` in it.
+- The MQTT Server does not change a config that is in that folder.
+- A node from an earlier version has a config that does not allow wildcards. Earlier bundled configs did not allow them. The MQTT Server then logs a warning at start.
+- To allow wildcards on such a node, set `<wildcard-subscriptions><enabled>true</enabled>` in the config, then start the MQTT Server again.
 
 A wildcard filter can match the topics of resources that the user cannot read. So the server checks each message before it sends it to a client:
 

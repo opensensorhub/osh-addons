@@ -172,8 +172,8 @@ Access:
 Broker:
 
 - The broker must allow wildcards. The bundled HiveMQ config allows them.
-- At start, the MQTT Server replaces an unchanged earlier default config in its config folder with the new one.
-- If you changed the config, the MQTT Server keeps it and logs a warning. Set `<wildcard-subscriptions><enabled>true</enabled>` in it.
+- The MQTT Server does not change a config that is in its config folder. A node from an earlier version has a config that does not allow wildcards, and the MQTT Server logs a warning at start.
+- To allow wildcards on such a node, set `<wildcard-subscriptions><enabled>true</enabled>` in that config, then start the MQTT Server again.
 
 ## Formats
 

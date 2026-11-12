@@ -55,34 +55,28 @@ public class TestMqttServerConfig
     @Test
     public void testDefaultEnablesWildcards() throws IOException
     {
-        var file = write(defaultConfig());
-        assertFalse(MqttServer.wildcardsDisabled(file));
-        assertFalse(MqttServer.isOldDefaultConfig(file));
+        assertFalse(MqttServer.wildcardsDisabled(write(defaultConfig())));
     }
 
 
     @Test
-    public void testEarlierDefaultIsReplaced() throws IOException
+    public void testEarlierDefaultDisablesWildcards() throws IOException
     {
+        // the config of a node from an earlier version: the server keeps it and logs a warning
         var old = earlierDefault();
-        assertTrue(MqttServer.isOldDefaultConfig(write(old)));
+        assertTrue(MqttServer.wildcardsDisabled(write(old)));
 
         // line endings and indentation do not matter
-        assertTrue(MqttServer.isOldDefaultConfig(write(old.replace("\n", "\r\n").replace("    ", "\t"))));
-
-        // the first default had no persistence element
-        var first = old.replaceFirst("\\s*<persistence>\\s*<mode>in-memory</mode>\\s*</persistence>", "");
-        assertNotEquals(old, first);
-        assertTrue(MqttServer.isOldDefaultConfig(write(first)));
+        assertTrue(MqttServer.wildcardsDisabled(write(old.replace("\n", "\r\n").replace("    ", "\t"))));
     }
 
 
     @Test
-    public void testChangedConfigIsKept() throws IOException
+    public void testConfigWithoutWildcardElement() throws IOException
     {
-        // a user changed the port: keep the file, warn about wildcards
-        var file = write(earlierDefault().replace("<port>1883</port>", "<port>1884</port>"));
-        assertFalse(MqttServer.isOldDefaultConfig(file));
-        assertTrue(MqttServer.wildcardsDisabled(file));
+        // no element: no warning
+        var text = defaultConfig().replaceFirst("(?s)<wildcard-subscriptions>.*?</wildcard-subscriptions>", "");
+        assertNotEquals(defaultConfig(), text);
+        assertFalse(MqttServer.wildcardsDisabled(write(text)));
     }
 }

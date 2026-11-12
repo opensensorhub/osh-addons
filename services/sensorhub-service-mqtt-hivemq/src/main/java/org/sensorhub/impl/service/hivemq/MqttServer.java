@@ -21,10 +21,6 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.util.HexFormat;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.regex.Pattern;
 import org.sensorhub.api.comm.mqtt.IMqttServer;
@@ -49,10 +45,6 @@ public class MqttServer extends AbstractModule<MqttServerConfig> implements IMqt
 {
     private static final String CONFIG_FILE_NAME = "config.xml";
     
-    // SHA-256 of earlier default configs, without whitespace. They disable wildcards.
-    static final Set<String> OLD_DEFAULT_CONFIGS = Set.of(
-        "4508192cfda8841d6193ae7c30343c1ebfef1919dfc0b172ab839c9c9fddb157",
-        "42f5b9f635f4b759de3eae362f8735b7bd0abe872318980ee6ba309057e86b3a");
     static final Pattern WILDCARDS_DISABLED = Pattern.compile(
         "<wildcard-subscriptions>\\s*<enabled>\\s*false\\s*</enabled>");
     
@@ -71,10 +63,9 @@ public class MqttServer extends AbstractModule<MqttServerConfig> implements IMqt
             configFolder.mkdirs();
         
         // if no config was provided, copy default config
-        // an unchanged earlier default config is replaced, to enable wildcards
+        // an existing config is never changed
         File configFile = new File(configFolder, CONFIG_FILE_NAME);
-        boolean oldDefault = configFile.exists() && isOldDefaultConfig(configFile.toPath());
-        if (!configFile.exists() || oldDefault)
+        if (!configFile.exists())
         {
             try (var outFile = new FileOutputStream(configFile))
             {
@@ -85,9 +76,6 @@ public class MqttServer extends AbstractModule<MqttServerConfig> implements IMqt
             {
                 throw new SensorHubException("Error creating config file", e);
             }
-            
-            if (oldDefault)
-                getLogger().info("Replaced earlier default HiveMQ config {} with the new default (wildcard subscriptions enabled)", configFile);
         }
         else if (wildcardsDisabled(configFile.toPath()))
         {
@@ -112,22 +100,6 @@ public class MqttServer extends AbstractModule<MqttServerConfig> implements IMqt
         catch (final Exception e)
         {
             throw new SensorHubException("Cannot start embedded HiveMQ server", e);
-        }
-    }
-    
-    
-    /** @return true if the file is an earlier default config that the user did not change */
-    static boolean isOldDefaultConfig(Path file)
-    {
-        try
-        {
-            var text = Files.readString(file, StandardCharsets.UTF_8).replaceAll("\\s", "");
-            var hash = MessageDigest.getInstance("SHA-256").digest(text.getBytes(StandardCharsets.UTF_8));
-            return OLD_DEFAULT_CONFIGS.contains(HexFormat.of().formatHex(hash));
-        }
-        catch (IOException | NoSuchAlgorithmException e)
-        {
-            return false;
         }
     }
     
