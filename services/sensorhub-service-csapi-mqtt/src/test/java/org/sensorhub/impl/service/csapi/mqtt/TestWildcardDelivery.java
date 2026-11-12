@@ -20,49 +20,45 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Predicate;
 import org.junit.Test;
-import org.sensorhub.impl.service.csapi.mqtt.CsApiMqttConnector.Access;
+import com.google.common.base.Ticker;
 
 
 /**
- * Checks of messages sent through wildcard subscriptions. The CS API read
+ * Checks of messages sent through wildcard subscriptions. The permission
  * check is replaced by a table of resources and users.
  */
 public class TestWildcardDelivery
 {
-    long now = 1_000_000;
-    final Map<String, Access> access = new HashMap<>(); // "user path" -> access
+    long now = 1_000_000; // ms
+    final Map<String, Boolean> access = new HashMap<>(); // "user path" -> can read
     final List<String> checks = new ArrayList<>();
 
-    final CsApiMqttConnector connector = new CsApiMqttConnector(null, TestTopicMapper.mapper()) {
+    final Ticker ticker = new Ticker() {
         @Override
-        Access doCheckRead(String userID, URI uri)
+        public long read()
         {
-            var key = userID + " " + uri;
-            checks.add(key);
-            return access.getOrDefault(key, Access.DENIED);
-        }
-
-        @Override
-        Access doCheckDeleted(String userID, URI uri)
-        {
-            var key = userID + " deleted " + uri;
-            checks.add(key);
-            return access.getOrDefault(key, Access.DENIED);
+            return TimeUnit.MILLISECONDS.toNanos(now);
         }
     };
 
-
-    public TestWildcardDelivery()
-    {
-        connector.clockMs = () -> now;
-    }
+    final CsApiMqttConnector connector = new CsApiMqttConnector(null, TestTopicMapper.mapper(), ticker) {
+        @Override
+        boolean doCheckRead(String userID, URI uri)
+        {
+            var key = userID + " " + uri;
+            checks.add(key);
+            return access.getOrDefault(key, false);
+        }
+    };
 
 
     @Test
     public void testEventOfReadableResource()
     {
-        access.put("alice /systems/134/datastreams/12", Access.ALLOWED);
+        access.put("alice /systems/134/datastreams/12", true);
         assertTrue(connector.canDeliver("alice", "node1/systems/134/datastreams/12"));
         assertFalse(connector.canDeliver("bob", "node1/systems/134/datastreams/12"));
         assertFalse(connector.canDeliver("alice", "node1/systems/134/datastreams/13"));
@@ -72,7 +68,7 @@ public class TestWildcardDelivery
     @Test
     public void testBatchEventChecksDatastream()
     {
-        access.put("alice /systems/134/datastreams/12", Access.ALLOWED);
+        access.put("alice /systems/134/datastreams/12", true);
         assertTrue(connector.canDeliver("alice", "node1/systems/134/datastreams/12/observations"));
         assertEquals(List.of("alice /systems/134/datastreams/12"), checks);
     }
@@ -81,7 +77,7 @@ public class TestWildcardDelivery
     @Test
     public void testResourceDataIsNotSent()
     {
-        access.put("alice /systems/134/datastreams/12/observations", Access.ALLOWED);
+        access.put("alice /systems/134/datastreams/12/observations", true);
         assertFalse(connector.canDeliver("alice", "node1/systems/134/datastreams/12/observations:data"));
         assertFalse(connector.canDeliver("alice", "node1/systems/134/datastreams/12/observations:data/swe-csv"));
         assertFalse(connector.canDeliver("alice", "node1/systems:data"));
@@ -99,32 +95,44 @@ public class TestWildcardDelivery
 
 
     @Test
-    public void testDeletedResourceChecksPermission()
+    public void testPermissionOnResourceOrSystemAbove()
     {
-        // a deleted resource: the permission is checked without the database
-        access.put("alice /systems/134/subsystems/7", Access.NOT_FOUND);
-        access.put("alice deleted /systems/134/subsystems/7", Access.ALLOWED);
-        assertTrue(connector.canDeliver("alice", "node1/systems/134/subsystems/7"));
+        var res = CsApiMqttConnector.ResourcePath.of(URI.create("/systems/134/subsystems/7/datastreams/12"));
 
-        // no permission: the delete event is not sent
-        access.put("bob /systems/134/subsystems/7", Access.NOT_FOUND);
-        assertFalse(connector.canDeliver("bob", "node1/systems/134/subsystems/7"));
-        assertEquals(List.of(
-            "alice /systems/134/subsystems/7", "alice deleted /systems/134/subsystems/7",
-            "bob /systems/134/subsystems/7", "bob deleted /systems/134/subsystems/7"), checks);
+        // on the resource itself: the systems above it are not checked
+        assertTrue(CsApiMqttConnector.canRead(res, "12"::equals, id -> { throw new AssertionError(id); }));
+
+        // on a system above it
+        assertTrue(CsApiMqttConnector.canRead(res, id -> false, "134"::equals));
+        assertFalse(CsApiMqttConnector.canRead(res, id -> false, id -> false));
+    }
+
+
+    @Test
+    public void testDeletedResourceUsesSystemsOfTopic()
+    {
+        // osh-core cannot find a deleted resource in the database
+        Predicate<String> notInDatabase = id -> { throw new IllegalArgumentException(); };
+        var res = CsApiMqttConnector.ResourcePath.of(URI.create("/systems/134/datastreams/12"));
+
+        assertTrue(CsApiMqttConnector.canRead(res, notInDatabase, "134"::equals));
+        assertFalse(CsApiMqttConnector.canRead(res, notInDatabase, id -> false));
+
+        // the system was deleted too
+        assertFalse(CsApiMqttConnector.canRead(res, notInDatabase, notInDatabase));
     }
 
 
     @Test
     public void testDecisionsAreCached()
     {
-        access.put("alice /systems/134", Access.ALLOWED);
+        access.put("alice /systems/134", true);
         assertTrue(connector.canDeliver("alice", "node1/systems/134"));
         assertTrue(connector.canDeliver("alice", "node1/systems/134"));
         assertEquals(1, checks.size());
 
         // access removed: still sent until the cached decision expires
-        access.put("alice /systems/134", Access.DENIED);
+        access.put("alice /systems/134", false);
         now += CsApiMqttConnector.ACCESS_CACHE_MS - 1;
         assertTrue(connector.canDeliver("alice", "node1/systems/134"));
         now += 1;

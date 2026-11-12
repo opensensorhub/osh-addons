@@ -23,9 +23,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.LongSupplier;
+import java.util.function.Predicate;
 import org.sensorhub.api.comm.mqtt.IMqttServer;
 import org.sensorhub.api.comm.mqtt.InvalidPayloadException;
 import org.sensorhub.api.comm.mqtt.IMqttServer.IMqttHandler;
@@ -44,6 +46,10 @@ import org.sensorhub.impl.service.consys.resource.ResourceFormat;
 import org.sensorhub.impl.service.csapi.mqtt.TopicMapper.ResourceTopic;
 import org.sensorhub.impl.service.consys.stream.StreamHandler;
 import org.vast.util.Asserts;
+import com.google.common.base.Ticker;
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.util.concurrent.UncheckedExecutionException;
 
 
 /**
@@ -139,8 +145,20 @@ public class CsApiMqttConnector implements IMqttHandler
     
     public CsApiMqttConnector(ConSysApiServlet servlet, TopicMapper topics)
     {
+        this(servlet, topics, Ticker.systemTicker());
+    }
+
+
+    /** @param ticker the clock of the access cache */
+    CsApiMqttConnector(ConSysApiServlet servlet, TopicMapper topics, Ticker ticker)
+    {
         this.servlet = servlet;
         this.topics = topics;
+        this.accessCache = CacheBuilder.newBuilder()
+            .expireAfterWrite(ACCESS_CACHE_MS, TimeUnit.MILLISECONDS)
+            .maximumSize(ACCESS_CACHE_MAX)
+            .ticker(ticker)
+            .build();
     }
 
 
@@ -276,9 +294,8 @@ public class CsApiMqttConnector implements IMqttHandler
     /**
      * Check a message that a client gets through a wildcard filter. Only
      * Resource Events and Batch Resource Events are sent, and only if the
-     * user can read the resource. If the resource was deleted, the user must
-     * have the permission to read it, directly or from a system above it in
-     * the topic path. Decisions are kept for {@link #ACCESS_CACHE_MS}.
+     * user has the permission to read the resource, directly or from a
+     * system above it. Decisions are kept for {@link #ACCESS_CACHE_MS}.
      */
     @Override
     public boolean canDeliver(String userID, String topic)
@@ -297,91 +314,43 @@ public class CsApiMqttConnector implements IMqttHandler
         if (!resource.event())
             return false;
 
-        return checkRead(userID, resource.uri()) == Access.ALLOWED;
+        return checkRead(userID, resource.uri());
     }
 
-
-    enum Access { ALLOWED, DENIED, NOT_FOUND }
-    record CachedAccess(Access access, long expiresMs) {}
 
     /** How long a read check of a wildcard delivery is kept */
     static final long ACCESS_CACHE_MS = 10_000;
     static final int ACCESS_CACHE_MAX = 10_000;
-    final Map<String, CachedAccess> accessCache = new ConcurrentHashMap<>();
-    LongSupplier clockMs = System::currentTimeMillis;
+    final Cache<String, Boolean> accessCache;
 
 
     /** @return if the user can read the resource, from the cache if possible */
-    Access checkRead(String userID, URI uri)
-    {
-        var key = userID + '\0' + uri;
-        var now = clockMs.getAsLong();
-        var cached = accessCache.get(key);
-        if (cached != null && cached.expiresMs() > now)
-            return cached.access();
-
-        // a deleted resource cannot be read: check the permission only
-        var access = doCheckRead(userID, uri);
-        if (access == Access.NOT_FOUND)
-            access = doCheckDeleted(userID, uri);
-
-        // keep the cache small: drop expired entries, then all if still too big
-        if (accessCache.size() >= ACCESS_CACHE_MAX)
-        {
-            accessCache.values().removeIf(c -> c.expiresMs() <= now);
-            if (accessCache.size() >= ACCESS_CACHE_MAX)
-                accessCache.clear();
-        }
-        accessCache.put(key, new CachedAccess(access, now + ACCESS_CACHE_MS));
-        return access;
-    }
-
-
-    /** @return if the user can read the resource, with a GET as the user */
-    Access doCheckRead(String userID, URI uri)
+    boolean checkRead(String userID, URI uri)
     {
         try
         {
-            servlet.getSecurityHandler().setCurrentUser(userID);
-            servlet.getRootHandler().doGet(new RequestContext(servlet, uri, DISCARD));
-            return Access.ALLOWED;
+            return accessCache.get(userID + '\0' + uri, () -> doCheckRead(userID, uri));
         }
-        catch (SecurityException e)
+        catch (ExecutionException | UncheckedExecutionException e)
         {
-            return Access.DENIED;
-        }
-        catch (Exception e)
-        {
-            for (Throwable t = e; t != null; t = t.getCause())
-            {
-                if (t instanceof InvalidRequestException ire)
-                    return ire.getErrorCode() == ErrorCode.NOT_FOUND ? Access.NOT_FOUND : Access.DENIED;
-            }
-            servlet.getLogger().error("Cannot check access of user {} to {}", userID, uri, e);
-            return Access.DENIED;
-        }
-        finally
-        {
-            servlet.getSecurityHandler().clearCurrentUser();
+            return false;
         }
     }
 
 
     /**
-     * Check the read permission of a resource that no longer exists, as the
-     * CS API does for a GET, but with the systems of the topic path in place
-     * of the database. The permission can be given for the resource itself,
-     * or for a system above it.
-     * @return ALLOWED or DENIED
+     * Check the read permission of a resource, as the CS API does for a GET,
+     * but without a read of the resource. Thus the check also works for a
+     * resource that was deleted.
      */
-    Access doCheckDeleted(String userID, URI uri)
+    boolean doCheckRead(String userID, URI uri)
     {
         if (!(servlet.getSecurityHandler() instanceof ConSysApiSecurity security))
-            return Access.DENIED;
+            return false;
 
         var res = ResourcePath.of(uri);
         if (res == null)
-            return Access.DENIED;
+            return false;
         var perms = switch (res.type()) {
             case "systems", "subsystems" -> security.system_permissions;
             case "datastreams" -> security.datastream_permissions;
@@ -389,29 +358,61 @@ public class CsApiMqttConnector implements IMqttHandler
             default -> null;
         };
         if (perms == null)
-            return Access.DENIED;
+            return false;
 
         try
         {
             security.setCurrentUser(userID);
-            if (security.hasPermission(new ItemWithIdPermission(perms.get, res.id())))
-                return Access.ALLOWED;
-            for (var ancestor: res.ancestors())
-            {
-                if (security.hasPermission(new ItemWithParentPermission(perms.get, ancestor)))
-                    return Access.ALLOWED;
-            }
-            return Access.DENIED;
+            return canRead(res,
+                id -> security.hasPermission(new ItemWithIdPermission(perms.get, id)),
+                parentId -> security.hasPermission(new ItemWithParentPermission(perms.get, parentId)));
         }
         catch (RuntimeException e)
         {
-            // osh-core looks up parents in the database, which can fail for a deleted resource
-            return Access.DENIED;
+            // for example, an unknown user
+            return false;
         }
         finally
         {
             security.clearCurrentUser();
         }
+    }
+
+
+    /**
+     * The permission can be given for the resource itself, or for a system
+     * above it. osh-core finds these systems in the database. This lookup
+     * fails for a deleted resource. Then the systems of the topic path are
+     * used.
+     * @param idAllowed checks the permission on a resource ID, with the
+     * systems above it in the database
+     * @param parentAllowed checks the permission on the resources of a system
+     */
+    static boolean canRead(ResourcePath res, Predicate<String> idAllowed, Predicate<String> parentAllowed)
+    {
+        try
+        {
+            if (idAllowed.test(res.id()))
+                return true;
+        }
+        catch (IllegalArgumentException e)
+        {
+            // the resource is not in the database
+        }
+
+        for (var ancestor: res.ancestors())
+        {
+            try
+            {
+                if (parentAllowed.test(ancestor))
+                    return true;
+            }
+            catch (IllegalArgumentException e)
+            {
+                // the system is not in the database
+            }
+        }
+        return false;
     }
 
 
