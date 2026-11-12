@@ -114,6 +114,24 @@ public class TestTopicMapper
 
 
     @Test
+    public void testBatchEventTopics() throws InvalidTopicException
+    {
+        // the subscriber must be able to read the datastream
+        var topics = mapper();
+        for (var path: new String[] {
+            "systems/134/datastreams/12",
+            "systems/134/subsystems/7/subsystems/8/datastreams/12"
+        })
+        {
+            var res = topics.parse("node1/" + path + "/observations");
+            assertEquals("/" + path, res.uri().toString());
+            assertNull(res.format());
+            assertTrue(res.event());
+        }
+    }
+
+
+    @Test
     public void testFormatTokens()
     {
         assertEquals("json", TopicMapper.formatToken("application/json"));
@@ -167,8 +185,8 @@ public class TestTopicMapper
             "node1/systems/134/#",                          // wildcard, not supported yet
             "node1/systems",                                // event topic of a collection
             "node1/systems/1/datastreams",                  // event topic of a collection
-            "node1/systems/1/datastreams/2/observations",   // batch event topic, not supported yet
             "node1/systems/1/datastreams/2/observations/9", // no observation events yet
+            "node1/systems/1/controlstreams/3/commands",    // no command batch events yet
             "node1/systems/1/controlstreams/3/commands/9",  // no command events yet
             "node1/systems/1/events/5",                     // no system events yet
             "node1/systems/1/samplingFeatures/5",           // no sampling feature events yet
