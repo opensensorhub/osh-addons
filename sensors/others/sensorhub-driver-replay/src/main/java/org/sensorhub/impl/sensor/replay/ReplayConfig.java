@@ -1,4 +1,5 @@
 /***************************** BEGIN LICENSE BLOCK ***************************
+
  The contents of this file are subject to the Mozilla Public License, v. 2.0.
  If a copy of the MPL was not distributed with this file, You can obtain one
  at http://mozilla.org/MPL/2.0/.
@@ -7,14 +8,13 @@
  WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
  for the specific language governing rights and limitations under the License.
 
- Copyright (C) 2025-2026 Georobotix Innovative Research. All Rights Reserved.
+ Copyright (C) 2026 GeoRobotix Innovative Research. All Rights Reserved.
+
  ******************************* END LICENSE BLOCK ***************************/
-package com.botts.impl.sensor.replay.config;
+package org.sensorhub.impl.sensor.replay;
 
 import org.sensorhub.api.config.DisplayInfo;
-import org.sensorhub.api.database.IObsSystemDatabase;
 import org.sensorhub.api.sensor.SensorConfig;
-
 import java.util.Date;
 
 /**
@@ -25,13 +25,6 @@ import java.util.Date;
  * @since 7/28/2025
  */
 public class ReplayConfig extends SensorConfig {
-
-    @DisplayInfo.Required
-    @DisplayInfo.ModuleType(IObsSystemDatabase.class)
-    @DisplayInfo.FieldType(DisplayInfo.FieldType.Type.MODULE_ID)
-    @DisplayInfo(label = "Database Module Id", desc = "The module id of the data store module to use as the archived data store to read from")
-    public String moduleId;
-
     @DisplayInfo.Required
     @DisplayInfo.FieldType(DisplayInfo.FieldType.Type.SYSTEM_UID)
     @DisplayInfo(label = "System Unique Id", desc = "The unique id of the system for which archive data is to be transferred")

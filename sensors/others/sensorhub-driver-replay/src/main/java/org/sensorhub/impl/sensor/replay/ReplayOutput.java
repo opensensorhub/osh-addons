@@ -2,9 +2,8 @@
 
  Copyright (C) 2026 GeoRobotix Innovative Research. All Rights Reserved.
  ******************************* END LICENSE BLOCK ***************************/
-package com.botts.impl.sensor.replay.output;
+package org.sensorhub.impl.sensor.replay;
 
-import com.botts.impl.sensor.replay.ReplaySensor;
 import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.DataEncoding;
 import net.opengis.swe.v20.DataType;
@@ -30,7 +29,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * through statistical sampling what the "data frame" rate should be.
  * This processor operates on a batching principle, in that it will retrieve
  * batches of N observations where N is configurable as
- * {@link com.botts.impl.sensor.replay.config.ReplayConfig#batchSize}.
+ * {@link ReplayConfig#batchSize}.
  *
  * @author Nicolas Garay
  * @since 3/19/2025

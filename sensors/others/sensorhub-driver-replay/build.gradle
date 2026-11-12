@@ -1,7 +1,7 @@
 description = 'Sensor Replay'
 ext.details = 'Allows for archived data streams to be played back as realtime'
 
-version = '1.2.5'
+version = '1.3.0'
 if (project.hasProperty("snapshot") && project.property("snapshot") == "true") {
     version = "${version}-SNAPSHOT"
 }
@@ -15,8 +15,8 @@ dependencies {
 // add info to OSGI manifest
 osgi {
     manifest {
-        attributes('Bundle-Vendor': 'Botts Innovative Research, Inc.')
-        attributes('Bundle-Activator': 'com.botts.impl.sensor.replay.osgi.Activator')
+        attributes('Bundle-Vendor': 'GeoRobotix Innovative Research, LLC.')
+        attributes('Bundle-Activator': 'org.sensorhub.impl.sensor.replay.Activator')
     }
 }
 
@@ -26,8 +26,8 @@ ext.pom >>= {
         developer {
             id 'nickgaray'
             name 'Nicolas Garay'
-            organization 'Botts Innovative Research, Inc.'
-            organizationUrl 'http://www.botts-inc.com'
+            organization 'GeoRobotix Innovative Research, LLC.'
+            organizationUrl 'https://georobotix.us'
         }
     }
 }
