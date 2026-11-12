@@ -115,6 +115,20 @@ public class CsApiMqttConnector implements IMqttHandler
     }
     
     
+    /**
+     * Discards the response of a GET by ID. A Resource Event subscription
+     * only checks that the GET succeeds. A GET by ID is never a stream
+     * request, so the CS API only writes the resource to this output.
+     */
+    static final StreamHandler DISCARD = new StreamHandler() {
+        @Override public void setStartCallback(Runnable onStart) {}
+        @Override public void setCloseCallback(Runnable onClose) {}
+        @Override public OutputStream getOutputStream() { return OutputStream.nullOutputStream(); }
+        @Override public void sendPacket() {}
+        @Override public void close() {}
+    };
+    
+    
     public CsApiMqttConnector(ConSysApiServlet servlet, TopicMapper topics)
     {
         this.servlet = servlet;
@@ -127,6 +141,31 @@ public class CsApiMqttConnector implements IMqttHandler
     {
         // reject invalid topics before a subscriber is created
         var resource = topics.parse(topic);
+
+        // ResourceEventPublisher publishes the events of all resources, so
+        // only check that the resource exists and that the user can read it
+        if (resource.event())
+        {
+            try
+            {
+                servlet.getSecurityHandler().setCurrentUser(userID);
+                servlet.getRootHandler().doGet(new RequestContext(servlet, resource.uri(), DISCARD));
+            }
+            catch (SecurityException e)
+            {
+                throw e;
+            }
+            catch (Exception e)
+            {
+                throwSubscribeError(topic, e);
+            }
+            finally
+            {
+                servlet.getSecurityHandler().clearCurrentUser();
+            }
+            return;
+        }
+
         var accepted = false;
 
         try
@@ -154,24 +193,9 @@ public class CsApiMqttConnector implements IMqttHandler
         {
             throw e;
         }
-        catch (InvalidRequestException e)
-        {
-            throw new InvalidTopicException(e.getMessage());
-        }
-        catch (UnsupportedOperationException e)
-        {
-            // some resources cannot be streamed yet (for example command results)
-            throw new InvalidTopicException("Streaming not supported on this resource");
-        }
         catch (Exception e)
         {
-            // the CS API can wrap a request error, for example an unsupported format
-            for (var cause = e.getCause(); cause != null; cause = cause.getCause())
-            {
-                if (cause instanceof InvalidRequestException)
-                    throw new InvalidTopicException(cause.getMessage());
-            }
-            throw new IllegalStateException("Internal error subscribing to topic " + topic, e);
+            throwSubscribeError(topic, e);
         }
         finally
         {
@@ -188,6 +212,25 @@ public class CsApiMqttConnector implements IMqttHandler
                 });
             }
         }
+    }
+    
+    
+    static void throwSubscribeError(String topic, Exception e) throws InvalidTopicException
+    {
+        if (e instanceof InvalidRequestException)
+            throw new InvalidTopicException(e.getMessage());
+
+        // some resources cannot be streamed yet (for example command results)
+        if (e instanceof UnsupportedOperationException)
+            throw new InvalidTopicException("Streaming not supported on this resource");
+
+        // the CS API can wrap a request error, for example an unsupported format
+        for (var cause = e.getCause(); cause != null; cause = cause.getCause())
+        {
+            if (cause instanceof InvalidRequestException)
+                throw new InvalidTopicException(cause.getMessage());
+        }
+        throw new IllegalStateException("Internal error subscribing to topic " + topic, e);
     }
     
     
@@ -214,8 +257,12 @@ public class CsApiMqttConnector implements IMqttHandler
     {
         try
         {
-            // the format subtopic selects the payload format, else detect it
+            // only the server publishes Resource Events
             var resource = topics.parse(topic);
+            if (resource.event())
+                throw new AccessControlException("Clients cannot publish on Resource Event topics");
+
+            // the format subtopic selects the payload format, else detect it
             var ctx = new RequestContext(servlet, resource.uri(), new ByteBufferInputStream(payload));
             ctx.setRequestContentType(resource.format() != null ? resource.format() : ResourceFormat.AUTO.getMimeType());
             
