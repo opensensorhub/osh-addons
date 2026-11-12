@@ -69,6 +69,7 @@ public class OshExtension implements ExtensionMain, EmbeddedExtension, IMqttServ
     Map<String, String> clientUsers = new ConcurrentHashMap<>();
     volatile WebSocketProxyServlet webSocketProxy;
     volatile TokenExpiryMonitor tokenExpiryMonitor;
+    volatile OshAuthenticator authenticator;
     Logger log;
     
     
@@ -89,6 +90,7 @@ public class OshExtension implements ExtensionMain, EmbeddedExtension, IMqttServ
             this::disconnectExpiredClient, Clock.systemUTC(), log);
         var oshAuth = new OshAuthenticator(this);
         oshAuth.expiryMonitor = tokenExpiryMonitor;
+        authenticator = oshAuth;
         Services.securityRegistry().setAuthenticatorProvider(authProviderInput -> {
             return oshAuth;
         });
@@ -139,9 +141,12 @@ public class OshExtension implements ExtensionMain, EmbeddedExtension, IMqttServ
                         var clientId = disconnectEventInput.getClientInformation().getClientId();
                         log.debug("Client {} disconnected", clientId);
                         
-                        // cancel the token expiry timer of this connection only
-                        tokenExpiryMonitor.onDisconnect(disconnectEventInput.getConnectionInformation()
-                            .getConnectionAttributeStore().getAsString(OshAuthenticator.TOKEN_CONN_PROP).orElse(null));
+                        // cancel the token expiry timer of this connection only, and
+                        // remove its token user if this was the last connection of the user
+                        var connId = disconnectEventInput.getConnectionInformation()
+                            .getConnectionAttributeStore().getAsString(OshAuthenticator.TOKEN_CONN_PROP).orElse(null);
+                        tokenExpiryMonitor.onDisconnect(connId);
+                        oshAuth.releaseTokenUser(connId);
                         
                         clientUsers.remove(clientId);
                         var topicList = clientTopics.remove(clientId);
@@ -193,6 +198,27 @@ public class OshExtension implements ExtensionMain, EmbeddedExtension, IMqttServ
                 else if (!Boolean.TRUE.equals(found))
                     log.debug("Client {} with an expired token is not connected", clientId);
             });
+    }
+    
+    
+    /**
+     * Remove the users that token logins added to the OSH user registry.
+     * They must not stay when the server stops.
+     */
+    void removeTokenUsers()
+    {
+        var oshAuth = authenticator;
+        if (oshAuth == null)
+            return;
+        
+        try
+        {
+            oshAuth.removeTokenUsers();
+        }
+        catch (RuntimeException e)
+        {
+            log.error("Cannot remove the token users from the OSH users", e);
+        }
     }
     
     
@@ -323,6 +349,7 @@ public class OshExtension implements ExtensionMain, EmbeddedExtension, IMqttServ
     {
         if (tokenExpiryMonitor != null)
             tokenExpiryMonitor.stop();
+        removeTokenUsers();
         
         // stop websocket proxy if enabled
         if (webSocketProxy != null)

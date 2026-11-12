@@ -42,6 +42,14 @@ public class TokenAuthConfig
     public String userIdField = "preferred_username";
 
 
+    @DisplayInfo(label="Roles Claim", desc="Path of the token claim that contains the roles of the user, with / between the names. Keycloak realm roles: realm_access/roles")
+    public String userRolesField = "realm_access/roles";
+
+
+    @DisplayInfo(label="Add Users", desc="Add the user of a token to the OSH users, with the roles of the token. If off, the user must exist in OSH")
+    public boolean autoAddUser = true;
+
+
     @DisplayInfo(label="JWK Cache Size", desc="Number of public keys to keep in cache")
     public int cacheSize = 5;
 

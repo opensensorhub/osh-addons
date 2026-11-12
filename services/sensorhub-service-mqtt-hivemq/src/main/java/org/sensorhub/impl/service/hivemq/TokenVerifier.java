@@ -20,6 +20,9 @@ import java.security.PublicKey;
 import java.security.interfaces.ECPublicKey;
 import java.security.interfaces.RSAPublicKey;
 import java.time.Duration;
+import java.util.Collection;
+import java.util.LinkedHashSet;
+import java.util.Map;
 import org.slf4j.Logger;
 import com.auth0.jwk.JwkException;
 import com.auth0.jwk.JwkProvider;
@@ -44,6 +47,9 @@ class TokenVerifier
 {
     // below the time HiveMQ gives the authenticator (OshAuthenticator.AUTH_TIMEOUT_MS)
     static final int JWKS_TIMEOUT_MS = 2000;
+
+    // the OAuth module gives this role to all its users
+    static final String ANON_ROLE = "anon";
 
     final TokenAuthConfig config;
     final JwkProvider jwkProvider;
@@ -129,6 +135,35 @@ class TokenVerifier
             throw new JWTVerificationException("MQTT username is not equal to the token claim " + config.userIdField);
 
         return verified;
+    }
+
+
+    /**
+     * Read the roles of a verified token from the roles claim
+     * @return the roles of the token after the anon role, which all users have.
+     * A token without the roles claim gives only the anon role.
+     */
+    Collection<String> roles(DecodedJWT token)
+    {
+        var roles = new LinkedHashSet<String>();
+        roles.add(ANON_ROLE);
+        if (isBlank(config.userRolesField))
+            return roles;
+
+        var path = config.userRolesField.split("/");
+        Object elt = token.getClaim(path[0]).as(Object.class);
+        for (int i = 1; i < path.length && elt != null; i++)
+            elt = elt instanceof Map ? ((Map<?,?>)elt).get(path[i]) : null;
+
+        if (elt instanceof Collection)
+        {
+            for (var role: (Collection<?>)elt)
+            {
+                if (role instanceof String && !((String)role).isBlank())
+                    roles.add((String)role);
+            }
+        }
+        return roles;
     }
 
 
