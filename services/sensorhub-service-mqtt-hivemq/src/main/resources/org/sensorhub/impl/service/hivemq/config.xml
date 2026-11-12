@@ -21,7 +21,7 @@
             <enabled>false</enabled>
         </shared-subscriptions>
         <wildcard-subscriptions>
-            <enabled>false</enabled>
+            <enabled>true</enabled>
         </wildcard-subscriptions>
     </mqtt>
     <security>

@@ -16,12 +16,18 @@ package org.sensorhub.impl.service.csapi.mqtt;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.net.URI;
 import java.nio.ByteBuffer;
 import java.security.AccessControlException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Predicate;
 import org.sensorhub.api.comm.mqtt.IMqttServer;
 import org.sensorhub.api.comm.mqtt.InvalidPayloadException;
 import org.sensorhub.api.comm.mqtt.IMqttServer.IMqttHandler;
@@ -31,11 +37,19 @@ import org.sensorhub.api.comm.mqtt.MqttException;
 import org.sensorhub.api.comm.mqtt.MqttOutputStream;
 import org.sensorhub.impl.service.consys.InvalidRequestException;
 import org.sensorhub.impl.service.consys.InvalidRequestException.ErrorCode;
+import org.sensorhub.impl.security.ItemWithIdPermission;
+import org.sensorhub.impl.security.ItemWithParentPermission;
+import org.sensorhub.impl.service.consys.ConSysApiSecurity;
 import org.sensorhub.impl.service.consys.ConSysApiServlet;
 import org.sensorhub.impl.service.consys.resource.RequestContext;
 import org.sensorhub.impl.service.consys.resource.ResourceFormat;
+import org.sensorhub.impl.service.csapi.mqtt.TopicMapper.ResourceTopic;
 import org.sensorhub.impl.service.consys.stream.StreamHandler;
 import org.vast.util.Asserts;
+import com.google.common.base.Ticker;
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.util.concurrent.UncheckedExecutionException;
 
 
 /**
@@ -131,14 +145,39 @@ public class CsApiMqttConnector implements IMqttHandler
     
     public CsApiMqttConnector(ConSysApiServlet servlet, TopicMapper topics)
     {
+        this(servlet, topics, Ticker.systemTicker());
+    }
+
+
+    /** @param ticker the clock of the access cache */
+    CsApiMqttConnector(ConSysApiServlet servlet, TopicMapper topics, Ticker ticker)
+    {
         this.servlet = servlet;
         this.topics = topics;
+        this.accessCache = CacheBuilder.newBuilder()
+            .expireAfterWrite(ACCESS_CACHE_MS, TimeUnit.MILLISECONDS)
+            .maximumSize(ACCESS_CACHE_MAX)
+            .ticker(ticker)
+            .build();
     }
 
 
     @Override
     public void onSubscribe(String userID, String topic, IMqttServer server) throws InvalidTopicException
     {
+        // A wildcard filter can match the topics of many resources, also of
+        // resources created later. Check only that the user can read the
+        // resource it names. Each message is checked by canDeliver().
+        if (TopicMapper.isFilter(topic))
+        {
+            var uri = topics.parseFilter(topic).uri();
+            if (uri.getPath().equals(TopicMapper.SYSTEMS_PATH))
+                checkListSystems(userID);
+            else
+                checkSubscribe(userID, topic, uri);
+            return;
+        }
+
         // reject invalid topics before a subscriber is created
         var resource = topics.parse(topic);
 
@@ -146,23 +185,7 @@ public class CsApiMqttConnector implements IMqttHandler
         // only check that the resource exists and that the user can read it
         if (resource.event())
         {
-            try
-            {
-                servlet.getSecurityHandler().setCurrentUser(userID);
-                servlet.getRootHandler().doGet(new RequestContext(servlet, resource.uri(), DISCARD));
-            }
-            catch (SecurityException e)
-            {
-                throw e;
-            }
-            catch (Exception e)
-            {
-                throwSubscribeError(topic, e);
-            }
-            finally
-            {
-                servlet.getSecurityHandler().clearCurrentUser();
-            }
+            checkSubscribe(userID, topic, resource.uri());
             return;
         }
 
@@ -215,6 +238,203 @@ public class CsApiMqttConnector implements IMqttHandler
     }
     
     
+    /** Check that the user can read a resource, with a GET as the user */
+    void checkSubscribe(String userID, String topic, URI uri) throws InvalidTopicException
+    {
+        try
+        {
+            servlet.getSecurityHandler().setCurrentUser(userID);
+            servlet.getRootHandler().doGet(new RequestContext(servlet, uri, DISCARD));
+        }
+        catch (SecurityException e)
+        {
+            throw e;
+        }
+        catch (Exception e)
+        {
+            throwSubscribeError(topic, e);
+        }
+        finally
+        {
+            servlet.getSecurityHandler().clearCurrentUser();
+        }
+    }
+
+
+    /**
+     * Check that the user can list the systems collection. This is the check
+     * of a collection GET. A collection GET is not used here: through a
+     * stream handler, the CS API reads it as a streaming request.
+     */
+    void checkListSystems(String userID)
+    {
+        if (!(servlet.getSecurityHandler() instanceof ConSysApiSecurity security))
+            throw new AccessControlException("Cannot check access to the systems collection");
+
+        try
+        {
+            security.setCurrentUser(userID);
+            if (!security.hasPermission(security.system_permissions.list))
+                throw new AccessControlException("User " + userID + " cannot list systems");
+        }
+        finally
+        {
+            security.clearCurrentUser();
+        }
+    }
+
+
+    @Override
+    public boolean supportsWildcards()
+    {
+        return true;
+    }
+
+
+    /**
+     * Check a message that a client gets through a wildcard filter. Only
+     * Resource Events and Batch Resource Events are sent, and only if the
+     * user has the permission to read the resource, directly or from a
+     * system above it. Decisions are kept for {@link #ACCESS_CACHE_MS}.
+     */
+    @Override
+    public boolean canDeliver(String userID, String topic)
+    {
+        ResourceTopic resource;
+        try
+        {
+            resource = topics.parse(topic);
+        }
+        catch (InvalidTopicException e)
+        {
+            return false;
+        }
+
+        // Resource Data is sent only to exact subscriptions
+        if (!resource.event())
+            return false;
+
+        return checkRead(userID, resource.uri());
+    }
+
+
+    /** How long a read check of a wildcard delivery is kept */
+    static final long ACCESS_CACHE_MS = 10_000;
+    static final int ACCESS_CACHE_MAX = 10_000;
+    final Cache<String, Boolean> accessCache;
+
+
+    /** @return if the user can read the resource, from the cache if possible */
+    boolean checkRead(String userID, URI uri)
+    {
+        try
+        {
+            return accessCache.get(userID + '\0' + uri, () -> doCheckRead(userID, uri));
+        }
+        catch (ExecutionException | UncheckedExecutionException e)
+        {
+            return false;
+        }
+    }
+
+
+    /**
+     * Check the read permission of a resource, as the CS API does for a GET,
+     * but without a read of the resource. Thus the check also works for a
+     * resource that was deleted.
+     */
+    boolean doCheckRead(String userID, URI uri)
+    {
+        if (!(servlet.getSecurityHandler() instanceof ConSysApiSecurity security))
+            return false;
+
+        var res = ResourcePath.of(uri);
+        if (res == null)
+            return false;
+        var perms = switch (res.type()) {
+            case "systems", "subsystems" -> security.system_permissions;
+            case "datastreams" -> security.datastream_permissions;
+            case "controlstreams" -> security.commandstream_permissions;
+            default -> null;
+        };
+        if (perms == null)
+            return false;
+
+        try
+        {
+            security.setCurrentUser(userID);
+            return canRead(res,
+                id -> security.hasPermission(new ItemWithIdPermission(perms.get, id)),
+                parentId -> security.hasPermission(new ItemWithParentPermission(perms.get, parentId)));
+        }
+        catch (RuntimeException e)
+        {
+            // for example, an unknown user
+            return false;
+        }
+        finally
+        {
+            security.clearCurrentUser();
+        }
+    }
+
+
+    /**
+     * The permission can be given for the resource itself, or for a system
+     * above it. osh-core finds these systems in the database. This lookup
+     * fails for a deleted resource. Then the systems of the topic path are
+     * used.
+     * @param idAllowed checks the permission on a resource ID, with the
+     * systems above it in the database
+     * @param parentAllowed checks the permission on the resources of a system
+     */
+    static boolean canRead(ResourcePath res, Predicate<String> idAllowed, Predicate<String> parentAllowed)
+    {
+        try
+        {
+            if (idAllowed.test(res.id()))
+                return true;
+        }
+        catch (IllegalArgumentException e)
+        {
+            // the resource is not in the database
+        }
+
+        for (var ancestor: res.ancestors())
+        {
+            try
+            {
+                if (parentAllowed.test(ancestor))
+                    return true;
+            }
+            catch (IllegalArgumentException e)
+            {
+                // the system is not in the database
+            }
+        }
+        return false;
+    }
+
+
+    /**
+     * A resource in a topic path: its type and ID, and the IDs of the
+     * systems above it, nearest first
+     */
+    record ResourcePath(String type, String id, List<String> ancestors)
+    {
+        static ResourcePath of(URI uri)
+        {
+            var levels = uri.getPath().substring(1).split("/");
+            if (levels.length < 2 || levels.length % 2 != 0)
+                return null;
+            var ancestors = new ArrayList<String>();
+            for (int i = levels.length - 3; i > 0; i -= 2)
+                ancestors.add(levels[i]);
+            return new ResourcePath(levels[levels.length - 2], levels[levels.length - 1], ancestors);
+        }
+    }
+
+
     static void throwSubscribeError(String topic, Exception e) throws InvalidTopicException
     {
         if (e instanceof InvalidRequestException)

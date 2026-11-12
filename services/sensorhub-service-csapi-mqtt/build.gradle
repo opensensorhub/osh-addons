@@ -1,6 +1,6 @@
 description = 'Connected Systems API Part 3 MQTT Service'
 ext.details = 'MQTT binding of OGC API Connected Systems Part 3'
-version = '0.1.0'
+version = '0.2.0'
 
 
 dependencies {
