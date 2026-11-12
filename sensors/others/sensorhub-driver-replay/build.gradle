@@ -1,0 +1,33 @@
+description = 'Sensor Replay'
+ext.details = 'Allows for archived data streams to be played back as realtime'
+
+version = '1.3.0'
+if (project.hasProperty("snapshot") && project.property("snapshot") == "true") {
+    version = "${version}-SNAPSHOT"
+}
+
+dependencies {
+    implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
+    implementation 'org.sensorhub:sensorhub-datastore-h2:' + oshCoreVersion
+    implementation 'org.sensorhub:sensorhub-service-consys:' + oshCoreVersion
+}
+
+// add info to OSGI manifest
+osgi {
+    manifest {
+        attributes('Bundle-Vendor': 'GeoRobotix Innovative Research, LLC.')
+        attributes('Bundle-Activator': 'org.sensorhub.impl.sensor.replay.Activator')
+    }
+}
+
+// add info to maven pom
+ext.pom >>= {
+    developers {
+        developer {
+            id 'nickgaray'
+            name 'Nicolas Garay'
+            organization 'GeoRobotix Innovative Research, LLC.'
+            organizationUrl 'https://georobotix.us'
+        }
+    }
+}
