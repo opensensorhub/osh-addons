@@ -1,0 +1,65 @@
+// OGC SWE Common Data Model — Protocol Buffers Field Options
+// Extension companion file: defines google.protobuf.FieldOptions extensions
+// that carry SWE Common semantic metadata (definition URI, label, unit of
+// measure, reference frames, etc.) on the fields of any generated message.
+//
+// Companion to sweCommon3.proto and the rest of this protobuf/ directory,
+// but conceptually independent: sweCommon3.proto defines the SWE Common
+// *type system* (DataRecord, Quantity, Vector, …); this file defines the
+// *annotation surface* that downstream schemas use to attach SWE Common
+// semantics to fields of their own generated messages.
+//
+// Origin: starts as a vendored copy of
+//   https://github.com/opengeospatial/ogcapi-connected-systems
+//   path: swecommon/experiments/protobuf/swe_options.proto
+//   file commit: 74647886a1dcc8d51399814729c1bc6d4c04c648  (2024-04-30)
+//
+// Local additions (after vendoring): explicit `syntax = "proto3";` (upstream
+// omits it and defaults to proto2).
+//
+// **This is the sole working copy for now.** An earlier plan kept a
+// coordinated downstream re-mirror inside the consys-proto OSH service
+// module; that copy was removed on 2026-05-26 to avoid sync overhead
+// before the file is being actively consumed by Java code. When the OSH
+// service needs the .proto at build time, re-mirror it from here and
+// reinstate the lockstep workflow.
+//
+// Naming convention note: extension names are camelCase (uomCode, axisID,
+// referenceFrame, …) matching the corresponding SWE Common XML attributes
+// rather than proto3 snake_case. This is the convention used by the CS API
+// example schemas (e.g. observationSchema-scalar.proto uses `(uomCode)`
+// unqualified) and must not be changed without coordinating across all
+// consumers.
+//
+// Package: intentionally omitted. The CS API example schemas reference the
+// options by unqualified name (`(uomCode)`, `(referenceFrame)`, …); adding
+// a package would require every callsite to switch to a qualified name and
+// would break compatibility with the example schemas already published.
+//
+// `java_package` / `java_outer_classname` are set even though the proto
+// `package` is omitted: the two namespaces are independent. Without a
+// `java_package`, protoc emits `SweOptions` into the Java *default
+// (unnamed) package*, which classes in named packages (e.g. the generated
+// WeatherObservation) cannot legally reference — the Java build fails.
+// Setting only the Java options fixes that while leaving the proto
+// namespace (and the unqualified extension call-sites) untouched.
+
+syntax = "proto3";
+
+option java_package = "com.georobotix.swecommon";
+option java_outer_classname = "SweOptions";
+
+import "google/protobuf/descriptor.proto";
+
+extend google.protobuf.FieldOptions {
+  optional string id = 1000;
+  optional string label = 1001;
+  optional string description = 1002;
+  optional string definition = 1003;
+  optional string uomCode = 1004;
+  optional string uomHref = 1005;
+  optional string axisID = 1006;
+  optional string referenceFrame = 1007;
+  optional string localFrame = 1008;
+  optional string referenceTime = 1009;
+}

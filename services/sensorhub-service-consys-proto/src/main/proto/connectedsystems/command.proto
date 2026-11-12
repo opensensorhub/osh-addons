@@ -1,0 +1,79 @@
+// OGC Connected Systems API — Command resource (Part 2, clause 9)
+//
+// Models the `Command` resource — the actuator-side mirror of
+// `Observation`. A `Command` is a directive issued on a `ControlStream`
+// to actuate a property on the receiving `System`.
+//
+// Per the spec: "A `Feasibility` resource is a `Command` resource
+// created on a control stream feasibility channel" — the same proto
+// shape is reused for slots 108 (Command) and 111 (Feasibility) in
+// `cs_message.proto`. The slot itself discriminates intent.
+//
+// Field-number layout mirrors `observation.proto`.
+
+syntax = "proto3";
+
+package georobotix.csapi;
+
+option java_package = "com.georobotix.csapi";
+option java_outer_classname = "CommandProto";
+option go_package = "github.com/georobotix/csapi";
+
+import "connectedsystems/cs_common.proto";
+import "swecommon/sweCommon3.proto";
+
+// Command resource — a single command issued on a ControlStream.
+// Also used as the shape for Feasibility (per spec).
+message Command {
+  // ─── Identity (1–9) ───────────────────────────────────────────────
+  string id              = 1;
+  string controlstream_id = 2;  // required per spec
+                                // (JSON: `controlstream@id`)
+
+  reserved 3 to 9;
+
+  // ─── Cross-resource references (10–19) ────────────────────────────
+  optional string sampling_feature_id = 10;
+  Link            procedure           = 11;
+
+  reserved 12 to 19;
+
+  // ─── Time (20–29) ─────────────────────────────────────────────────
+  TimeInstant issue_time     = 20;  // required per spec; server-set
+                                    // if omitted on create
+  TimePeriod  execution_time = 21;  // when execution occurred / is
+                                    // scheduled
+
+  reserved 22 to 29;
+
+  // ─── Sender & status (30–39) ──────────────────────────────────────
+  string             sender         = 30;  // submitter identifier
+  CommandStatusCode  current_status = 31;  // current lifecycle status
+
+  reserved 32 to 39;
+
+  // ─── Parameters payload (40–49) ───────────────────────────────────
+  //
+  // Command parameters — schema defined per-ControlStream. Carried as
+  // SWE Common `EncodedValues` for symmetry with Observation.result.
+  georobotix.swecommon.EncodedValues parameters = 40;
+
+  reserved 41 to 49;
+  reserved 50 to 99;
+}
+
+// Command lifecycle status codes per the spec (commandStatusCode.json).
+// For Feasibility, the same enum applies with the spec's
+// feasibility-specific semantic notes (SCHEDULED / UPDATED unused).
+enum CommandStatusCode {
+  COMMAND_STATUS_CODE_UNSPECIFIED = 0;
+  COMMAND_STATUS_CODE_PENDING     = 1;
+  COMMAND_STATUS_CODE_ACCEPTED    = 2;
+  COMMAND_STATUS_CODE_REJECTED    = 3;
+  COMMAND_STATUS_CODE_SCHEDULED   = 4;
+  COMMAND_STATUS_CODE_UPDATED     = 5;
+  COMMAND_STATUS_CODE_CANCELED    = 6;
+  COMMAND_STATUS_CODE_EXECUTING   = 7;
+  COMMAND_STATUS_CODE_FAILED      = 8;
+  COMMAND_STATUS_CODE_COMPLETED   = 9;
+}

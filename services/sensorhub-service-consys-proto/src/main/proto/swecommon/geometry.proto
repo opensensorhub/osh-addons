@@ -1,0 +1,51 @@
+// OGC SWE Common Data Model 3.0 — Protocol Buffers Schema — Geometry Components
+// Package 9: ISO-19107 geometry components (new in SWE Common 3.0).
+// Standard: OGC 24-014  (https://docs.ogc.org/is/24-014/24-014.html)
+
+syntax = "proto3";
+
+package georobotix.swecommon;
+
+option java_package = "com.georobotix.swecommon";
+option java_outer_classname = "SweCommonGeometryProto";
+option go_package = "github.com/georobotix/swecommon";
+
+import "swecommon/basic_types.proto";
+
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Package 9 — Geometry Components  (new in SWE Common 3.0)
+// ═══════════════════════════════════════════════════════════════════════════
+
+enum GeometryType {
+  GEOMETRY_TYPE_UNSPECIFIED = 0;
+  GEOMETRY_TYPE_POINT = 1;
+  GEOMETRY_TYPE_MULTI_POINT = 2;
+  GEOMETRY_TYPE_LINE_STRING = 3;
+  GEOMETRY_TYPE_MULTI_LINE_STRING = 4;
+  GEOMETRY_TYPE_POLYGON = 5;
+  GEOMETRY_TYPE_MULTI_POLYGON = 6;
+}
+
+message GeoJsonGeometry {
+  // Simplified GeoJSON Geometry for wire use.
+  GeometryType type = 1;
+  // Packed float64 coordinate data.
+  bytes coordinates = 2;
+  // Full GeoJSON coordinates as text fallback.
+  string coordinates_json = 3;
+}
+
+message GeometryConstraint {
+  repeated GeometryType geom_types = 1;
+}
+
+message Geometry {
+  // ISO-19107 geometry embedded in a SWE Common data structure.
+  AbstractDataComponent data_component = 1;
+  GeometryConstraint constraint = 2;
+  repeated NilValueText nil_values = 3;
+  // URI — coordinate reference system (required by OGC spec).
+  string srs = 4;
+  GeoJsonGeometry value = 5;
+}

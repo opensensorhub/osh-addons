@@ -1,0 +1,62 @@
+// OGC Connected Systems API — CommandResult resource (Part 2, clause 9)
+//
+// Result data produced by executing a Command. Per spec, a result can
+// be one of: inline data, a link to a single observation, a link to a
+// set of observations, a link to a datastream, or a link to an
+// external dataset. Modeled here as a `oneof` over those variants.
+//
+// Same proto shape is reused for slot 110 (CommandResult) and slot
+// 113 (FeasibilityResult). For feasibility, the inline `data` typically
+// conveys the feasibility verdict + supporting evidence.
+
+syntax = "proto3";
+
+package georobotix.csapi;
+
+option java_package = "com.georobotix.csapi";
+option java_outer_classname = "CommandResultProto";
+option go_package = "github.com/georobotix/csapi";
+
+import "connectedsystems/cs_common.proto";
+import "swecommon/sweCommon3.proto";  // EncodedValues
+
+// CommandResult — result of executing a Command (or Feasibility).
+message CommandResult {
+  // ─── Identity (1–9) ───────────────────────────────────────────────
+  string id         = 1;  // required per spec
+  string command_id = 2;  // required per spec
+                          // (JSON: `command@id`)
+
+  reserved 3 to 9;
+
+  // ─── Result variant (10–19) ───────────────────────────────────────
+  //
+  // Spec's oneOf:
+  //   * Inline result      (JSON `data`)
+  //   * Single observation (JSON `observation@link`)
+  //   * Observation set    (JSON `observationSet@link`)
+  //   * Datastream         (JSON `datastream@link`)
+  //   * External dataset   (JSON `external@link`)
+  //
+  // The datastream variant carries an additional `result_time`
+  // TimePeriod, expressed here via a nested message.
+  oneof result {
+    georobotix.swecommon.EncodedValues inline           = 10;  // inline data
+    Link                        observation_link = 11;
+    Link                        observation_set_link = 12;
+    DatastreamResultLink        datastream_link  = 13;
+    Link                        external_link    = 14;
+  }
+
+  reserved 15 to 19;
+  reserved 20 to 99;
+}
+
+// Datastream result link with optional result-time scope.
+// Spec: commandResult.json (datastream@link variant) — Link plus an
+// optional `resultTime` TimePeriod scoping which datastream
+// observations belong to the command.
+message DatastreamResultLink {
+  Link       link        = 1;  // link to the datastream
+  TimePeriod result_time = 2;  // optional time scope
+}
