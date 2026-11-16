@@ -34,11 +34,12 @@ When OSH access control is on, an MQTT client logs in with the name and the pass
 - A user must have a password to log in with a password. The server refuses a CONNECT that has a user name and an empty password or no password.
 - The server also refuses a user that has no password in the user registry, for example a user that an OAuth login added. Such a user can log in with a token (see Token login).
 - A CONNECT without a user name gets the `anonymous` user when `requireAuth` is off.
+- When token login is on, the server refuses password logins and connections without a user name, unless `allowPasswordLogin` is on (see Token login).
 
 
 ### Token login
 
-Since version 0.3.0, a client can send an OAuth 2.0 access token (for example from Keycloak) as the MQTT password. Password login stays as it is.
+Since version 0.3.0, a client can send an OAuth 2.0 access token (for example from Keycloak) as the MQTT password. When token login is on, a token is the only way to log in (see Token login only).
 
 To turn it on, set these settings in the MQTT Server config (`tokenAuth`). The names are the same as in the bearer token settings of the OAuth module (`sensorhub-security-oauth`).
 
@@ -48,6 +49,7 @@ To turn it on, set these settings in the MQTT Server config (`tokenAuth`). The n
 - `userIdField`: token claim that must be equal to the MQTT username. Default: `preferred_username`.
 - `userRolesField`: path of the token claim that contains the roles of the user, with `/` between the names. Default: `realm_access/roles` (Keycloak realm roles).
 - `autoAddUser`: add the user of a token to the OSH users. Default: on.
+- `allowPasswordLogin`: also accept the password of an OSH user, and connections without credentials if `requireAuth` is off. Default: off.
 - `cacheSize`, `cacheDuration`: number of public keys to keep, and time in minutes to keep them.
 
 The client sends:
@@ -60,6 +62,21 @@ The server checks the signature, the issuer, the expiry (`exp` is required) and 
 If the server cannot get the public keys (the issuer is down, or it refuses too many requests), it refuses all token logins. Each refusal adds a warning to the log. Other refusals are logged at debug level only.
 
 The connection gets the username as its OSH user, also when OSH access control is off.
+
+#### Token login only
+
+Since version 0.3.1, when `jwksUri` is set, a token is the only way to log in. This is the default, so that a server with token login does not accept passwords by accident.
+
+- The server refuses a CONNECT with a password. This includes the correct password of a user in the OSH config, for example an administrator. The server does not check the password.
+- The server refuses a CONNECT without a user name, also when `requireAuth` is off.
+- A user in the OSH config can log in with a token. The token must have the user name of this user in the username claim.
+- If the token settings are not valid (for example `issuer` is empty or `jwksUri` is not a URL), the server refuses all logins. It does not go back to password login. The log shows an error when the server starts.
+
+To accept passwords and tokens together, set `allowPasswordLogin` to on. Then password login works as without token login, and `requireAuth` controls connections without credentials. The log shows a warning when the server starts.
+
+The server writes the login methods that it accepts to the log when it starts (`MQTT login: ...`).
+
+This setting applies to MQTT only, also through the websocket proxy. It does not change the login of the HTTP server.
 
 #### Token users and roles
 

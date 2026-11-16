@@ -20,7 +20,8 @@ import org.sensorhub.api.config.DisplayInfo;
 /**
  * <p>
  * Settings to accept OAuth 2.0 access tokens (for example from Keycloak) as
- * the MQTT password. Token login is on when {@link #jwksUri} is set.
+ * the MQTT password. Token login is on when {@link #jwksUri} is set. A token
+ * is then the only way to log in, unless {@link #allowPasswordLogin} is set.
  * The names are the same as in the bearer token settings of the OAuth module.
  * </p>
  */
@@ -48,6 +49,10 @@ public class TokenAuthConfig
 
     @DisplayInfo(label="Add Users", desc="Add the user of a token to the OSH users, with the roles of the token. If off, the user must exist in OSH")
     public boolean autoAddUser = true;
+
+
+    @DisplayInfo(label="Allow Password Login", desc="Also accept the password of an OSH user when token login is on. If off, a token is the only way to log in: the server refuses passwords (also of local users) and connections without credentials")
+    public boolean allowPasswordLogin = false;
 
 
     @DisplayInfo(label="JWK Cache Size", desc="Number of public keys to keep in cache")

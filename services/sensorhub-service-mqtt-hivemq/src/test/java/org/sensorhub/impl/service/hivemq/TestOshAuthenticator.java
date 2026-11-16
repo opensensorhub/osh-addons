@@ -81,6 +81,15 @@ public class TestOshAuthenticator
     }
 
 
+    /* token login on, and the operator also allows password login */
+    static TokenAuthConfig mixedConfig()
+    {
+        var config = tokenConfig();
+        config.allowPasswordLogin = true;
+        return config;
+    }
+
+
     /* authenticator without a security manager: access control on, one user with a password */
     class TestAuthenticator extends OshAuthenticator
     {
@@ -453,8 +462,7 @@ public class TestOshAuthenticator
         assertTrue(users.isEmpty());
 
         // a login without a token has no connection ID
-        auth.accessControl = true;
-        assertNull(auth.authenticate("alice", PASSWORD).connId);
+        assertNull(authenticator(mixedConfig(), true).authenticate("alice", PASSWORD).connId);
     }
 
 
@@ -486,8 +494,8 @@ public class TestOshAuthenticator
         assertEquals(expiry, login.tokenExpiry);
 
         // no expiry for a password or an anonymous login
-        assertNull(authenticator().authenticate("alice", PASSWORD).tokenExpiry);
-        assertNull(authenticator(tokenConfig(), false).authenticate(null, "").tokenExpiry);
+        assertNull(authenticator(mixedConfig(), true).authenticate("alice", PASSWORD).tokenExpiry);
+        assertNull(authenticator(mixedConfig(), false).authenticate(null, "").tokenExpiry);
     }
 
 
@@ -574,9 +582,67 @@ public class TestOshAuthenticator
 
 
     @Test
-    public void testPasswordLoginStillWorks()
+    public void testTokenOnlyRefusesPassword()
     {
+        // token login on: a correct password is refused, and it is not checked
+        assertNull(authenticator().user("alice", PASSWORD));
+        assertNull(authenticator(tokenConfig(), false).user("alice", PASSWORD));
+        assertTrue(passwordChecks.isEmpty());
+    }
+
+
+    @Test
+    public void testTokenOnlyRefusesLocalUserPassword()
+    {
+        // a user of the OSH config must also use a token
+        users.put("alice", localUser("alice", PASSWORD, "osh_viewer"));
         var auth = authenticator();
+        assertNull(auth.user("alice", PASSWORD));
+        assertEquals("alice", auth.user("alice", token("alice")));
+    }
+
+
+    @Test
+    public void testTokenOnlyRefusesAnonymous()
+    {
+        // also when authentication is not required
+        assertNull(authenticator(tokenConfig(), false).user(null, ""));
+        assertNull(authenticator(tokenConfig(), true).user(null, ""));
+    }
+
+
+    @Test
+    public void testTokenOnlyWithoutAccessControl()
+    {
+        var auth = authenticator(tokenConfig(), false);
+        auth.accessControl = false;
+        assertNull(auth.user("alice", PASSWORD));
+        assertNull(auth.user(null, ""));
+        assertEquals("alice", auth.user("alice", token("alice")));
+    }
+
+
+    @Test
+    public void testInvalidTokenSettingsDoNotAllowPasswords()
+    {
+        // the JWKS URL is set but there is no verifier (for example no issuer):
+        // the server refuses all logins, it does not go back to passwords
+        var auth = authenticator(tokenConfig(), false, null);
+        assertNull(auth.user("alice", PASSWORD));
+        assertNull(auth.user("alice", token("alice")));
+        assertNull(auth.user(null, ""));
+        assertTrue(passwordChecks.isEmpty());
+
+        // with password login allowed, passwords work
+        assertEquals("alice", authenticator(mixedConfig(), true, null).user("alice", PASSWORD));
+    }
+
+
+    @Test
+    public void testPasswordLoginWhenAllowed()
+    {
+        var auth = authenticator(mixedConfig(), true);
+        assertEquals("alice", auth.user("alice", token("alice")));
         assertEquals("alice", auth.user("alice", PASSWORD));
         assertNull(auth.user("alice", "wrong"));
         assertEquals(List.of("alice", "alice"), passwordChecks);
@@ -596,8 +662,9 @@ public class TestOshAuthenticator
     @Test
     public void testAnonymousWhenAuthNotRequired()
     {
-        assertEquals(ISecurityManager.ANONYMOUS_USER, authenticator(tokenConfig(), false).user(null, ""));
-        assertNull(authenticator(tokenConfig(), true).user(null, ""));
+        assertEquals(ISecurityManager.ANONYMOUS_USER, authenticator(mixedConfig(), false).user(null, ""));
+        assertNull(authenticator(mixedConfig(), true).user(null, ""));
+        assertEquals(ISecurityManager.ANONYMOUS_USER, authenticator(new TokenAuthConfig(), false).user(null, ""));
     }
 
 

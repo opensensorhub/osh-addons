@@ -94,6 +94,16 @@ public class OshAuthenticator implements SimpleAuthenticator
         this.config = config;
         this.tokenVerifier = tokenVerifier;
         this.log = log;
+
+        var others = config.requireAuth ? "password" : "password, anonymous";
+        if (isTokenOnly() && tokenVerifier == null)
+            log.error("MQTT login: all logins are refused. The token login settings are not valid and password login is not allowed");
+        else if (isTokenOnly())
+            log.info("MQTT login: token only (password and anonymous logins are refused)");
+        else if (tokenVerifier != null)
+            log.warn("MQTT login: token, {} (allowPasswordLogin is on)", others);
+        else
+            log.info("MQTT login: {}", others);
     }
 
 
@@ -182,6 +192,13 @@ public class OshAuthenticator implements SimpleAuthenticator
             }
         }
 
+        // token login is on: nothing but a token gets in, unless the operator allows it
+        if (isTokenOnly())
+        {
+            log.debug("Login refused for user {}: only token login is allowed", userID != null ? userID : "(none)");
+            return null;
+        }
+
         // check user exists and password matches
         if (userID != null && isAccessControlEnabled())
             return checkPassword(userID, pwd.toCharArray()) ? new Login(userID, null) : null;
@@ -190,6 +207,19 @@ public class OshAuthenticator implements SimpleAuthenticator
             return new Login(ISecurityManager.ANONYMOUS_USER, null);
 
         return null;
+    }
+
+
+    /**
+     * @return true if a token is the only way to log in: the config has token
+     * login settings and does not allow password login. This is also true if
+     * the token settings are not valid: the server then refuses all logins,
+     * it does not go back to passwords.
+     */
+    boolean isTokenOnly()
+    {
+        var tokenAuth = config.tokenAuth;
+        return tokenAuth != null && !TokenVerifier.isBlank(tokenAuth.jwksUri) && !tokenAuth.allowPasswordLogin;
     }
 
 
