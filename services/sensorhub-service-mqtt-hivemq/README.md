@@ -29,54 +29,182 @@ The check of a wildcard match runs outside the HiveMQ threads. Each message that
 
 ### Login
 
-When OSH access control is on, an MQTT client logs in with the name and the password of an OSH user.
+This section tells you how to set who can connect to the MQTT server. You set this in the Admin UI:
+
+1. Click **Services** in the list on the left, then click **MQTT Server**.
+2. The **General** tab has the **Require Authentication** box.
+3. The **Token Login** tab has the token settings and the **Allow Password Login** box.
+
+#### Choose a login mode
+
+| You want | Require Authentication | Token Login | Allow Password Login |
+|---|---|---|---|
+| 1. Clients log in with an OSH user name and password (default) | on | empty | - |
+| 2. Clients log in with a token from Keycloak only | on | filled in | off |
+| 3. Clients log in with a token or with a password | on | filled in | on |
+| 4. Clients connect without a login | off | any | any |
+
+Two rules apply to all modes:
+
+- **Require Authentication** (`requireAuth`) controls only the clients that send no user name. If it is on, the server refuses them. If it is off, they connect as the `anonymous` user. Since version 0.3.1 the default is on, as for the other OSH services.
+- A client that sends a user name must log in correctly. If its password or its token is wrong, the server refuses it. The client does not become `anonymous`. (One exception: a node without a list of users, see Before you start.)
+
+After each change of these settings:
+
+1. Click **Apply Changes** (top right). The MQTT Server starts again with the new settings. This disconnects the clients.
+2. Click **Save** (top left), then **Yes**. This keeps the change when the node starts again. Without this step, the change is lost when the node stops.
+
+#### Before you start
+
+- The node must have a list of users (click **Security** in the list on the left, then **Users**). The **Users** tab has the users, and the **Roles** tab has the roles. Without it, the server cannot check a password. Then a client that sends a password is refused if **Require Authentication** is on, and connects as `anonymous` if it is off. Token login works without the list of users.
+- What a user can read and write comes from the roles of the user in OSH. The login settings do not change this.
+
+#### Mode 1: user name and password (default)
+
+1. Click **Services**, then **MQTT Server**.
+2. On the **General** tab, make sure that **Require Authentication** is on.
+3. On the **Token Login** tab, make sure that **JSON Web Key Set Endpoint** is empty.
+4. Click **Apply Changes**, then **Save**.
+
+The client sends the user name and the password of an OSH user. Example:
+
+```
+mosquitto_sub -h <node address> -p 1883 -u <OSH user> -P <password> -t '<topic>'
+```
+
+Rules for passwords:
 
 - A user must have a password to log in with a password. The server refuses a CONNECT that has a user name and an empty password or no password.
-- The server also refuses a user that has no password in the user registry, for example a user that an OAuth login added. Such a user can log in with a token (see Token login).
-- A CONNECT without a user name gets the `anonymous` user when `requireAuth` is off.
-- When token login is on, the server refuses password logins and connections without a user name, unless `allowPasswordLogin` is on (see Token login).
+- The server also refuses a user that has no password in the user registry, for example a user that an OAuth login added. Such a user can log in with a token (mode 2 or 3).
+
+#### Mode 2: tokens only
+
+Since version 0.3.0, a client can send an OAuth 2.0 access token (for example from Keycloak) as the MQTT password. Since version 0.3.1, when token login is on, a user can log in with a token only. The server refuses each password, also the correct password of a user in the OSH config (for example an administrator).
+
+You need this data from the administrator of Keycloak:
+
+- The realm URL, for example `https://keycloak.example.org/realms/osh`.
+- The names of the realm roles that the users have.
+
+Steps:
+
+1. Click **Services**, then **MQTT Server**, then the **Token Login** tab.
+2. In **JSON Web Key Set Endpoint**, type the realm URL and then `/protocol/openid-connect/certs`. Example: `https://keycloak.example.org/realms/osh/protocol/openid-connect/certs`.
+3. In **Token Issuer**, type the realm URL. It must be exactly the same as in the tokens (the `iss` value).
+4. Leave **Allow Password Login** off.
+5. Leave the other fields as they are. See Token login settings if you must change them.
+6. Click **Apply Changes**, then **Save**.
+7. Click **Security**, then **Users**. On the **Roles** tab, make one OSH role for each Keycloak realm role, with the same name, and give it permissions. See Token users and roles.
+
+The client sends:
+
+- User name: the Keycloak user name. For a Keycloak service account, this is `service-account-<client ID>`.
+- Password: the access token.
+
+Example (get a token, then connect):
+
+```
+TOKEN=$(curl -s <realm URL>/protocol/openid-connect/token \
+  -d grant_type=password -d client_id=<client ID> \
+  -d username=<Keycloak user> -d password=<Keycloak password> \
+  | sed 's/.*"access_token":"\([^"]*\)".*/\1/')
+
+mosquitto_sub -h <node address> -p 1883 -u <Keycloak user> -P "$TOKEN" -t '<topic>'
+```
+
+A user in the OSH config can also log in with a token. The Keycloak user name must be the same as the OSH user name. This user gets its roles from OSH, not from the token.
+
+If the token settings are not valid (for example **Token Issuer** is empty, or the endpoint is not a URL), no user can log in. The server does not go back to password login. The log shows an error when the server starts.
+
+#### Mode 3: tokens and passwords
+
+Do the steps of mode 2, but in step 4 set **Allow Password Login** (`allowPasswordLogin`) to on. Then a client can log in with a token (as in mode 2) or with the user name and password of an OSH user (as in mode 1). The log shows a warning when the server starts, because the server accepts two types of login.
+
+#### Mode 4: no login
+
+On the **General** tab, set **Require Authentication** to off. Click **Apply Changes**, then **Save**. A client that sends no user name then connects as the `anonymous` user. It can do only what the role `anon` permits.
+
+This setting does not change the login of clients that send a user name. Mode 1, 2 or 3 applies to them.
+
+Example:
+
+```
+mosquitto_sub -h <node address> -p 1883 -t '<topic>'
+```
+
+#### Make sure that the mode is correct
+
+When the MQTT Server starts, it writes one line to the node log. The line tells you which logins the server accepts:
+
+| Log line | Meaning |
+|---|---|
+| `MQTT login: password` | Mode 1 |
+| `MQTT login: token only, passwords are refused` | Mode 2 |
+| `MQTT login: token and password (allowPasswordLogin is on)` | Mode 3 (warning) |
+| `MQTT login: no user can log in. The token login settings are not valid ...` | Mode 2 with an error in the settings |
+| `... Connections without a user name are accepted (requireAuth is off)` | Added to the line in mode 4 |
+
+#### If a client cannot connect
+
+The client gets the answer `Bad user name or password` for each refused login. Look for the cause in this list:
+
+- Mode 2, and the client sent a password that is not a token. Use a token, or use mode 3.
+- The token expired. Get a new token. Keycloak tokens are valid for a short time (frequently 5 to 15 minutes).
+- The user name is not the user name in the token.
+- **Token Issuer** is not exactly the `iss` value of the token. A different host name, port or `http`/`https` is sufficient to fail.
+- **Token Audience** is set, and the token does not have this audience. Clear the field to skip this check.
+- The node cannot connect to the JSON Web Key Set Endpoint. The log then shows a warning for each token login.
+- The client sent no user name, and **Require Authentication** is on.
+- The client sent a user name without a password.
+
+Refusals are in the node log at debug level (`org.sensorhub`).
+
+The client connects but cannot subscribe or publish: the user has no OSH role that gives the permission. See Token users and roles.
+
+#### What the login settings do not change
+
+- The settings apply to MQTT only, also through the websocket proxy. They do not change the login of the HTTP server (Admin UI, CS API).
+- The websocket proxy does not ask for HTTP credentials. The client logs in with the MQTT CONNECT, as on the TCP port.
 
 
 ### Token login
 
-Since version 0.3.0, a client can send an OAuth 2.0 access token (for example from Keycloak) as the MQTT password. When token login is on, a token is the only way to log in (see Token login only).
+#### Token login settings
 
-To turn it on, set these settings in the MQTT Server config (`tokenAuth`). The names are the same as in the bearer token settings of the OAuth module (`sensorhub-security-oauth`).
+The settings are in the MQTT Server config, in **Token Login** (`tokenAuth` in the config file). The names are the same as in the bearer token settings of the OAuth module (`sensorhub-security-oauth`). Token login is on when `jwksUri` is set.
 
-- `jwksUri`: URL of the public keys of the issuer. Keycloak: `{realm URL}/protocol/openid-connect/certs`.
-- `issuer`: issuer that the token must have (`iss`). Keycloak: the realm URL. Required.
-- `audience`: audience that the token must have (`aud`). Leave it empty to skip this check.
-- `userIdField`: token claim that must be equal to the MQTT username. Default: `preferred_username`.
-- `userRolesField`: path of the token claim that contains the roles of the user, with `/` between the names. Default: `realm_access/roles` (Keycloak realm roles).
-- `autoAddUser`: add the user of a token to the OSH users. Default: on.
-- `allowPasswordLogin`: also accept the password of an OSH user, and connections without credentials if `requireAuth` is off. Default: off.
-- `cacheSize`, `cacheDuration`: number of public keys to keep, and time in minutes to keep them.
+| Admin UI | Config file | Meaning |
+|---|---|---|
+| JSON Web Key Set Endpoint | `jwksUri` | URL of the public keys of the issuer. Keycloak: `{realm URL}/protocol/openid-connect/certs`. |
+| Token Issuer | `issuer` | Issuer that the token must have (`iss`). Keycloak: the realm URL. Required. |
+| Token Audience | `audience` | Audience that the token must have (`aud`). Leave it empty to skip this check. |
+| Username Claim | `userIdField` | Token claim that must be equal to the MQTT user name. Default: `preferred_username`. |
+| Roles Claim | `userRolesField` | Path of the token claim that contains the roles of the user, with `/` between the names. Default: `realm_access/roles` (Keycloak realm roles). |
+| Add Users | `autoAddUser` | Add the user of a token to the OSH users. Default: on. If off, only users that are in OSH can log in. |
+| Allow Password Login | `allowPasswordLogin` | Also accept the user name and password of an OSH user. Default: off. |
+| JWK Cache Size, JWK Cache Duration | `cacheSize`, `cacheDuration` | Number of public keys to keep, and time in minutes to keep them. |
 
-The client sends:
+Example of the config file for mode 2:
 
-- Username: the value of the username claim. For a Keycloak service account, this is `service-account-<client ID>`.
-- Password: the access token.
+```json
+{
+  "objClass": "org.sensorhub.impl.service.hivemq.MqttServerConfig",
+  "moduleClass": "org.sensorhub.impl.service.hivemq.MqttServer",
+  "requireAuth": true,
+  "tokenAuth": {
+    "jwksUri": "https://keycloak.example.org/realms/osh/protocol/openid-connect/certs",
+    "issuer": "https://keycloak.example.org/realms/osh"
+  }
+}
+```
+
+#### How the server checks a token
 
 The server checks the signature, the issuer, the expiry (`exp` is required) and the audience if set. If the password is a token and one check fails, the server refuses the connection. It does not try the token as a password.
 
 If the server cannot get the public keys (the issuer is down, or it refuses too many requests), it refuses all token logins. Each refusal adds a warning to the log. Other refusals are logged at debug level only.
 
-The connection gets the username as its OSH user, also when OSH access control is off.
-
-#### Token login only
-
-Since version 0.3.1, when `jwksUri` is set, a token is the only way to log in. This is the default, so that a server with token login does not accept passwords by accident.
-
-- The server refuses a CONNECT with a password. This includes the correct password of a user in the OSH config, for example an administrator. The server does not check the password.
-- The server refuses a CONNECT without a user name, also when `requireAuth` is off.
-- A user in the OSH config can log in with a token. The token must have the user name of this user in the username claim.
-- If the token settings are not valid (for example `issuer` is empty or `jwksUri` is not a URL), the server refuses all logins. It does not go back to password login. The log shows an error when the server starts.
-
-To accept passwords and tokens together, set `allowPasswordLogin` to on. Then password login works as without token login, and `requireAuth` controls connections without credentials. The log shows a warning when the server starts.
-
-The server writes the login methods that it accepts to the log when it starts (`MQTT login: ...`).
-
-This setting applies to MQTT only, also through the websocket proxy. It does not change the login of the HTTP server.
+The connection gets the user name as its OSH user, also when OSH access control is off.
 
 #### Token users and roles
 

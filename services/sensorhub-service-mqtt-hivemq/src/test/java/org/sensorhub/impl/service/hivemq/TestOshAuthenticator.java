@@ -603,11 +603,15 @@ public class TestOshAuthenticator
 
 
     @Test
-    public void testTokenOnlyRefusesAnonymous()
+    public void testTokenOnlyKeepsRequireAuth()
     {
-        // also when authentication is not required
-        assertNull(authenticator(tokenConfig(), false).user(null, ""));
+        // requireAuth alone controls a CONNECT without a user name
+        assertEquals(ISecurityManager.ANONYMOUS_USER, authenticator(tokenConfig(), false).user(null, ""));
         assertNull(authenticator(tokenConfig(), true).user(null, ""));
+
+        // a user name without a valid token does not become anonymous
+        assertNull(authenticator(tokenConfig(), false).user("alice", ""));
+        assertNull(authenticator(tokenConfig(), false).user("alice", PASSWORD));
     }
 
 
@@ -617,7 +621,6 @@ public class TestOshAuthenticator
         var auth = authenticator(tokenConfig(), false);
         auth.accessControl = false;
         assertNull(auth.user("alice", PASSWORD));
-        assertNull(auth.user(null, ""));
         assertEquals("alice", auth.user("alice", token("alice")));
     }
 
@@ -626,8 +629,8 @@ public class TestOshAuthenticator
     public void testInvalidTokenSettingsDoNotAllowPasswords()
     {
         // the JWKS URL is set but there is no verifier (for example no issuer):
-        // the server refuses all logins, it does not go back to passwords
-        var auth = authenticator(tokenConfig(), false, null);
+        // the server refuses all users, it does not go back to passwords
+        var auth = authenticator(tokenConfig(), true, null);
         assertNull(auth.user("alice", PASSWORD));
         assertNull(auth.user("alice", token("alice")));
         assertNull(auth.user(null, ""));

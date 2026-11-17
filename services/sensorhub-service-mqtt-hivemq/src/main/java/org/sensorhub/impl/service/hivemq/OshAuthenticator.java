@@ -95,15 +95,15 @@ public class OshAuthenticator implements SimpleAuthenticator
         this.tokenVerifier = tokenVerifier;
         this.log = log;
 
-        var others = config.requireAuth ? "password" : "password, anonymous";
+        var anon = config.requireAuth ? "" : ". Connections without a user name are accepted (requireAuth is off)";
         if (isTokenOnly() && tokenVerifier == null)
-            log.error("MQTT login: all logins are refused. The token login settings are not valid and password login is not allowed");
+            log.error("MQTT login: no user can log in. The token login settings are not valid and password login is not allowed{}", anon);
         else if (isTokenOnly())
-            log.info("MQTT login: token only (password and anonymous logins are refused)");
+            log.info("MQTT login: token only, passwords are refused{}", anon);
         else if (tokenVerifier != null)
-            log.warn("MQTT login: token, {} (allowPasswordLogin is on)", others);
+            log.warn("MQTT login: token and password (allowPasswordLogin is on){}", anon);
         else
-            log.info("MQTT login: {}", others);
+            log.info("MQTT login: password{}", anon);
     }
 
 
@@ -192,10 +192,11 @@ public class OshAuthenticator implements SimpleAuthenticator
             }
         }
 
-        // token login is on: nothing but a token gets in, unless the operator allows it
-        if (isTokenOnly())
+        // token login is on: a user logs in with a token only, unless the operator
+        // allows passwords. A CONNECT without a user name is not a login: see requireAuth
+        if (userID != null && isTokenOnly())
         {
-            log.debug("Login refused for user {}: only token login is allowed", userID != null ? userID : "(none)");
+            log.debug("Password login refused for user {}: only token login is allowed", userID);
             return null;
         }
 
@@ -211,10 +212,10 @@ public class OshAuthenticator implements SimpleAuthenticator
 
 
     /**
-     * @return true if a token is the only way to log in: the config has token
-     * login settings and does not allow password login. This is also true if
-     * the token settings are not valid: the server then refuses all logins,
-     * it does not go back to passwords.
+     * @return true if a user can log in with a token only: the config has
+     * token login settings and does not allow password login. This is also
+     * true if the token settings are not valid: the server then refuses all
+     * users, it does not go back to passwords.
      */
     boolean isTokenOnly()
     {

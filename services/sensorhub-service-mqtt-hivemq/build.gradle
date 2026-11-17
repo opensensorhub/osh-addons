@@ -16,6 +16,11 @@ dependencies {
   }
 }
 
+// add the README to the jar, for the README tab of the Admin UI
+processResources {
+  from('README.md') { into 'org/sensorhub/impl/service/hivemq' }
+}
+
 // add info to OSGi manifest
 osgi {
   manifest {

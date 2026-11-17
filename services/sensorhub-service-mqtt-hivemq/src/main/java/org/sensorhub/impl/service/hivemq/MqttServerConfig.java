@@ -40,8 +40,8 @@ public class MqttServerConfig extends ServiceConfig
     public boolean enableWebSocketProxy = false;
     
     
-    @DisplayInfo(label="Require Authentication", desc="Set to require remote users to be authentified before they can use this service")
-    public boolean requireAuth = false;
+    @DisplayInfo(label="Require Authentication", desc="Refuse clients that connect without a user name. If off, such a client connects as the anonymous user. A client that sends a user name must always log in")
+    public boolean requireAuth = true;
 
 
     @DisplayInfo(label="Token Login", desc="Settings to accept access tokens (for example from Keycloak) as the MQTT password")
