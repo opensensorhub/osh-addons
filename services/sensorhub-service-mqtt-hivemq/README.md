@@ -27,6 +27,18 @@ A wildcard filter can match the topics of resources that the user cannot read. S
 The check of a wildcard match runs outside the HiveMQ threads. Each message that matches a wildcard filter of a client adds one check for that client.
 
 
+### Persistent sessions
+
+A client can ask the server to keep its session when the connection closes (MQTT 5: `cleanStart=false` and a session expiry interval; MQTT 3.1.1: `cleanSession=false`). The server then keeps the subscriptions of the client. When the client connects again with the same client ID, the CONNACK has `session present = 1` and the client gets data again. It does not have to send SUBSCRIBE again.
+
+- When the client connects again, the server checks each subscription of the session as a new SUBSCRIBE of the user of the new connection. If this user does not have the permission, the server removes the subscription from the session. The client gets no message about this.
+- A subscription of the session starts again later if its handler module is stopped when the client connects.
+- The server does not keep the messages for a client that is not connected. If a different client has a subscription to the same topic during this time, the client can get the messages that were sent meanwhile (QoS 1 or 2). Do not rely on this.
+- With the bundled HiveMQ config, sessions are kept in memory. They are lost when the MQTT server stops.
+
+A connection that does not log in cannot stop the subscriptions of a connected client that has the same client ID.
+
+
 ### Login
 
 This section tells you how to set who can connect to the MQTT server. You set this in the Admin UI:
@@ -240,11 +252,10 @@ To keep its data, the client must:
 
 1. Get a new token before the old token expires, for example at 80% of the token lifetime.
 2. Connect again with the new token.
-3. Subscribe again to all its topics.
+3. Subscribe again to all its topics. A client with a persistent session does not have to do this (see Persistent sessions).
 
 Known limits:
 
-- The client must subscribe again after each new connection, also when it uses a persistent session. The server reports that the session is present, but it sends no data until the client subscribes again.
 - The client cannot send a new token on an open connection (MQTT 5 re-authentication).
 - The server reads the expiry time when the client connects. If the user or the token is revoked at the issuer before that time, the connection stays open until the token expires.
 

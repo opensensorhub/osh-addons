@@ -235,6 +235,142 @@ public class TestOshExtension
     }
 
 
+    @Test
+    public void testSessionRestoredAfterReconnect() throws Exception
+    {
+        // first connection: subscribe, then close
+        var conn1 = ext.connectionStarted("client1");
+        ext.subscribeToTopic("user", "client1", TOPIC);
+        ext.connectionClosed("client1", conn1);
+        assertEquals(1, handler.unsubscribes);
+        assertFalse(ext.isExactSubscription("client1", TOPIC));
+
+        // new connection with the session of the broker: the handler starts again
+        var conn2 = ext.connectionStarted("client1");
+        ext.sessionStarted("client1");
+        ext.restoreSession("user", "client1", conn2, List.of(TOPIC));
+        assertEquals(2, handler.subscribes);
+        assertTrue(ext.isExactSubscription("client1", TOPIC));
+        assertEquals("user", ext.clientUsers.get("client1"));
+        assertTrue(removedFromBroker.isEmpty());
+
+        // a SUBSCRIBE of the client to the same topic does not call the handler again
+        ext.subscribeToTopic("user", "client1", TOPIC);
+        assertEquals(2, handler.subscribes);
+    }
+
+
+    @Test
+    public void testSessionRestoreChecksTheNewUser() throws Exception
+    {
+        var conn1 = ext.connectionStarted("client1");
+        ext.subscribeToTopic("alice", "client1", TOPIC);
+        ext.connectionClosed("client1", conn1);
+
+        // the same client ID connects as a user without the permission
+        handler.allow = false;
+        var conn2 = ext.connectionStarted("client1");
+        ext.restoreSession("bob", "client1", conn2, List.of(TOPIC));
+        assertTrue(handler.users.contains("bob"));
+        assertFalse(ext.isExactSubscription("client1", TOPIC));
+        assertEquals(List.of("client1 " + TOPIC), removedFromBroker);
+    }
+
+
+    @Test
+    public void testSessionRestoreRefusesUnsupportedWildcard() throws Exception
+    {
+        handler.wildcards = false;
+        var conn = ext.connectionStarted("client1");
+        ext.restoreSession("user", "client1", conn, List.of("api/systems/+", TOPIC));
+        assertEquals(List.of("client1 api/systems/+"), removedFromBroker);
+        assertTrue(ext.isExactSubscription("client1", TOPIC));
+    }
+
+
+    @Test
+    public void testSessionTopicWaitsForItsHandler() throws Exception
+    {
+        // the handler module is stopped when the client connects again
+        ext.unregisterHandler("api/", handler);
+        var conn = ext.connectionStarted("client1");
+        ext.restoreSession("user", "client1", conn, List.of(TOPIC));
+        assertEquals(0, handler.subscribes);
+        assertTrue(removedFromBroker.isEmpty());
+
+        // the handler starts the subscription when it registers again
+        ext.registerHandler("api/", handler);
+        assertEquals(1, handler.subscribes);
+        assertTrue(handler.users.contains("user"));
+    }
+
+
+    @Test
+    public void testFailedLoginDoesNotStopAConnectedClient() throws Exception
+    {
+        ext.connectionStarted("client1");
+        ext.subscribeToTopic("user", "client1", TOPIC);
+
+        // a connection with the same client ID that did not log in closes
+        ext.connectionClosed("client1", null);
+        assertEquals(0, handler.unsubscribes);
+        assertTrue(ext.isExactSubscription("client1", TOPIC));
+    }
+
+
+    @Test
+    public void testReplacedConnectionDoesNotStopTheNewOne() throws Exception
+    {
+        var conn1 = ext.connectionStarted("client1");
+        ext.subscribeToTopic("user", "client1", TOPIC);
+
+        // takeover: the new connection logs in, restores, then the old one closes
+        var conn2 = ext.connectionStarted("client1");
+        ext.sessionStarted("client1");
+        ext.restoreSession("user", "client1", conn2, List.of(TOPIC));
+        ext.connectionClosed("client1", conn1);
+        assertTrue(ext.isExactSubscription("client1", TOPIC));
+        assertEquals(2, handler.subscribes);
+        assertEquals(1, handler.unsubscribes);
+    }
+
+
+    @Test
+    public void testLateRestoreOfAReplacedConnectionIsDropped() throws Exception
+    {
+        // alice connects with a session; her restore is slow
+        var conn1 = ext.connectionStarted("client1");
+        ext.sessionStarted("client1");
+
+        // bob takes the client ID before the restore of alice runs
+        var conn2 = ext.connectionStarted("client1");
+        ext.sessionStarted("client1");
+        ext.restoreSession("alice", "client1", conn1, List.of(TOPIC));
+        assertEquals(0, handler.subscribes);
+        assertFalse(ext.isExactSubscription("client1", TOPIC));
+
+        // the restore of bob is checked as bob
+        handler.allow = false;
+        ext.restoreSession("bob", "client1", conn2, List.of(TOPIC));
+        assertEquals(Set.of("bob"), handler.users);
+        assertFalse(ext.isExactSubscription("client1", TOPIC));
+        assertEquals(List.of("client1 " + TOPIC), removedFromBroker);
+    }
+
+
+    @Test
+    public void testLateRestoreOfAClosedConnectionIsDropped() throws Exception
+    {
+        var conn1 = ext.connectionStarted("client1");
+        ext.sessionStarted("client1");
+        ext.connectionClosed("client1", conn1);
+
+        ext.restoreSession("user", "client1", conn1, List.of(TOPIC));
+        assertEquals(0, handler.subscribes);
+        assertTrue(ext.clientTopics.get("client1") == null || ext.clientTopics.get("client1").isEmpty());
+    }
+
+
     static class CountingHandler implements IMqttHandler
     {
         volatile boolean allow = true;
