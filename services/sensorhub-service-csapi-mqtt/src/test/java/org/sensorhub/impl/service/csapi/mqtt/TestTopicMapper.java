@@ -132,6 +132,68 @@ public class TestTopicMapper
 
 
     @Test
+    public void testWildcardFilters() throws InvalidTopicException
+    {
+        // filter -> resource that the subscriber must be able to read
+        var topics = mapper();
+        String[][] filters = {
+            {"node1/#", "/systems"},
+            {"node1/systems/#", "/systems"},
+            {"node1/systems/+", "/systems"},
+            {"node1/+/134", "/systems"},
+            {"node1/systems/+/subsystems/+", "/systems"},
+            {"node1/systems/134/#", "/systems/134"},
+            {"node1/systems/134/datastreams/+", "/systems/134"},
+            {"node1/systems/134/subsystems/7/controlstreams/+", "/systems/134/subsystems/7"},
+            {"node1/systems/134/datastreams/+/observations", "/systems/134"},
+            {"node1/systems/+/datastreams/12", "/systems"},
+            {"node1/systems/134/datastreams/12/#", "/systems/134/datastreams/12"},
+            {"node1/systems/134/datastreams/12/observations/#", "/systems/134/datastreams/12"},
+        };
+        for (var f: filters)
+            assertEquals(f[0], f[1], topics.parseFilter(f[0]).uri().toString());
+    }
+
+
+    @Test
+    public void testInvalidWildcardFilters()
+    {
+        var topics = mapper();
+        for (var filter: new String[] {
+            "node2/systems/+",                                   // other node
+            "node1/systems/134/#/datastreams",                   // '#' not last
+            "node1/systems/13+",                                 // wildcard not a whole level
+            "node1/systems/#4",
+            "node1/systems//+",                                  // empty level
+            "node1/systems/+/datastreams/+/observations:data",   // no wildcards on Resource Data
+            "node1/systems/134/datastreams/+:data",
+            "node1/systems/+/datastreams/12/observations:data/swe-csv",
+            "node1/systems/134/+",                               // collections have no events
+            "node1/systems/+/+",
+            "node1/systems/134/datastreams",
+            "node1/deployments/+",                               // no events for this type yet
+            "node1/systems/134/events/+",
+            "node1/systems/134/controlstreams/+/commands",       // no command batch events yet
+            "node1/systems/134/datastreams/12/observations/+",   // no observation events yet
+        })
+        {
+            assertThrows(filter, InvalidTopicException.class, () -> topics.parseFilter(filter));
+        }
+    }
+
+
+    @Test
+    public void testParseRejectsFilters()
+    {
+        var topics = mapper();
+        assertTrue(TopicMapper.isFilter("node1/systems/+"));
+        assertTrue(TopicMapper.isFilter("node1/#"));
+        assertFalse(TopicMapper.isFilter("node1/systems/134"));
+        assertThrows(InvalidTopicException.class, () -> topics.parse("node1/systems/+"));
+    }
+
+
+    @Test
     public void testFormatTokens()
     {
         assertEquals("json", TopicMapper.formatToken("application/json"));

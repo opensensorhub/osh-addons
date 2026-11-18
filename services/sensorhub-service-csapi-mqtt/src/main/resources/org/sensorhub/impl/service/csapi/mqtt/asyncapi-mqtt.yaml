@@ -39,6 +39,21 @@ info:
       each level, for example
       `${nodeId}/systems/{id}/subsystems/{id}/datastreams/{id}/observations:data`.
 
+    **Wildcard subscriptions**
+
+    - `+` and `#` are accepted on Resource Event and Batch Resource Event
+      topics, for example `${nodeId}/systems/+`,
+      `${nodeId}/systems/{id}/datastreams/+` or `${nodeId}/systems/{id}/#`.
+      A filter also gets the events of resources created later.
+    - Resource Data topics do not support wildcards. A filter with `:data`
+      is rejected. A filter that ends with `#` also matches `:data` topics,
+      but Resource Data is not sent through wildcard subscriptions.
+    - A filter that cannot match an event topic is rejected.
+    - To subscribe, the user must be able to read the resource before the
+      first wildcard, or to list systems if the filter names no resource.
+    - Each message is checked. A user gets an event only if the user can
+      read its resource through the CS API.
+
     **Format names**
 
     ${formatList}
@@ -51,7 +66,7 @@ info:
     - Resource Events for other resource types. Events are published for
       systems, subsystems, datastreams and control streams only.
     - Batch Resource Events for collections other than observations.
-    - Wildcard subscriptions (`+`, `#`). These topics are rejected.
+    - Wildcard subscriptions on Resource Data topics (`:data`).
     - MQTT 5 Content Type. The server does not set it. Clients must use
       the topic to know the format. Resource Events are always
       `application/cloudevents+json`.
@@ -80,9 +95,14 @@ info:
     - The status topic of one command carries the status of all commands on
       its control stream.
     - `swe-xml` publications create the resource but are reported as invalid.
-    - A Resource Event subscription needs an existing resource that the user
-      can read. Without wildcards, a client cannot get the `create` event of
-      a new resource.
+    - An exact Resource Event subscription needs an existing resource that
+      the user can read. Use a wildcard filter to get the `create` events of
+      new resources.
+    - `${nodeId}/systems/{id}` carries top-level systems only. A subscription
+      with the ID of a subsystem gets no events.
+    - For a deleted resource, a wildcard subscription checks the permission
+      only. Access decisions for wildcard subscriptions are kept for 10
+      seconds. Exact subscriptions are checked at subscribe time only.
     - A system update sends an event only if it adds a new version (a later
       `validTime`). Deleting a system sends no events for its datastreams and
       control streams. Enabling or disabling a resource sends no event.

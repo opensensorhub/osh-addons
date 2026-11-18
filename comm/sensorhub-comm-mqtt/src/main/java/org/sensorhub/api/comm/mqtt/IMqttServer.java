@@ -77,6 +77,35 @@ public interface IMqttServer
          * @throws MqttException for all other errors
          */
         void onUnsubscribe(String userID, String topic, IMqttServer server) throws MqttException;
+
+
+        /**
+         * @return true if the handler accepts wildcard topic filters ({@code +},
+         * {@code #}) in {@link #onSubscribe}. If false, the server rejects them
+         * before it calls the handler. The default is false.
+         */
+        default boolean supportsWildcards()
+        {
+            return false;
+        }
+        
+        
+        /**
+         * Check if a message can be sent to a user whose subscription matches
+         * the topic only through a wildcard topic filter ({@code +} or {@code #}).
+         * The server does not call this method for a topic that the client
+         * subscribed to exactly, because {@link #onSubscribe} checked it.
+         * The server can call this method for each message, so implementations
+         * should be fast or cache their decisions. It can block.
+         * @param userID Authenticated user of the subscribing client
+         * @param topic Topic of the message (no wildcards)
+         * @return true to send the message to this client, false to drop it.
+         * The default is false: wildcard subscriptions get no messages.
+         */
+        default boolean canDeliver(String userID, String topic)
+        {
+            return false;
+        }
     }
     
     

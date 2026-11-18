@@ -22,6 +22,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.regex.Pattern;
 import org.sensorhub.api.comm.mqtt.InvalidTopicException;
 import org.sensorhub.impl.service.consys.resource.ResourceFormat;
@@ -44,13 +45,16 @@ import org.sensorhub.impl.service.consys.resource.ResourceFormat;
  * {@code :data}: {@code node1/systems/134/datastreams/12/observations}.
  * The topic shape
  * is checked here; that each ID belongs to its parent, and that the
- * resource offers the format, is left to the CS API. Wildcard topic
- * filters are rejected until they are supported.
+ * resource offers the format, is left to the CS API.
+ * </p><p>
+ * Wildcard topic filters ({@code +}, {@code #}) are accepted for Resource
+ * Event and Batch Resource Event topics only (see {@link #parseFilter}).
  * </p>
  */
 final class TopicMapper
 {
     static final String DATA_MARKER = ":data";
+    static final String SYSTEMS_PATH = "/systems";
 
     // Resource Data topic templates (OGC CS API Part 3, Resource Data Topics
     // table), without '{nodeId}/' and ':data'. An ID is one level with no ':'.
@@ -89,6 +93,19 @@ final class TopicMapper
      * datastream, which a subscriber must be able to read.
      */
     record ResourceTopic(URI uri, String format, boolean event) {}
+
+    /**
+     * A wildcard topic filter. {@code uri} is the deepest resource that the
+     * filter names before its first wildcard, or the systems collection if it
+     * names no resource. A subscriber must be able to read it.
+     */
+    record TopicFilter(URI uri) {}
+
+    // States of the Resource Event and Batch Resource Event topic grammar,
+    // one MQTT level at a time (see EVENT_PATH and BATCH_PATH)
+    static final int SYSTEMS = 0, SYSTEM_ID = 1, SYSTEM = 2, SUBSYSTEM_ID = 3,
+        DATASTREAM_ID = 4, DATASTREAM = 5, CONTROLSTREAM_ID = 6, OBSERVATIONS = 7, CONTROLSTREAM = 8;
+    static final Set<Integer> EVENT_STATES = Set.of(SYSTEM, DATASTREAM, OBSERVATIONS, CONTROLSTREAM);
 
     final String prefix;
     final Map<String, String> formats = new TreeMap<>(); // token -> media type
@@ -189,11 +206,11 @@ final class TopicMapper
         if (path.indexOf('?') >= 0)
             throw new InvalidTopicException("Topics must not have a query string");
 
-        // Wildcard filters are not supported yet (see #255).
+        // Wildcard filters are parsed by parseFilter().
         // Reject them here: URI would read '#' as a fragment, and map
         // 'node1/systems/134/#' to the parent resource '/systems/134/'.
-        if (path.indexOf('+') >= 0 || path.indexOf('#') >= 0)
-            throw new InvalidTopicException("Wildcard topic filters are not supported");
+        if (isFilter(topic))
+            throw new InvalidTopicException("Wildcard topic filters are not allowed here");
 
         // a topic without ':data' is a Resource Event or Batch Resource Event topic
         var marker = path.lastIndexOf(DATA_MARKER);
@@ -221,6 +238,133 @@ final class TopicMapper
         }
 
         return new ResourceTopic(toUri(topic, path, format), format, false);
+    }
+
+
+    /**
+     * @return true if the topic has a wildcard character, so it is a topic
+     *         filter and not a topic name
+     */
+    static boolean isFilter(String topic)
+    {
+        return topic.indexOf('+') >= 0 || topic.indexOf('#') >= 0;
+    }
+
+
+    /**
+     * Parse a wildcard topic filter. A filter is accepted only if it follows
+     * the MQTT wildcard rules, and can match a Resource Event or Batch
+     * Resource Event topic. Resource Data topics ({@code :data}) cannot be
+     * subscribed to with wildcards, but a filter that ends with {@code #}
+     * also matches them: those messages are not sent to the subscriber.
+     * @param filter an MQTT topic filter with {@code +} or {@code #}
+     * @return the filter, with the resource that a subscriber must be able
+     *         to read
+     * @throws InvalidTopicException if the filter is not under this node, is
+     *         not a valid MQTT filter, names a Resource Data topic, or cannot
+     *         match any Resource Event or Batch Resource Event topic
+     */
+    TopicFilter parseFilter(String filter) throws InvalidTopicException
+    {
+        if (filter == null || !filter.startsWith(prefix))
+            throw new InvalidTopicException("Topic filter must start with '" + prefix + "'");
+
+        var levels = filter.substring(prefix.length()).split("/", -1);
+        var states = Set.of(SYSTEMS);
+        String resource = null; // deepest resource before the first wildcard
+        var path = new StringBuilder();
+        var literal = true;
+
+        for (int i = 0; i < levels.length; i++)
+        {
+            var level = levels[i];
+            if (level.indexOf(':') >= 0)
+                throw new InvalidTopicException("Wildcard topic filters are not supported on Resource Data topics: " + filter);
+
+            if (level.equals("#"))
+            {
+                if (i != levels.length - 1)
+                    throw new InvalidTopicException("'#' must be the last level of a topic filter: " + filter);
+                return toFilter(filter, resource);
+            }
+            if (level.equals("+"))
+                literal = false;
+            else if (level.indexOf('+') >= 0 || level.indexOf('#') >= 0)
+                throw new InvalidTopicException("A wildcard must be a whole topic level: " + filter);
+            else if (level.isEmpty())
+                throw new InvalidTopicException("Empty topic level in filter: " + filter);
+
+            states = next(states, level);
+            if (states.isEmpty())
+                throw new InvalidTopicException("Topic filter matches no Resource Event topic: " + filter);
+
+            if (literal)
+            {
+                path.append(i == 0 ? "" : "/").append(level);
+                if (states.size() == 1 && EVENT_STATES.contains(states.iterator().next()))
+                    resource = path.toString();
+            }
+        }
+
+        if (states.stream().noneMatch(EVENT_STATES::contains))
+            throw new InvalidTopicException("Topic filter matches no Resource Event topic: " + filter);
+
+        return toFilter(filter, resource);
+    }
+
+
+    static TopicFilter toFilter(String filter, String resource) throws InvalidTopicException
+    {
+        // no resource before the first wildcard: check the systems collection
+        if (resource == null)
+            resource = "systems";
+
+        // a Batch Resource Event topic is checked on its datastream
+        else if (BATCH_PATH.matcher(resource).matches())
+            resource = resource.substring(0, resource.length() - BATCH_SUFFIX.length());
+
+        return new TopicFilter(toUri(filter, resource, null));
+    }
+
+
+    /**
+     * @return the grammar states after one level. {@code +} takes all
+     *         transitions; an ID is any level other than {@code +}.
+     */
+    static Set<Integer> next(Set<Integer> states, String level)
+    {
+        var any = level.equals("+");
+        var next = new HashSet<Integer>();
+        for (var state: states)
+        {
+            switch (state)
+            {
+                case SYSTEMS:
+                    if (any || level.equals("systems")) next.add(SYSTEM_ID);
+                    break;
+                case SYSTEM_ID:
+                case SUBSYSTEM_ID:
+                    next.add(SYSTEM);
+                    break;
+                case SYSTEM:
+                    if (any || level.equals("subsystems")) next.add(SUBSYSTEM_ID);
+                    if (any || level.equals("datastreams")) next.add(DATASTREAM_ID);
+                    if (any || level.equals("controlstreams")) next.add(CONTROLSTREAM_ID);
+                    break;
+                case DATASTREAM_ID:
+                    next.add(DATASTREAM);
+                    break;
+                case CONTROLSTREAM_ID:
+                    next.add(CONTROLSTREAM);
+                    break;
+                case DATASTREAM:
+                    if (any || level.equals("observations")) next.add(OBSERVATIONS);
+                    break;
+                default:
+                    break;
+            }
+        }
+        return next;
     }
 
 

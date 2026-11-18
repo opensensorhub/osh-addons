@@ -50,6 +50,11 @@ public class TestAsyncApiHandler
         assertTrue(doc.contains("window of 1000 ms"));
         config.batchEventWindowMs = 250;
         assertTrue(handler.render(mapper, API_ROOT).contains("window of 250 ms"));
+
+        // wildcard support and its restriction on Resource Data
+        assertTrue(doc.contains("**Wildcard subscriptions**"));
+        assertTrue(doc.contains("`node1/systems/+`"));
+        assertTrue(doc.contains("Resource Data topics do not support wildcards"));
     }
 
 
