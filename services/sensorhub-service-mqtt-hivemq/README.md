@@ -25,3 +25,12 @@ A wildcard filter can match the topics of resources that the user cannot read. S
 - A handler accepts wildcard filters only if `IMqttHandler.supportsWildcards` returns true. Otherwise the server rejects them. The default is false.
 
 The check of a wildcard match runs outside the HiveMQ threads. Each message that matches a wildcard filter of a client adds one check for that client.
+
+
+### Login
+
+When OSH access control is on, an MQTT client logs in with the name and the password of an OSH user.
+
+- A user must have a password to log in with a password. The server refuses a CONNECT that has a user name and an empty password or no password.
+- The server also refuses a user that has no password in the user registry, for example a user that an OAuth login added.
+- A CONNECT without a user name gets the `anonymous` user when `requireAuth` is off.

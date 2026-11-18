@@ -58,15 +58,11 @@ public class OshAuthenticator implements SimpleAuthenticator
                 {
                     // check user exists and password matches
                     var user = securityMgr.getUserRegistry().get(userID);
-                    if (user != null)
+                    if (user != null && passwordMatches(user.getPassword(), pwd))
                     {
-                        Credential storedCredential = Credential.getCredential(user.getPassword());
-                        if (storedCredential.check(pwd))
-                        {
-                            authInput.getConnectionInformation().getConnectionAttributeStore().putAsString(MQTT_USER_PROP, userID);
-                            authOutput.authenticateSuccessfully();
-                            return;
-                        }
+                        authInput.getConnectionInformation().getConnectionAttributeStore().putAsString(MQTT_USER_PROP, userID);
+                        authOutput.authenticateSuccessfully();
+                        return;
                     }
                 }
                 else if (!oshExt.service.getConfiguration().requireAuth)
@@ -88,6 +84,20 @@ public class OshAuthenticator implements SimpleAuthenticator
                 async.resume();
             }
         });
+    }
+
+
+    /**
+     * Check the password of a CONNECT against the stored password of the user
+     * @return false if one of the two passwords is null or empty: a user
+     * without a password cannot log in with a password
+     */
+    static boolean passwordMatches(String storedPwd, char[] pwd)
+    {
+        if (storedPwd == null || storedPwd.isEmpty() || pwd == null || pwd.length == 0)
+            return false;
+        
+        return Credential.getCredential(storedPwd).check(pwd);
     }
 
 }
