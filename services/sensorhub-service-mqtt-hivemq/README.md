@@ -25,3 +25,82 @@ A wildcard filter can match the topics of resources that the user cannot read. S
 - A handler accepts wildcard filters only if `IMqttHandler.supportsWildcards` returns true. Otherwise the server rejects them. The default is false.
 
 The check of a wildcard match runs outside the HiveMQ threads. Each message that matches a wildcard filter of a client adds one check for that client.
+
+
+### Login
+
+When OSH access control is on, an MQTT client logs in with the name and the password of an OSH user.
+
+- A user must have a password to log in with a password. The server refuses a CONNECT that has a user name and an empty password or no password.
+- The server also refuses a user that has no password in the user registry, for example a user that an OAuth login added. Such a user can log in with a token (see Token login).
+- A CONNECT without a user name gets the `anonymous` user when `requireAuth` is off.
+
+
+### Token login
+
+Since version 0.3.0, a client can send an OAuth 2.0 access token (for example from Keycloak) as the MQTT password. Password login stays as it is.
+
+To turn it on, set these settings in the MQTT Server config (`tokenAuth`). The names are the same as in the bearer token settings of the OAuth module (`sensorhub-security-oauth`).
+
+- `jwksUri`: URL of the public keys of the issuer. Keycloak: `{realm URL}/protocol/openid-connect/certs`.
+- `issuer`: issuer that the token must have (`iss`). Keycloak: the realm URL. Required.
+- `audience`: audience that the token must have (`aud`). Leave it empty to skip this check.
+- `userIdField`: token claim that must be equal to the MQTT username. Default: `preferred_username`.
+- `userRolesField`: path of the token claim that contains the roles of the user, with `/` between the names. Default: `realm_access/roles` (Keycloak realm roles).
+- `autoAddUser`: add the user of a token to the OSH users. Default: on.
+- `cacheSize`, `cacheDuration`: number of public keys to keep, and time in minutes to keep them.
+
+The client sends:
+
+- Username: the value of the username claim. For a Keycloak service account, this is `service-account-<client ID>`.
+- Password: the access token.
+
+The server checks the signature, the issuer, the expiry (`exp` is required) and the audience if set. If the password is a token and one check fails, the server refuses the connection. It does not try the token as a password.
+
+If the server cannot get the public keys (the issuer is down, or it refuses too many requests), it refuses all token logins. Each refusal adds a warning to the log. Other refusals are logged at debug level only.
+
+The connection gets the username as its OSH user, also when OSH access control is off.
+
+#### Token users and roles
+
+With OSH access control on, subscribe and publish look up the user in the OSH users. So the server adds the user of a valid token to the OSH users when the client connects (`autoAddUser`).
+
+- The user gets the roles of the token, read from the roles claim (`userRolesField`), and the role `anon`. The OAuth module does the same for HTTP.
+- A role of the token gives permissions only if OSH has a role with the same name. Make an OSH role for each Keycloak realm role that you use, with the permissions that it must give. For example, make the OSH role `osh_operator` for the Keycloak realm role `osh_operator`. The server ignores the other roles of the token (for example `offline_access`).
+- Each new login of the user replaces the roles with the roles of the new token.
+- The server removes the user from the OSH users when the last connection that logged in with a token for this user closes. When the MQTT server stops, it removes all the users that it added. The users are not saved in the OSH config.
+- If `autoAddUser` is off, the server adds no users. It refuses a token login if the user is not in OSH.
+
+A user that the server did not add stays as it is. This is a user in the OSH config or a user that the OAuth module added. A token login for this user gets the roles that the user has in OSH, not the roles of the token.
+
+The server refuses a token for the user name `anonymous`. Connections without a user name use this user.
+
+A user that the server added cannot log in with a password, on MQTT or on HTTP.
+
+Known limits:
+
+- If the roles of a user change at the issuer, open connections keep the old roles until the client connects again with a new token.
+- The Admin UI cannot change the permissions of a user that the server added.
+- A user that the server added cannot get permissions on a resource that it makes. If the roles of the user do not give all permissions (`*`), a publication that makes a resource (for example a system) makes the resource, but the log shows `Internal error handling PUBLISH message` with a `ClassCastException`. The user then has only the permissions of its roles on the new resource. A publication of observations is not affected. The cause is in the OSH core.
+- The basic security realm of OSH cannot write its permissions file (`user_permissions.json`) while the OSH users contain a user that the server added. This is the time when a token client is connected. The cause is in the OSH core. Users that the OAuth module adds give the same error. The realm writes the file in two cases:
+  - A permission of a user changes. The CS API gives a user permissions on a resource that the user makes, if the user does not have them. A user with all permissions (`*`) gets none. The request of the user then fails with the status 500. The file is complete again after the next change, when no token client is connected.
+  - The node stops. The node saves the state of the realm before it stops the MQTT server, so the clients are still connected. To prevent the error, stop the MQTT server module before you stop the node.
+- After this error, the log shows a `ClassCastException` for `TokenUser` (at node stop, with `State could not be saved for module`), and the file is not complete. If the node starts with this file, the log shows `Cannot load state` for the realm. The users and roles of the OSH config are not changed. Permissions that were set in the Admin UI and not saved in the config are lost.
+
+#### Token expiry
+
+When the token of a connection expires, the server closes the connection. An MQTT 5 client gets a DISCONNECT with the reason code `Not authorized` (0x87). An MQTT 3.1.1 client sees only that the connection closes.
+
+To keep its data, the client must:
+
+1. Get a new token before the old token expires, for example at 80% of the token lifetime.
+2. Connect again with the new token.
+3. Subscribe again to all its topics.
+
+Known limits:
+
+- The client must subscribe again after each new connection, also when it uses a persistent session. The server reports that the session is present, but it sends no data until the client subscribes again.
+- The client cannot send a new token on an open connection (MQTT 5 re-authentication).
+- The server reads the expiry time when the client connects. If the user or the token is revoked at the issuer before that time, the connection stays open until the token expires.
+
+Connections that use a password or no credentials have no expiry.
