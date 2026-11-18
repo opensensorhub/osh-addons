@@ -1,0 +1,229 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Decodes the GPMF telemetry track of an FFmpeg video source.
+
+  The source component exposes one output per datastream of the camera driver; this chain reads its
+  binary data output (named "data"), hands each packet's byte array to the decoder, and republishes the
+  decoder's two outputs as datastreams of the process module.
+
+  Point the producerURI at your own camera, and make sure the driver's binary data stream limit is set
+  high enough for the gpmd track to get an output.
+-->
+<sml:AggregateProcess xmlns:sml="http://www.opengis.net/sensorml/2.0" xmlns:swe="http://www.opengis.net/swe/2.0"
+                      xmlns:gml="http://www.opengis.net/gml/3.2" xmlns:xlink="http://www.w3.org/1999/xlink"
+                      gml:id="GPMF_CHAIN">
+  <gml:identifier codeSpace="uid">urn:osh:process:gpmf:chain:video001</gml:identifier>
+  <gml:name>GoPro GPMF Telemetry Decoding</gml:name>
+
+  <sml:outputs>
+    <sml:OutputList>
+      <sml:output name="gpmf">
+        <swe:DataRecord definition="http://sensorml.com/ont/swe/property/TelemetryStream">
+          <swe:label>GPMF Telemetry</swe:label>
+          <swe:description>GoPro GPMF telemetry</swe:description>
+          <swe:field name="sampleTime">
+            <swe:Time definition="http://www.opengis.net/def/property/OGC/0/SamplingTime" referenceFrame="http://www.opengis.net/def/trs/BIPM/0/UTC">
+              <swe:label>Sample Time</swe:label>
+              <swe:description>Time of data collection</swe:description>
+              <swe:uom xlink:href="http://www.opengis.net/def/uom/ISO-8601/0/Gregorian"/>
+            </swe:Time>
+          </swe:field>
+          <swe:field name="streamTime">
+            <swe:Quantity>
+              <swe:label>Stream Time</swe:label>
+              <swe:description>Offset of these samples from the start of the recording, as reported by the camera. NaN if the camera did not report one.</swe:description>
+              <swe:uom code="s"/>
+            </swe:Quantity>
+          </swe:field>
+          <swe:field name="deviceName">
+            <swe:Text>
+              <swe:label>Device Name</swe:label>
+              <swe:description>Name of the device that recorded this stream, for example Hero11 Black</swe:description>
+            </swe:Text>
+          </swe:field>
+          <swe:field name="streamKey">
+            <swe:Text>
+              <swe:label>Stream Key</swe:label>
+              <swe:description>Four-character GPMF key identifying the stream, for example ACCL, GYRO, or GPS5</swe:description>
+            </swe:Text>
+          </swe:field>
+          <swe:field name="streamName">
+            <swe:Text>
+              <swe:label>Stream Name</swe:label>
+              <swe:description>Human-readable stream name as the camera reported it, for example Accelerometer (z,x,y)</swe:description>
+            </swe:Text>
+          </swe:field>
+          <swe:field name="units">
+            <swe:Text>
+              <swe:label>Units</swe:label>
+              <swe:description>Units of the values, as the camera reported them, for example m/s2</swe:description>
+            </swe:Text>
+          </swe:field>
+          <swe:field name="elementCount">
+            <swe:Count>
+              <swe:label>Element Count</swe:label>
+              <swe:description>Number of values in one sample, for example 3 for a three-axis sensor</swe:description>
+            </swe:Count>
+          </swe:field>
+          <swe:field name="sampleCount">
+            <swe:Count>
+              <swe:label>Sample Count</swe:label>
+              <swe:description>Number of samples in this record</swe:description>
+            </swe:Count>
+          </swe:field>
+          <swe:field name="textValue">
+            <swe:Text>
+              <swe:label>Text Value</swe:label>
+              <swe:description>Content of a text-valued stream, such as the GPS UTC timestamp. Empty for numeric streams.</swe:description>
+            </swe:Text>
+          </swe:field>
+          <swe:field name="valueCount">
+            <swe:Count id="valueCountID">
+              <swe:label>Value Count</swe:label>
+              <swe:description>Total number of values in this record, equal to the sample count times the element count</swe:description>
+            </swe:Count>
+          </swe:field>
+          <swe:field name="values">
+            <swe:DataArray>
+              <swe:label>Values</swe:label>
+              <swe:description>Samples of this stream in order, each holding element count values, with the camera's scale divisors applied</swe:description>
+              <swe:elementCount xlink:href="#valueCountID"/>
+              <swe:elementType name="value">
+                <swe:Quantity definition="http://sensorml.com/ont/swe/property/DN">
+                  <swe:label>Value</swe:label>
+                  <swe:uom xlink:href="http://qudt.org/vocab/unit/UNITLESS"/>
+                </swe:Quantity>
+              </swe:elementType>
+            </swe:DataArray>
+          </swe:field>
+        </swe:DataRecord>
+      </sml:output>
+
+      <sml:output name="gps">
+        <swe:DataRecord definition="http://sensorml.com/ont/swe/property/GeoPosition">
+          <swe:label>GPS</swe:label>
+          <swe:description>GoPro GPS fixes from GPMF telemetry</swe:description>
+          <swe:field name="sampleTime">
+            <swe:Time definition="http://www.opengis.net/def/property/OGC/0/SamplingTime" referenceFrame="http://www.opengis.net/def/trs/BIPM/0/UTC">
+              <swe:label>Sample Time</swe:label>
+              <swe:description>Time of data collection</swe:description>
+              <swe:uom xlink:href="http://www.opengis.net/def/uom/ISO-8601/0/Gregorian"/>
+            </swe:Time>
+          </swe:field>
+          <swe:field name="gpsTime">
+            <swe:Time definition="http://www.opengis.net/def/property/OGC/0/SamplingTime" referenceFrame="http://www.opengis.net/def/trs/BIPM/0/UTC">
+              <swe:label>GPS Time</swe:label>
+              <swe:description>Time of the fix as reported by the GPS receiver. NaN if the camera did not report one.</swe:description>
+              <swe:uom xlink:href="http://www.opengis.net/def/uom/ISO-8601/0/Gregorian"/>
+            </swe:Time>
+          </swe:field>
+          <swe:field name="location">
+            <swe:Vector definition="http://sensorml.com/ont/swe/property/LocationVector" referenceFrame="http://www.opengis.net/def/crs/EPSG/0/9705">
+              <swe:label>Location</swe:label>
+              <swe:description>Position of the camera, with altitude on the mean sea level datum</swe:description>
+              <swe:coordinate name="lat">
+                <swe:Quantity definition="http://sensorml.com/ont/swe/property/GeodeticLatitude" axisID="Lat">
+                  <swe:label>Geodetic Latitude</swe:label>
+                  <swe:uom code="deg"/>
+                </swe:Quantity>
+              </swe:coordinate>
+              <swe:coordinate name="lon">
+                <swe:Quantity definition="http://sensorml.com/ont/swe/property/Longitude" axisID="Lon">
+                  <swe:label>Longitude</swe:label>
+                  <swe:uom code="deg"/>
+                </swe:Quantity>
+              </swe:coordinate>
+              <swe:coordinate name="alt">
+                <swe:Quantity definition="http://sensorml.com/ont/swe/property/HeightAboveMSL" axisID="h">
+                  <swe:label>MSL Height</swe:label>
+                  <swe:description>Altitude above mean sea level (approximate datum)</swe:description>
+                  <swe:uom code="m"/>
+                </swe:Quantity>
+              </swe:coordinate>
+            </swe:Vector>
+          </swe:field>
+          <swe:field name="speed2D">
+            <swe:Quantity definition="http://sensorml.com/ont/swe/property/GroundSpeed">
+              <swe:label>Ground Speed</swe:label>
+              <swe:description>Speed over the ground. NaN if the camera did not report one.</swe:description>
+              <swe:uom code="m/s"/>
+            </swe:Quantity>
+          </swe:field>
+          <swe:field name="speed3D">
+            <swe:Quantity definition="http://sensorml.com/ont/swe/property/Speed">
+              <swe:label>3D Speed</swe:label>
+              <swe:description>Speed including the vertical component. NaN if the camera did not report one.</swe:description>
+              <swe:uom code="m/s"/>
+            </swe:Quantity>
+          </swe:field>
+          <swe:field name="fixType">
+            <swe:Count>
+              <swe:label>Fix Type</swe:label>
+              <swe:description>GPS fix quality: 0 for no fix, 2 for a 2D fix, 3 for a 3D fix, -1 if the camera did not report one</swe:description>
+            </swe:Count>
+          </swe:field>
+          <swe:field name="dop">
+            <swe:Quantity>
+              <swe:label>Dilution of Precision</swe:label>
+              <swe:description>Dilution of precision of the fix, lower being better. NaN if the camera did not report one.</swe:description>
+              <swe:uom code="1"/>
+            </swe:Quantity>
+          </swe:field>
+        </swe:DataRecord>
+      </sml:output>
+    </sml:OutputList>
+  </sml:outputs>
+
+  <sml:components>
+    <sml:ComponentList>
+      <sml:component name="source0">
+        <sml:SimpleProcess gml:id="SOURCE">
+          <sml:typeOf xlink:href="urn:osh:process:datasource:stream"/>
+          <sml:configuration>
+            <sml:Settings>
+              <sml:setValue ref="parameters/producerURI">urn:osh:sensor:georobotix:ffmpeg:video001</sml:setValue>
+            </sml:Settings>
+          </sml:configuration>
+        </sml:SimpleProcess>
+      </sml:component>
+
+      <sml:component name="gpmfDecoder">
+        <sml:SimpleProcess gml:id="DECODER">
+          <sml:typeOf xlink:href="urn:osh:process:gpmf:GpmfDecoder"/>
+          <sml:configuration>
+            <sml:Settings>
+              <sml:setValue ref="parameters/requireGpsFix">true</sml:setValue>
+              <sml:setValue ref="parameters/altitudeDatum">MEAN_SEA_LEVEL</sml:setValue>
+            </sml:Settings>
+          </sml:configuration>
+        </sml:SimpleProcess>
+      </sml:component>
+    </sml:ComponentList>
+  </sml:components>
+
+  <sml:connections>
+    <sml:ConnectionList>
+      <!-- the byte array of the driver's binary data output, not the record that wraps it -->
+      <sml:connection>
+        <sml:Link>
+          <sml:source ref="components/source0/outputs/data/data"/>
+          <sml:destination ref="components/gpmfDecoder/inputs/gpmfPacket"/>
+        </sml:Link>
+      </sml:connection>
+
+      <sml:connection>
+        <sml:Link>
+          <sml:source ref="components/gpmfDecoder/outputs/gpmf"/>
+          <sml:destination ref="outputs/gpmf"/>
+        </sml:Link>
+      </sml:connection>
+
+      <sml:connection>
+        <sml:Link>
+          <sml:source ref="components/gpmfDecoder/outputs/gps"/>
+          <sml:destination ref="outputs/gps"/>
+        </sml:Link>
+      </sml:connection>
+    </sml:ConnectionList>
+  </sml:connections>
+</sml:AggregateProcess>
