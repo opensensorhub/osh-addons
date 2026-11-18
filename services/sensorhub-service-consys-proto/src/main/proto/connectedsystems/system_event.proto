@@ -1,0 +1,62 @@
+// OGC Connected Systems API — SystemEvent resource (Part 2, clause 11)
+//
+// Models a lifecycle event affecting a `System` — deployment,
+// maintenance, replacement, calibration, etc. Per spec, this is a
+// direct application of the SensorML `Event` schema with CS API
+// `links` extension.
+//
+// Required per spec: `definition`, `label`, `time`. Most other fields
+// are reserved for the SensorML draft to flesh out (identifiers,
+// classifiers, contacts, documentation, properties, configuration).
+
+syntax = "proto3";
+
+package georobotix.csapi;
+
+option java_package = "com.georobotix.csapi";
+option java_outer_classname = "SystemEventProto";
+option go_package = "github.com/georobotix/csapi";
+
+import "connectedsystems/cs_common.proto";
+
+// SystemEvent — a lifecycle event on a System.
+//
+// In SensorML this maps to `Event` (sensorml/schemas/json/Event.json).
+// Subset of that schema is modeled here; future fields (contacts,
+// documentation, properties, configuration) slot in as the
+// SensorML draft fills out.
+message SystemEvent {
+  // ─── Identity (1–9) ───────────────────────────────────────────────
+  string          id          = 1;
+  string          definition  = 2;  // event type URI (required)
+  string          label       = 3;  // required per spec
+  optional string description = 4;
+
+  reserved 5 to 9;
+
+  // ─── Time (10–19) ─────────────────────────────────────────────────
+  //
+  // Spec's `time` is `TimeInstantOrPeriod` — either a single instant
+  // or a period. Modeled as a oneof.
+  oneof time {
+    TimeInstant instant = 10;  // single-instant event
+    TimePeriod  period  = 11;  // ranged event
+  }
+
+  reserved 12 to 19;
+
+  // ─── Links (20–29) ────────────────────────────────────────────────
+  repeated Link links = 20;
+
+  reserved 21 to 29;
+
+  // ─── SensorML extensions (30–49) ──────────────────────────────────
+  //
+  // Reserved for: identifiers (Term[]), classifiers (Term[]),
+  // contacts (ResponsibleParty[]), documentation (Document[]),
+  // properties (AnyProperty[]), configuration (Settings). These
+  // slot in alongside the SensorML draft fill-out workstream.
+
+  reserved 30 to 49;
+  reserved 50 to 99;
+}

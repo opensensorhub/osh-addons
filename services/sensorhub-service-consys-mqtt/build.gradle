@@ -1,5 +1,6 @@
 description = 'Connected Systems API MQTT Extension'
 ext.details = 'MQTT Extension for OGC API Connected Systems'
+version = '1.1.0'
 
 
 dependencies {
@@ -24,6 +25,12 @@ ext.pom >>= {
       name 'Alex Robin'
       organization 'Sensia Software LLC'
       organizationUrl 'http://www.sensiasoftware.com'
+    }
+    developer {
+      id 'tipatterson-dev'
+      name 'Ian Patterson'
+      organization 'GeoRobotix Innovative Research'
+      organizationUrl 'https://georobotix.us'
     }
   }
 }
