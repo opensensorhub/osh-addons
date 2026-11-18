@@ -131,6 +131,11 @@ public class MqttServer extends AbstractModule<MqttServerConfig> implements IMqt
             {
                 throw new SensorHubException("Error closing embedded HiveMQ server", e);
             }
+            finally
+            {
+                // also if HiveMQ did not stop the extension
+                oshExtension.removeTokenUsers();
+            }
         }
     }
     
