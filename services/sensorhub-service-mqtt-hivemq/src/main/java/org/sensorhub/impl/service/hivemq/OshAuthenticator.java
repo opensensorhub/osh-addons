@@ -173,6 +173,20 @@ public class OshAuthenticator implements SimpleAuthenticator
     boolean checkPassword(String userID, char[] pwd)
     {
         var user = securityMgr.getUserRegistry().get(userID);
-        return user != null && Credential.getCredential(user.getPassword()).check(pwd);
+        return user != null && passwordMatches(user.getPassword(), pwd);
+    }
+
+
+    /**
+     * Check the password of a CONNECT against the stored password of the user
+     * @return false if one of the two passwords is null or empty: a user
+     * without a password cannot log in with a password
+     */
+    static boolean passwordMatches(String storedPwd, char[] pwd)
+    {
+        if (storedPwd == null || storedPwd.isEmpty() || pwd == null || pwd.length == 0)
+            return false;
+        
+        return Credential.getCredential(storedPwd).check(pwd);
     }
 }
