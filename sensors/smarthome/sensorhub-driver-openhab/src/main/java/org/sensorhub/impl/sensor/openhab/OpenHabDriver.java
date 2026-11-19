@@ -411,7 +411,7 @@ public class OpenHabDriver extends AbstractSensorModule<OpenHabConfig>
 //	  }
 
     	// add unique ID based on serial number
-    	this.uniqueID = "urn:openhab:" + config.modelNumber + ":" + config.serialNumber;
+    	this.uniqueID = "urn:osh:sensor:georobotix:openhab:" + config.modelNumber + ":" + config.serialNumber;
     	this.xmlID = "OPENHAB_" + config.modelNumber + "_" + config.serialNumber.toUpperCase();
     }
   

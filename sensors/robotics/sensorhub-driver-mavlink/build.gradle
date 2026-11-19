@@ -1,6 +1,6 @@
 description = 'MAVLink System'
 ext.details = 'Driver for MAVLink compatible UAV and robots'
-version = '1.0.1'
+version = '1.0.2'
 
 dependencies {
   implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion

@@ -23,9 +23,9 @@ import org.sensorhub.api.common.BigId;
 import org.sensorhub.api.common.IdEncoders;
 import org.sensorhub.api.data.IDataStreamInfo;
 import org.sensorhub.api.data.IObsData;
-import org.sensorhub.impl.service.sweapi.resource.RequestContext;
-import org.sensorhub.impl.service.sweapi.resource.ResourceBinding;
-import org.sensorhub.impl.service.sweapi.resource.ResourceLink;
+import org.sensorhub.impl.service.consys.resource.RequestContext;
+import org.sensorhub.impl.service.consys.resource.ResourceBinding;
+import org.sensorhub.impl.service.consys.resource.ResourceLink;
 import org.vast.data.DataBlockMixed;
 import com.google.common.collect.Sets;
 

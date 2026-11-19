@@ -16,6 +16,7 @@ package org.sensorhub.impl.service.hivemq;
 
 import java.security.AccessControlException;
 import java.time.Duration;
+import org.sensorhub.api.comm.mqtt.ImplSpecificException;
 import org.sensorhub.api.comm.mqtt.InvalidPayloadException;
 import org.sensorhub.api.comm.mqtt.InvalidTopicException;
 import org.sensorhub.api.security.ISecurityManager;
@@ -102,6 +103,12 @@ public class OshPublishHandler implements PublishInboundInterceptor
             {
                 log.debug("Invalid payload: {}", e.getMessage());
                 reasonCode = AckReasonCode.PAYLOAD_FORMAT_INVALID;
+                errorMsg = e.getMessage();
+            }
+            catch (ImplSpecificException e)
+            {
+                log.debug("Implementation Error: {}", e.getMessage());
+                reasonCode = AckReasonCode.IMPLEMENTATION_SPECIFIC_ERROR;
                 errorMsg = e.getMessage();
             }
             catch (Exception e)

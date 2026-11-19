@@ -1,6 +1,6 @@
 description = 'Angel Sensor'
 ext.details = 'Driver for Angel Sensor BLE wrist band'
-version = '0.1-SNAPSHOT'
+version = '0.1.1'
 
 dependencies {
   implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion

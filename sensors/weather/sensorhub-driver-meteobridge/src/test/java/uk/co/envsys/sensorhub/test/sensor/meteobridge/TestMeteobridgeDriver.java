@@ -1,7 +1,8 @@
 package uk.co.envsys.sensorhub.test.sensor.meteobridge;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-
+import static org.junit.Assert.fail;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.ServerSocket;
@@ -81,7 +82,11 @@ public class TestMeteobridgeDriver implements IEventListener {
             
             // ensure that sol0evo is disabled by default, and not included in outputs
             assertTrue(!config.sol0evoEnabled);
-            assertTrue(dataMsg.getComponent("sol0evo") == null);
+            try {
+                dataMsg.getComponent("sol0evo");
+                fail("Exception expected");
+            } catch (IllegalArgumentException e) {
+            };
         }
 	}
 	
@@ -90,7 +95,11 @@ public class TestMeteobridgeDriver implements IEventListener {
 		for (IStreamingDataInterface di: driver.getObservationOutputs().values()) {
             DataComponent dataMsg = di.getRecordDescription();
             assertTrue(!config.sol0evoEnabled);
-            assertTrue(dataMsg.getComponent("sol0evo") == null);
+            try {
+                dataMsg.getComponent("sol0evo");
+                fail("Exception expected");
+            } catch (IllegalArgumentException e) {
+            };
         }
 	}
 	
@@ -101,7 +110,7 @@ public class TestMeteobridgeDriver implements IEventListener {
         	System.out.println();
         	new SMLUtils(SWEUtils.V2_0).writeProcess(System.out, smlDesc, true);
         }
-        assertTrue(smlDesc.getNumOutputs() == 1);
+        assertEquals(2, smlDesc.getNumOutputs());
         assertTrue(smlDesc.getDescription() == "Weather station connected to a Meteobridge device");
     }
     

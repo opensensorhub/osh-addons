@@ -1,10 +1,10 @@
 description = 'Navigation Database'
 ext.details = 'Adaptor for aeronautical navigation database provider in ARINC 424 format'
-version = '0.5'
+version = '0.7.0'
 
 dependencies {
   implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
-  implementation project(':sensorhub-utils-grid')
+  implementation project(':sensorhub-utils-aero')
 }
 
 // add info to OSGi manifest

@@ -1,32 +1,36 @@
-package org.sensorhub.impl.sensor.uas;
+/***************************** BEGIN LICENSE BLOCK ***************************
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
+ The contents of this file are subject to the Mozilla Public License, v. 2.0.
+ If a copy of the MPL was not distributed with this file, You can obtain one
+ at http://mozilla.org/MPL/2.0/.
+
+ Software distributed under the License is distributed on an "AS IS" basis,
+ WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+ for the specific language governing rights and limitations under the License.
+
+ Copyright (C) 2021 Botts Innovative Research, Inc. All Rights Reserved.
+
+ ******************************* END LICENSE BLOCK ***************************/
+package org.sensorhub.impl.sensor.uas;
 
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
-import org.sensorhub.impl.sensor.uas.common.SyncTime;
+import org.sensorhub.impl.sensor.uas.common.SimulationClock;
 import org.sensorhub.impl.sensor.uas.config.UasConfig;
-import org.sensorhub.impl.sensor.uas.klv.SetDecoder;
-import org.sensorhub.impl.sensor.uas.outputs.AirframeAttitude;
-import org.sensorhub.impl.sensor.uas.outputs.FullTelemetry;
-import org.sensorhub.impl.sensor.uas.outputs.GeoRefImageFrame;
-import org.sensorhub.impl.sensor.uas.outputs.GimbalAttitude;
-import org.sensorhub.impl.sensor.uas.outputs.Identification;
-import org.sensorhub.impl.sensor.uas.outputs.Security;
-import org.sensorhub.impl.sensor.uas.outputs.SensorLocation;
-import org.sensorhub.impl.sensor.uas.outputs.SensorParams;
-import org.sensorhub.impl.sensor.uas.outputs.UasOutput;
-import org.sensorhub.impl.sensor.uas.outputs.Video;
-import org.sensorhub.impl.sensor.uas.outputs.VmtiOutput;
+import org.sensorhub.impl.sensor.uas.outputs.*;
 import org.sensorhub.misb.stanag4609.comm.MpegTsProcessor;
+import org.sensorhub.misb.stanag4609.klv.codec.SetDecoder;
+import org.sensorhub.misb.stanag4609.time.SyncTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.vast.ogc.om.MovingFeature;
 import org.vast.swe.SWEConstants;
 import org.vast.util.Asserts;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 
 /**
  * Base class for two sensors that parse an MPEG TS stream.
@@ -72,6 +76,11 @@ public abstract class UasSensorBase<UasConfigType extends UasConfig> extends Abs
      */
     protected final Object syncTimeLock = new Object();
 
+    /**
+     * Class used to compute simulated real-time timestamp in loop mode
+     */
+    protected SimulationClock simulatedTime = new SimulationClock();
+    
     /**
      * Feature for the UAS itself.
      */
@@ -166,7 +175,7 @@ public abstract class UasSensorBase<UasConfigType extends UasConfig> extends Abs
      * Creates the strings that uniquely identify this sensor in OpenSensorHub.
      */
     protected void generateIds() {
-        generateUniqueID("urn:osh:sensor:uas:", config.serialNumber);
+        generateUniqueID("urn:osh:sensor:georobotix:uas:", config.serialNumber);
         generateXmlID("MISB_UAS_", config.serialNumber);
     }
 
@@ -321,6 +330,7 @@ public abstract class UasSensorBase<UasConfigType extends UasConfig> extends Abs
                 mpegTsProcessor.join();
             } catch (InterruptedException e) {
                 logger.error("Interrupted waiting for stream processor to stop", e);
+                Thread.currentThread().interrupt();
                 throw new SensorHubException("Interrupted waiting for stream processor to stop", e);
             } finally {
                 // Close stream and cleanup resources
@@ -370,7 +380,7 @@ public abstract class UasSensorBase<UasConfigType extends UasConfig> extends Abs
         addFoi(uasFoi);
         
         imagedFoi = new MovingFeature();
-        imagedFoi.setUniqueIdentifier("urn:osh:foi:imagedArea:" + config.serialNumber);
+        imagedFoi.setUniqueIdentifier("urn:osh:foi:georobotix:imagedArea:" + config.serialNumber);
         imagedFoi.setName("UAS " + config.serialNumber + " Imaged Area");
         imagedFoi.setDescription("Area viewed by imaging sensor on-board platform " + config.serialNumber);
         addFoi(imagedFoi);
@@ -384,5 +394,10 @@ public abstract class UasSensorBase<UasConfigType extends UasConfig> extends Abs
     public String getImagedFoiUID()
     {
         return imagedFoi.getUniqueIdentifier();
+    }
+    
+    public SimulationClock getSimulatedTime()
+    {
+        return simulatedTime;
     }
 }

@@ -1,3 +1,0 @@
-org.sensorhub.impl.persistence.perst.BasicStorageDescriptor
-org.sensorhub.impl.persistence.perst.ObsStorageDescriptor
-org.sensorhub.impl.persistence.perst.MultiEntityStorageDescriptor

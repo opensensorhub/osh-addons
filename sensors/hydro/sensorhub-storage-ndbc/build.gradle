@@ -1,6 +1,6 @@
 description = 'NDBC Buoy Data Archive'
 ext.details = 'Connector to retrieve historical observations from NDBC datasets'
-version = '0.1.0'
+version = '0.1.1'
 
 dependencies {
   implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion

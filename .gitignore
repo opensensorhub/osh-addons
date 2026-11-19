@@ -9,3 +9,5 @@
 **/.classpath
 **/.idea
 **/*.iml
+**/generated-sources/
+**/resources/**/README.md

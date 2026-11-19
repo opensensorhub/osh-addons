@@ -8,7 +8,7 @@ Software distributed under the License is distributed on an "AS IS" basis,
 WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
 for the specific language governing rights and limitations under the License.
  
-Copyright (C) 2012-2016 Sensia Software LLC. All Rights Reserved.
+Copyright (C) 2012-2024 Sensia Software LLC. All Rights Reserved.
  
 ******************************* END LICENSE BLOCK ***************************/
 
@@ -38,10 +38,6 @@ public class OAuthClientConfig extends SecurityModuleConfig
     public String userInfoEndpoint;
     
     
-    @DisplayInfo(label="Redirect URL", desc="URL where OAuth provider will redirect the user after proper authentication")
-    public String redirectURL;
-    
-    
     @DisplayInfo(desc="Client ID as provided by your OAuth provider")
     public String clientID;
     
@@ -55,6 +51,17 @@ public class OAuthClientConfig extends SecurityModuleConfig
     
     
     @Required
-    @DisplayInfo(desc="Name of JSON attribute in UserInfo resource to use as OSH user ID")
+    @DisplayInfo(desc="Path of JSON attribute to use as OSH user ID")
     public String userIdField = "id";
+    
+    
+    @DisplayInfo(desc="Path of JSON attribute containing the user roles")
+    public String userRolesField = "";
+    
+    
+    @DisplayInfo(desc="Automatically create users with roles returned by the identity provider")
+    public boolean autoAddUser = true;
+
+    @DisplayInfo(label="Client Credentials Token", desc="Configuration options for authenticating client credentials token")
+    public OAuthBearerTokenConfig bearerTokenConfig = new OAuthBearerTokenConfig();
 }

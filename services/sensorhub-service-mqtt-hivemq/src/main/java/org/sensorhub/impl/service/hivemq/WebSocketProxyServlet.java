@@ -67,6 +67,7 @@ public class WebSocketProxyServlet extends HttpServlet
         try
         {
             WebSocketPolicy wsPolicy = new WebSocketPolicy(WebSocketBehavior.SERVER);
+            wsPolicy.setMaxBinaryMessageSize(1024*1024);
             wsFactory = new WebSocketServerFactory(getServletContext(), wsPolicy);
             wsFactory.start();
         }

@@ -20,8 +20,11 @@ import java.io.InputStream;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.util.PriorityQueue;
+
+import org.sensorhub.api.sensor.SensorException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.vast.swe.Base64Decoder;
@@ -78,6 +81,46 @@ public class RTPH264Receiver extends Thread
         this.localPort = localPort;
         this.callback = callback;
     }
+
+
+    public int getLocalPort()
+    {
+        return localPort;
+    }
+
+
+    public void setRemotePort(int remotePort)
+    {
+        this.remotePort = remotePort;
+
+        if (remotePort > 0 && rtpSocket != null) {
+            try {
+                rtpSocket.send(new DatagramPacket(new byte[4], 0, 4, InetAddress.getByName(remoteHost), remotePort));
+            } catch (IOException e) {
+                log.warn("Failed to send packet", e);
+            }
+        }
+    }
+
+    public void init() throws SensorException
+    {
+        try
+        {
+            // bind UDP port for receiving RTP packets
+            rtpSocket = new DatagramSocket(null);
+            rtpSocket.setReuseAddress(false);
+            rtpSocket.bind(localPort == 0 ? null : new InetSocketAddress(localPort));
+            localPort = rtpSocket.getLocalPort();
+            log.info("RTPH264Receiver listening on port {}", localPort);
+            rtpSocket.setReceiveBufferSize(MAX_DATAGRAM_SIZE);
+            if (remotePort > 0)
+                rtpSocket.send(new DatagramPacket(new byte[4], 0, 4, InetAddress.getByName(remoteHost), remotePort));
+        }
+        catch (IOException e)
+        {
+            throw new RuntimeException("Failed to bind RTP socket to port " + localPort, e);
+        }
+    }
     
     
     public void setParameterSets(String paramSetsSDP)
@@ -106,7 +149,11 @@ public class RTPH264Receiver extends Thread
         byte[] res = new byte[s.length()*3/4];
         InputStream is = new ByteArrayInputStream(s.getBytes());
         Base64Decoder decoder = new Base64Decoder(is);
-        decoder.read(res);
+        int bytesRead = decoder.read(res);
+        if (bytesRead != res.length) {
+        	// This should never happen, since ByteArrayInputStream always has all bytes available immediately
+        	log.warn("Did not read enough bytes while decoding base64 string");
+        }
         decoder.close();
         return res;
     }
@@ -116,12 +163,6 @@ public class RTPH264Receiver extends Thread
     {
         try
         {
-            // bind UDP port for receiving RTP packets
-            rtpSocket = new DatagramSocket(localPort);
-            rtpSocket.setReuseAddress(true);
-            rtpSocket.setReceiveBufferSize(MAX_DATAGRAM_SIZE);
-            rtpSocket.send(new DatagramPacket(new byte[4], 0, 4, InetAddress.getByName(remoteHost), remotePort));
-
             final byte[] receiveData = new byte[MAX_DATAGRAM_SIZE];
             final DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
             
@@ -331,6 +372,9 @@ public class RTPH264Receiver extends Thread
     {
         started = false;
         super.interrupt();
-        rtpSocket.close();
+        if (rtpSocket != null) {
+            rtpSocket.close();
+            rtpSocket = null;
+        }
     }
 }

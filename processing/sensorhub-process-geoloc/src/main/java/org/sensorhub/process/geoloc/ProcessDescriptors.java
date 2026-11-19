@@ -25,10 +25,12 @@ public class ProcessDescriptors extends AbstractProcessProvider
         addImpl(ECEFPosMatrix.INFO);
         addImpl(ECEFToLLA.INFO);
         addImpl(LLAToECEF.INFO);
-        
+        addImpl(LLToLLA.INFO);
+
         addImpl(RayIntersectSphere.INFO);
         addImpl(RayIntersectEllipsoid.INFO);
         addImpl(RayIntersectTerrain.INFO);
+        addImpl(RayIntersection.INFO);
     }
 
 }

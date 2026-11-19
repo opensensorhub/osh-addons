@@ -14,36 +14,29 @@ Copyright (C) 2018 Delta Air Lines, Inc. All Rights Reserved.
 
 package org.sensorhub.impl.sensor.flightAware;
 
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-
+import java.time.Instant;
 import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
-import org.vast.swe.SWEConstants;
+import org.sensorhub.utils.aero.impl.AeroUtils;
+import org.vast.data.DataBlockProxy;
 import org.vast.swe.SWEHelper;
-import org.vast.swe.helper.GeoPosHelper;
-
-import net.opengis.swe.v20.DataBlock;
+import com.google.common.base.Strings;
 import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.DataEncoding;
 import net.opengis.swe.v20.DataRecord;
-import net.opengis.swe.v20.Vector;
 
 
-public class FlightPositionOutput extends AbstractSensorOutput<FlightAwareDriver>
+public class FlightPositionOutput extends AbstractSensorOutput<FlightAwareDriver> implements PositionListener
 {
     static final String DEF_FLIGHTPOS_REC = SWEHelper.getPropertyUri("aero/FlightPosition");
     static final String DEF_VERTICAL_RATE = SWEHelper.getPropertyUri("areo/VerticalRate");
     static final String DEF_GROUND_SPEED = SWEHelper.getPropertyUri("GroundSpeed");
     static final String DEF_HEADING = SWEHelper.getPropertyUri("TrueHeading");
     private static final int AVERAGE_SAMPLING_PERIOD = 30;
-    private static final String INVALID_ALT_MSG = ": Invalid altitude detected.";
 
-	DataRecord recordStruct;
-	DataEncoding encoding;	
-
-	Map<String, Long> latestUpdateTimes = new ConcurrentHashMap<>();
-	Map<String, DataBlock> latestRecords = new ConcurrentHashMap<>();  // key is position uid
+    DataRecord dataStruct;
+    DataEncoding encoding;
+    FaPositionMsg posMsg;
 
 	
 	public FlightPositionOutput(FlightAwareDriver parentSensor) 
@@ -51,93 +44,90 @@ public class FlightPositionOutput extends AbstractSensorOutput<FlightAwareDriver
 		super("flightPos", parentSensor);
 	}
 
-	protected void init()
-	{
-		SWEHelper fac = new SWEHelper();
-		GeoPosHelper geoHelper = new GeoPosHelper();
 
-		// SWE Common data structure
-		recordStruct = fac.newDataRecord(7);
-		recordStruct.setName(getName());
-		recordStruct.setDefinition(DEF_FLIGHTPOS_REC);
+    protected void init()
+    {
+        // data structure
+        this.dataStruct = FaPositionMsg.getSchema(getName());
+        this.posMsg = DataBlockProxy.generate(dataStruct, FaPositionMsg.class);
 
-		recordStruct.addComponent("time", fac.newTimeStampIsoGPS());
+        // default encoding is text
+        encoding = new SWEHelper().newTextEncoding(",", "\n");
+    }
+    
 
-		// oshFlightId
-		recordStruct.addField("flightId", fac.newText(FlightPlanOutput.DEF_FLIGH_ID, "Flight ID", null));
-
-		//  location
-		Vector locVector = geoHelper.newLocationVectorLLA(SWEConstants.DEF_SENSOR_LOC);
-		locVector.setLabel("Location");
-		locVector.setDescription("Location measured by GPS device");
-		recordStruct.addComponent("location", locVector);
-
-		//  heading
-		recordStruct.addField("heading", fac.newQuantity(DEF_HEADING, "True Heading", null, "deg"));
-
-		// airspeed
-		recordStruct.addField("groundSpeed", fac.newQuantity(DEF_GROUND_SPEED, "Ground Speed", null, "[kn_i]"));
-		
-		// vertical rate
-        recordStruct.addField("verticalRate", fac.newQuantity(DEF_VERTICAL_RATE, "Vertical Rate", null, "[ft_i]/min"));
-
-		// default encoding is text
-		encoding = fac.newTextEncoding(",", "\n");
-	}
-
-	public void sendPosition(String oshFlightId, FlightObject fltPos)
+    @Override
+    public synchronized void newPosition(FlightObject fltObj)
 	{                
-		int i = 0;
-		
-		// build data block from FlightObject Record
-		DataBlock dataBlk = recordStruct.createDataBlock();
-		dataBlk.setDoubleValue(i++, fltPos.getClock());
-		dataBlk.setStringValue(i++, oshFlightId);
-		dataBlk.setDoubleValue(i++, fltPos.getValue(fltPos.lat));
-		dataBlk.setDoubleValue(i++, fltPos.getValue(fltPos.lon));		
-		
-		// fix altitude if 0
-        double alt = fltPos.getValue(fltPos.alt);
+	    long msgTime = System.currentTimeMillis();
+        
+        // fix altitude if 0
+        double alt = toDouble(fltObj.alt);
         if (alt <= 0)
-        {
-            DataBlock lastData = latestRecords.get(oshFlightId);
-            if (lastData != null)
-            {
-                double lastAlt = lastData.getDoubleValue(i);
-                parentSensor.getLogger().debug("{}{} Using last value = {}", oshFlightId, INVALID_ALT_MSG, lastAlt);
-                alt = lastAlt;
-            }
-            else
-                parentSensor.getLogger().debug("{}{} No previous value available", oshFlightId, INVALID_ALT_MSG);
-        }
-		dataBlk.setDoubleValue(i++, alt);
-		
-		dataBlk.setDoubleValue(i++, fltPos.getValue(fltPos.heading));
-		dataBlk.setDoubleValue(i++, fltPos.getValue(fltPos.gs));
-        dataBlk.setDoubleValue(i++, fltPos.verticalChange);
+            alt = Double.NaN;
+	    
+        // renew datablock
+        var dataBlk = latestRecord == null ?
+            dataStruct.createDataBlock() : latestRecord.renew();
+        posMsg.wrap(dataBlk);
+        
+        // set datablock values
+        posMsg.setTime(toInstant(fltObj.clock));
+        posMsg.setTailNumber(fltObj.reg);
+        posMsg.setCallSign(fltObj.ident);
+        posMsg.setLatitude(toDouble(fltObj.lat));
+        posMsg.setLongitude(toDouble(fltObj.lon));
+        posMsg.setUpdateType(fltObj.updateType);
+        posMsg.setGroundSpeed(toDouble(fltObj.gs));
+        posMsg.setTrueTrack(toDouble(fltObj.heading));
+        posMsg.setGnssAltitude(toDouble(fltObj.alt_gnss));
+        posMsg.setBaroAltitude(toDouble(fltObj.alt));
+        posMsg.setVerticalRate(toDouble(fltObj.vertRate));
+        posMsg.setTrueHeading(toDouble(fltObj.heading_true));
+        posMsg.setIndicatedAirspeed(toDouble(fltObj.speed_ias));
+        posMsg.setTrueAirSpeed(toDouble(fltObj.speed_tas));
+        posMsg.setMach(toDouble(fltObj.mach));
+        
+        // create FOI if needed, use tail number as ID
+        String foiUid = AeroUtils.ensureTailFoi(getParentProducer(), posMsg.getTailNumber());
         
 		// update latest record and send event
 		latestRecord = dataBlk;
-		latestRecords.put(oshFlightId, dataBlk);
-		latestRecordTime = System.currentTimeMillis();
-        latestUpdateTimes.put(oshFlightId, fltPos.getClock());
-		eventHandler.publish(new DataEvent(
-		    latestRecordTime, this,
-		    FlightAwareDriver.FLIGHT_UID_PREFIX + oshFlightId,
-		    dataBlk));
+		latestRecordTime = msgTime;
+		eventHandler.publish(new DataEvent(latestRecordTime, this, foiUid, dataBlk));
 	}
+    
+    
+    protected Instant toInstant(String val)
+    {
+        if (Strings.isNullOrEmpty(val))
+            return null;
+        
+        long epochSeconds = Long.parseLong(val);
+        return Instant.ofEpochSecond(epochSeconds);
+    }
+    
+    
+    protected double toDouble(String val)
+    {
+        if (Strings.isNullOrEmpty(val))
+            return Double.NaN;
+        
+        return Double.parseDouble(val);
+    }
+	
 
-	public double getAverageSamplingPeriod()
-	{
-		return AVERAGE_SAMPLING_PERIOD;
-	}
+    public double getAverageSamplingPeriod()
+    {
+        return AVERAGE_SAMPLING_PERIOD;
+    }
 
 
-	@Override 
-	public DataComponent getRecordDescription()
-	{
-		return recordStruct;
-	}
+    @Override 
+    public DataComponent getRecordDescription()
+    {
+        return dataStruct;
+    }
 
 
 	@Override

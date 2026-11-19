@@ -47,7 +47,7 @@ public class ISADriver extends AbstractSensorModule<ISAConfig> implements ISyste
         super.doInit();
         
         // add unique ID based on serial number
-        this.uniqueID = "urn:osh:sensor:isa:" + config.networkID;
+        this.uniqueID = "urn:osh:sensor:georobotix:isa:" + config.networkID;
         this.xmlID = "ISA_" + config.networkID.toUpperCase();
         
         /*// init comm provider
@@ -104,7 +104,7 @@ public class ISADriver extends AbstractSensorModule<ISAConfig> implements ISyste
             new SMLHelper().edit((PhysicalSystem)sensorDescription)
                 .name("ISA Sensor Network")
                 .description("Network of sensors connected via the Integrated Sensor Architecture (ISA) protocol")
-                .definition(SWEConstants.DEF_SENSOR_NETWORK)
+                .definition(SWEConstants.DEF_SYSTEM)
                 .build();
         }
     }

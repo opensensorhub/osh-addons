@@ -16,7 +16,9 @@ package org.sensorhub.impl.security.oauth;
 
 import org.eclipse.jetty.security.Authenticator;
 import org.sensorhub.api.common.SensorHubException;
+import org.sensorhub.api.service.IHttpServer;
 import org.sensorhub.impl.module.AbstractModule;
+import org.sensorhub.impl.service.HttpServerConfig;
 
 
 /**
@@ -36,13 +38,26 @@ public class OAuthClient extends AbstractModule<OAuthClientConfig>
     public void setConfiguration(OAuthClientConfig config)
     {
         super.setConfiguration(config);
-        authenticator = new OAuthAuthenticator(config, getLogger());
     }
     
     
     @Override
     protected void doStart() throws SensorHubException
     {
+        // retrieve HTTP server config and base URL
+        var httpServer = getParentHub().getModuleRegistry().getModuleByType(IHttpServer.class);
+        if (httpServer == null)
+            throw new SensorHubException("No HTTP server module configured");
+        var callbackBaseUrl = httpServer.getServerBaseUrl();
+        var httpConfig = (HttpServerConfig)httpServer.getConfiguration();
+        
+        authenticator = new OAuthAuthenticator(
+            config,
+            callbackBaseUrl,
+            httpConfig.enableCORS,
+            getParentHub().getSecurityManager(),
+            getLogger());
+        
         getParentHub().getSecurityManager().registerAuthenticator(authenticator);
     }
 

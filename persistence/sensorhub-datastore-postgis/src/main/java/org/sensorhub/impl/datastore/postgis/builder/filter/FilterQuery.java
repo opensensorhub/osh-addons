@@ -1,0 +1,130 @@
+/***************************** BEGIN LICENSE BLOCK ***************************
+
+ The contents of this file are subject to the Mozilla Public License, v. 2.0.
+ If a copy of the MPL was not distributed with this file, You can obtain one
+ at http://mozilla.org/MPL/2.0/.
+
+ Software distributed under the License is distributed on an "AS IS" basis,
+ WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+ for the specific language governing rights and limitations under the License.
+
+ Copyright (C) 2023 Georobotix. All Rights Reserved.
+
+ ******************************* END LICENSE BLOCK ***************************/
+
+package org.sensorhub.impl.datastore.postgis.builder.filter;
+
+import org.sensorhub.api.common.BigId;
+import org.sensorhub.api.datastore.command.ICommandStore;
+import org.sensorhub.api.datastore.deployment.IDeploymentStore;
+import org.sensorhub.api.datastore.feature.IFoiStore;
+import org.sensorhub.api.datastore.obs.IDataStreamStore;
+import org.sensorhub.api.datastore.obs.IObsStore;
+import org.sensorhub.api.datastore.system.ISystemDescStore;
+import org.sensorhub.impl.datastore.postgis.builder.generator.FilterQueryGenerator;
+
+import java.util.SortedSet;
+import java.util.stream.Collectors;
+
+public abstract class FilterQuery<F extends FilterQueryGenerator> {
+    protected String commandStreamTableName;
+    protected String commandStatusTableName;
+    protected String commandTableName;
+    protected String sysDescTableName;
+    protected String dataStreamTableName;
+    protected String foiTableName;
+    protected String obsTableName;
+    protected String tableName;
+
+    // store
+    protected IFoiStore foiStore;
+    protected ISystemDescStore systemDescStore;
+    protected IDataStreamStore dataStreamStore;
+    protected IObsStore obsStore;
+    protected ICommandStore commandStore;
+    protected IDeploymentStore deploymentStore;
+
+    protected F filterQueryGenerator;
+
+    protected FilterQuery(String tableName, F filterQueryGenerator) {
+        this.tableName = tableName;
+        this.filterQueryGenerator = filterQueryGenerator;
+    }
+
+    protected void handleInternalIDs(SortedSet<BigId> ids) {
+        if (ids != null && !ids.isEmpty()) {
+            String operator = "IN";
+            if(ids.size() == 1) {
+                operator = "=";
+            }
+            addCondition(this.tableName+".id "+operator+" (" +
+                    ids.stream().map(bigId -> String.valueOf(bigId.getIdAsLong())).collect(Collectors.joining(",")) +
+                    ")");
+        }
+    }
+
+    protected void addCondition(String condition) {
+        filterQueryGenerator.addCondition(condition);
+    }
+
+    protected void orCondition(String condition) {
+        filterQueryGenerator.orCondition(condition);
+    }
+
+    public void setCommandStreamTableName(String commandStreamTableName) {
+        this.commandStreamTableName = commandStreamTableName;
+    }
+
+    public void setCommandStatusTableName(String commandStatusTableName) {
+        this.commandStatusTableName = commandStatusTableName;
+    }
+
+    public void setCommandTableName(String commandTableName) {
+        this.commandTableName = commandTableName;
+    }
+
+    public void setSysDescTableName(String sysDescTableName) {
+        this.sysDescTableName = sysDescTableName;
+    }
+
+    public void setDataStreamTableName(String dataStreamTableName) {
+        this.dataStreamTableName = dataStreamTableName;
+    }
+
+    public void setFoiTableName(String foiTableName) {
+        this.foiTableName = foiTableName;
+    }
+
+    public void setObsTableName(String obsTableName) {
+        this.obsTableName = obsTableName;
+    }
+
+    public void setFoiStore(IFoiStore foiStore) {
+        this.foiStore = foiStore;
+        this.foiTableName = this.foiStore.getDatastoreName();
+    }
+
+    public void setSystemDescStore(ISystemDescStore systemDescStore) {
+        this.systemDescStore = systemDescStore;
+        this.sysDescTableName = this.systemDescStore.getDatastoreName();
+    }
+
+    public void setDataStreamStore(IDataStreamStore dataStreamStore) {
+        this.dataStreamStore = dataStreamStore;
+        this.dataStreamTableName = this.dataStreamStore.getDatastoreName();
+    }
+
+    public void setObsStore(IObsStore obsStore) {
+        this.obsStore = obsStore;
+        this.obsTableName = this.obsStore.getDatastoreName();
+    }
+
+    public void setCommandStore(ICommandStore commandStore) {
+        this.commandStore = commandStore;
+    }
+
+    public void setDeploymentStore(IDeploymentStore deploymentStore) {
+        this.deploymentStore = deploymentStore;
+    }
+
+}

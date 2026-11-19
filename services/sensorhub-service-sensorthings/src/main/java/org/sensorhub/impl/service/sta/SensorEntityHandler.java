@@ -30,16 +30,17 @@ import org.sensorhub.api.datastore.obs.DataStreamKey;
 import org.sensorhub.api.datastore.obs.IDataStreamStore;
 import org.sensorhub.api.datastore.system.ISystemDescStore;
 import org.sensorhub.api.datastore.system.SystemFilter;
+import org.sensorhub.api.feature.FeatureId;
 import org.sensorhub.api.system.ISystemWithDesc;
 import org.sensorhub.api.system.SystemAddedEvent;
 import org.sensorhub.api.system.SystemChangedEvent;
 import org.sensorhub.api.system.SystemEvent;
-import org.sensorhub.api.system.SystemId;
 import org.sensorhub.impl.event.DelegatingSubscriberAdapter;
 import org.sensorhub.impl.service.sta.filter.SensorFilterVisitor;
 import org.sensorhub.impl.system.SystemSubscriptionHandler;
 import org.sensorhub.impl.system.wrapper.SystemWrapper;
 import org.sensorhub.utils.SWEDataUtils;
+import org.vast.sensorML.SMLFactory;
 import org.vast.sensorML.SMLHelper;
 import org.vast.util.Asserts;
 import org.vast.util.TimeExtent;
@@ -85,7 +86,7 @@ public class SensorEntityHandler implements IResourceHandler<Sensor>
     STASecurity securityHandler;
     int maxPageSize = 100;
     String uidPrefix;
-    SystemId sysGroupID;
+    FeatureId sysGroupID;
 
 
     SensorEntityHandler(OSHPersistenceManager pm)
@@ -222,7 +223,7 @@ public class SensorEntityHandler implements IResourceHandler<Sensor>
         
         try
         {
-            return sysHandler.delete();
+            return sysHandler.delete(true);
         }
         catch (DataStoreException e)
         {
@@ -363,10 +364,8 @@ public class SensorEntityHandler implements IResourceHandler<Sensor>
             doc.setProtocol(sensor.getEncodingType());
             doc.setLinkage((String)sensor.getMetadata());
             
-            DocumentList docList = new SMLHelper().createDocumentList()
-                .add(doc)
-                .build();
-                
+            DocumentList docList = new SMLFactory().newDocumentList();
+            docList.addDocument(doc);
             docList.addDocument(doc);
             sys.getDocumentationList().add("sta_metadata", docList);
         }

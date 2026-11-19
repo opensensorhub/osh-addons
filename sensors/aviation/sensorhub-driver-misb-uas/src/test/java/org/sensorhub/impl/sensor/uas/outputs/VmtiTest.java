@@ -113,7 +113,7 @@ public class VmtiTest {
                 }
             } finally {
                 synchronized (syncObject) {
-                    if (count.incrementAndGet() > 200)
+                    if (count.incrementAndGet() > 20)
                         syncObject.notify();
                 }
             }

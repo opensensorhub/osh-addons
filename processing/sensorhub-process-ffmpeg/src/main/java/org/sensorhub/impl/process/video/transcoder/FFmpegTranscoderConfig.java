@@ -1,0 +1,37 @@
+package org.sensorhub.impl.process.video.transcoder;
+
+import org.sensorhub.api.config.DisplayInfo;
+import org.sensorhub.impl.process.video.FFmpegProcessConfig;
+
+public class FFmpegTranscoderConfig extends FFmpegProcessConfig {
+
+    @DisplayInfo.Required
+    @DisplayInfo(label="Input Format")
+    public CodecEnum inCodec = CodecEnum.H264;
+
+    @DisplayInfo(label="Input Format Override")
+    public String inCodecOverride = "";
+
+    @DisplayInfo(label="Automatically Detect Input Format", desc="If enabled, process will attempt to determine the input format."
+    + " If a codec could not be determined from the input data, it will fall back to the selected Input Format.")
+    public boolean detectInput = false;
+
+    @DisplayInfo.Required
+    @DisplayInfo(label="Output Format")
+    public CodecEnum outCodec = CodecEnum.H264;
+
+    @DisplayInfo(label="Output Format Override")
+    public String outCodecOverride = "";
+
+    @DisplayInfo(label="Output Width")
+    public Integer outputWidth = null;
+
+    @DisplayInfo(label="Output Height")
+    public Integer outputHeight = null;
+
+    public FFmpegTranscoderConfig() {
+        super();
+        execProcess = FFMpegTranscoder.class;
+    }
+
+}

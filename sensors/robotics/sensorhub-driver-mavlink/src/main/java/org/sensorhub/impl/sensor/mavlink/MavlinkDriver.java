@@ -31,13 +31,13 @@ import com.MAVLink.Parser;
 import com.MAVLink.Messages.MAVLinkMessage;
 import com.MAVLink.common.msg_command_ack;
 import com.MAVLink.common.msg_command_long;
-import com.MAVLink.common.msg_heartbeat;
 import com.MAVLink.common.msg_param_set;
 import com.MAVLink.common.msg_position_target_global_int;
 import com.MAVLink.common.msg_set_mode;
 import com.MAVLink.enums.MAV_CMD;
 import com.MAVLink.enums.MAV_MODE_FLAG;
 import com.MAVLink.enums.MAV_PARAM_TYPE;
+import com.MAVLink.minimal.msg_heartbeat;
 
 
 /**
@@ -92,7 +92,7 @@ public class MavlinkDriver extends AbstractSensorModule<MavlinkConfig>
     protected void doInit() throws SensorHubException
     {
         // generate identifiers
-        generateUniqueID("urn:osh:sensor:mavlink:", config.vehicleID);
+        generateUniqueID("urn:osh:sensor:georobotix:mavlink:", config.vehicleID);
         generateXmlID("MAVLINK_SYSTEM_", config.vehicleID);
         
         // create outputs depending on selected sentences
@@ -317,7 +317,7 @@ public class MavlinkDriver extends AbstractSensorModule<MavlinkConfig>
         synchronized (cmdOut)
         {
             pkt.compid = 0;
-            pkt.generateCRC();
+            pkt.generateCRC(pkt.len);
             byte[] cmdData = pkt.encodePacket();
             cmdOut.write(cmdData);
             cmdOut.flush();

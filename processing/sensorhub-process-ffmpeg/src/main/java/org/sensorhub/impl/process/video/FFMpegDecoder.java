@@ -52,7 +52,7 @@ public class FFMpegDecoder extends ExecutableProcessImpl
 {
 	public static final OSHProcessInfo INFO = new OSHProcessInfo("video:FFMpegDecoder", "FFMPEG Video Decoder", null, FFMpegDecoder.class);
 	
-	enum CodecEnum {
+    enum CodecEnum {
 	    //AUTO("auto"),
 	    H264("h264"),
 	    H265("hevc"),
@@ -97,6 +97,7 @@ public class FFMpegDecoder extends ExecutableProcessImpl
     	// inputs
         inputData.add("codedFrame", swe.createRecord()
             .label("Video Frame")
+            .definition(SWEHelper.getPropertyUri("VideoFrame"))
             .addField("time", inputTimeStamp = swe.createTime()
                 .asSamplingTimeIsoUTC()
                 .build())
@@ -130,6 +131,7 @@ public class FFMpegDecoder extends ExecutableProcessImpl
         // outputs
         outputData.add("rgbFrame", swe.createRecord()
             .label("Video Frame")
+            .definition(SWEHelper.getPropertyUri("VideoFrame"))
             .addField("time", outputTimeStamp = swe.createTime()
                 .asSamplingTimeIsoUTC()
                 .build())
@@ -204,7 +206,7 @@ public class FFMpegDecoder extends ExecutableProcessImpl
             av_init_packet(dec_pkt);
             av_frame = av_frame_alloc();
             sws_frame = av_frame_alloc();
-            nativeFrameData = new BytePointer(50*1024);
+            nativeFrameData = new BytePointer((long)50*1024);
         }
         catch (IllegalArgumentException e)
         {
@@ -247,6 +249,10 @@ public class FFMpegDecoder extends ExecutableProcessImpl
     {
         // get input encoded frame data
         byte[] frameData = ((DataBlockCompressed)imgIn.getData()).getUnderlyingObject();
+        if (frameData == null) {
+            getLogger().debug("Frame data is null");
+            return;
+        }
         //System.out.println("Frame size=" + frameData.length);
         
         // grow packet data buffer as needed
@@ -284,7 +290,7 @@ public class FFMpegDecoder extends ExecutableProcessImpl
                 
                 frameData = new byte[av_frame.width() * av_frame.height() * 3];
                 sws_frame.data(0).get(frameData);
-                ((DataBlockByte)imgOut.getData()).setUnderlyingObject(frameData);
+                ((DataBlockByte)imgOut.getData()).setUnderlyingObject(frameData.clone());
                 
                 // also copy frame timestamp
                 var ts = inputTimeStamp.getData().getDoubleValue();

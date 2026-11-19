@@ -1,0 +1,686 @@
+/***************************** BEGIN LICENSE BLOCK ***************************
+ The contents of this file are subject to the Mozilla Public License, v. 2.0.
+ If a copy of the MPL was not distributed with this file, You can obtain one
+ at http://mozilla.org/MPL/2.0/.
+
+ Software distributed under the License is distributed on an "AS IS" basis,
+ WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+ for the specific language governing rights and limitations under the License.
+
+ Copyright (C) 2023 Botts Innovative Research, Inc. All Rights Reserved.
+ ******************************* END LICENSE BLOCK ***************************/
+package org.sensorhub.mpegts;
+
+import org.bytedeco.ffmpeg.avcodec.AVCodecParameters;
+import org.bytedeco.ffmpeg.avcodec.AVPacket;
+import org.bytedeco.ffmpeg.avformat.AVFormatContext;
+import org.bytedeco.ffmpeg.avformat.AVIOInterruptCB;
+import org.bytedeco.ffmpeg.avformat.AVInputFormat;
+import org.bytedeco.ffmpeg.avutil.AVDictionary;
+import org.bytedeco.ffmpeg.avutil.AVRational;
+import org.bytedeco.ffmpeg.global.avcodec;
+import org.bytedeco.ffmpeg.global.avformat;
+import org.bytedeco.ffmpeg.global.avutil;
+import org.bytedeco.javacpp.Pointer;
+import org.bytedeco.javacpp.PointerPointer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.annotation.Nonnull;
+import java.util.Optional;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+
+import static org.bytedeco.ffmpeg.global.avdevice.avdevice_register_all;
+import static org.bytedeco.ffmpeg.global.avformat.*;
+
+/**
+ * The class provides a wrapper to bytedeco.org JavaCpp-Platform.
+ * "Bytedeco makes native libraries available to the Java platform
+ * by offering ready-to-use bindings generated with the co-developed
+ * JavaCPP technology."
+ * <p>
+ * Of particular interest is the platform support for FFmpeg,
+ * specifically avutils which is used to demux the MPEG-TS streams into h264 video packets.
+ * <p>
+ * The MpegTsProcessor allows for easy interface and management of the logical stream,
+ * allowing client applications to register callbacks for video and data buffers for further domain-specific processing.
+ * <p>
+ * <H1>Example Usage:</H1>
+ * <pre><code>
+ * MpegTsProcessor mpegTsProcessor = new MpegTsProcessor("src/test/resources/Flight_20190327_018.ts");
+ * mpegTsProcessor.openStream();
+ * mpegTsProcessor.queryEmbeddedStreams();
+ * if (mpegTsProcessor.hasVideoStream()) {
+ *      mpegTsProcessor.setVideoDataBufferListener(new DataBufferListener() {
+ *          public void onDataBuffer(byte[] dataBuffer) {
+ *                 ...
+ *              }
+ *          });
+ * }
+ * mpegTsProcessor.processStream();
+ * </code></pre>
+ * ...
+ * <pre><code>
+ * mpegTsProcessor.stopProcessingStream();
+ * try {
+ *      mpegTsProcessor.join();
+ * } catch (InterruptedException e) {
+ *      e.printStackTrace();
+ * }
+ * mpegTsProcessor.closeStream();
+ * </code></pre>
+ *
+ * @author Nick Garay
+ * @since Feb. 6, 2020
+ */
+public class MpegTsProcessor extends Thread {
+    /**
+     * Logging utility.
+     */
+    private static final Logger logger = LoggerFactory.getLogger(MpegTsProcessor.class);
+
+    /**
+     * Name of thread.
+     */
+    private static final String WORKER_THREAD_NAME = "STREAM-PROCESSOR";
+
+    private StreamCollection streamCollection = new StreamCollection(0);
+
+    private String optionsString = "";
+
+    private String formatString;
+
+    private boolean registerDevices = false;
+
+    private boolean injectVideoExtradata = false;
+
+    /**
+     * Context used by underlying FFmpeg library to decode stream.
+     */
+    private AVFormatContext avFormatContext;
+
+    /**
+     * Callbacks allow some blocking AVFormatContext operations to terminate early on
+     * stream close. These are global for GC purposes; do not directly modify.
+     */
+    private AVIOInterruptCB.Callback_Pointer callbackPointer;
+    private AVIOInterruptCB interruptCallback;
+
+    /**
+     * Flag indicating if processing of the transport stream should be terminated.
+     */
+    private final AtomicBoolean terminateProcessing = new AtomicBoolean(false);
+
+    /**
+     * Flag indicating whether the stream has been opened or connected successfully.
+     */
+    private boolean streamOpened = false;
+
+    /**
+     * Flag indicating that the current {@link MpegTsProcessor#openStream()} call is a reconnect attempt
+     * rather than a first connection.
+     * <p>
+     * A reconnect keeps the existing stream contexts, and with them any listeners clients registered on
+     * them, on the assumption that the source came back with the same stream layout. If the layout did
+     * in fact change, the driver has to be re-initialized to pick it up.
+     */
+    private volatile boolean reconnecting = false;
+
+    /**
+     * A string representation of the file or url to use as the source of the transport stream to demux.
+     */
+    private final String streamSource;
+
+    /**
+     * FPS to enforce when playing back from a file.
+     * Zero means the file will be played back as fast as possible.
+     */
+    int fps;
+
+    /**
+     * If true, play the video file continuously in a loop.
+     */
+    volatile boolean loop;
+
+    /**
+     * Executor to restart the stream in case of failure.
+     */
+    protected ScheduledExecutorService restartExecutor;
+
+    private final Object avFormatContextLock = new Object();
+
+    /**
+     * Constructor
+     *
+     * @param source A string representation of the file or url to use as the source of the transport stream to demux.
+     */
+    public MpegTsProcessor(String source) {
+        this(source, 0, false);
+    }
+
+    public MpegTsProcessor(String source, String optionsString) {
+        this(source, optionsString, 0, false);
+    }
+
+    /**
+     * Constructor with more options when playing back from a file.
+     *
+     * @param source A string representation of the file or url to use as the source of the transport stream to demux.
+     * @param fps    The desired playback FPS (use 0 for decoding the TS file as fast as possible).
+     * @param loop   If true, play the video file continuously in a loop.
+     */
+    public MpegTsProcessor(String source, int fps, boolean loop) {
+        this(source, "", fps, loop);
+    }
+
+    public MpegTsProcessor(String source, String optionsString, int fps, boolean loop) {
+        super(WORKER_THREAD_NAME);
+
+        if (source != null) {
+            this.streamSource = source;
+        } else {
+            this.streamSource = "";
+        }
+
+        if (optionsString != null) {
+            this.optionsString = optionsString;
+        } else {
+            this.optionsString = "";
+        }
+
+        this.fps = fps;
+        this.loop = loop;
+    }
+
+    /**
+     * Attempts to open the stream given the {@link MpegTsProcessor#streamSource}.
+     * Opening the stream entails establishing appropriate connection and ability to extract stream information.
+     *
+     * @return True if the stream is opened successfully, false otherwise.
+     */
+    public boolean openStream() {
+        logger.debug("openStream");
+
+        avformat.avformat_network_init();
+
+        if (registerDevices) {
+            avdevice_register_all();
+        }
+
+        // Create a new AV Format Context for I/O
+        avFormatContext = avformat_alloc_context();
+
+        // Allow for context to be interrupted after attempt to stop stream
+        interruptCallback = avFormatContext.interrupt_callback();
+        callbackPointer = new AVIOInterruptCB.Callback_Pointer() {
+            @Override
+            public int call(Pointer opaque) {
+                return terminateProcessing.get() ? 1 : 0;
+            }
+        };
+        interruptCallback.callback(callbackPointer);
+
+        AVInputFormat inputFormat = null;
+
+        // Set timeout
+        var options = new AVDictionary(null);
+        String cmdFormat;
+        cmdFormat = populateOptions(options, optionsString);
+        if (cmdFormat != null && !cmdFormat.isBlank()) {
+            inputFormat = av_find_input_format(cmdFormat);
+        }
+
+        int returnCode = avformat.avformat_open_input(avFormatContext, streamSource, inputFormat, options);
+        logger.debug("returnCode: {}", returnCode);
+
+        // Attempt to open the stream, streamPath can be a file or URL
+        if (returnCode == 0) {
+            returnCode = avformat.avformat_find_stream_info(avFormatContext, (PointerPointer<?>) null);
+
+            if (returnCode < 0) {
+                logger.error("Failed to find stream info");
+            } else {
+                streamOpened = true;
+
+                // On a reconnect, keep the stream contexts built for the previous connection so that the
+                // listeners registered on them stay attached, and assume the source came back with the same
+                // layout. Re-querying would replace them with fresh contexts that have no listeners.
+                if (canReuseStreamContexts()) {
+                    logger.debug("Reconnected: reusing {} existing stream context(s)", streamCollection.getStreamContexts().size());
+                } else {
+                    queryEmbeddedStreams();
+                }
+
+                // Allocate the codec contexts and attempt to open them
+                streamCollection.openStreamCodecs(avFormatContext);
+
+                logger.debug("Stream opened {}", streamSource);
+            }
+        } else {
+            logger.error("Failed to open stream: {}", streamSource);
+        }
+
+        return streamOpened;
+    }
+
+    public boolean isStreamOpened() {
+        return streamOpened;
+    }
+
+    private String populateOptions(AVDictionary options, String optionsString) {
+        if (optionsString.isBlank()) {
+            return null;
+        }
+
+        String detectedFormat = null;
+
+        for (String option : optionsString.split("-")) {
+            if (option.isBlank()) {
+                continue;
+            }
+            String name = option.substring(0, option.indexOf(' ')).trim();
+            for (String value : option.substring(option.indexOf(' ') + 1).trim().split(" ")) {
+                if (name.equals("f")) {
+                    detectedFormat = value;
+                    break;
+                } else {
+                    avutil.av_dict_set(options, name, value, avutil.AV_DICT_APPEND);
+                }
+            }
+        }
+
+        return detectedFormat;
+    }
+
+    /**
+     * Determines whether the stream contexts from the previous connection can be carried over to the
+     * connection that was just re-established, instead of being rebuilt by
+     * {@link MpegTsProcessor#queryEmbeddedStreams()}.
+     * <p>
+     * Carrying them over is what keeps client listeners attached across a reconnect. It requires that this
+     * open actually is a reconnect, that there are contexts to carry over, and that the source came back
+     * with at least as many streams as it had before -- the last of which is checked only because the
+     * stream IDs of the retained contexts are used to index into the new format context, and an ID beyond
+     * its stream count would be an out-of-bounds read in native code.
+     *
+     * @return True if the existing stream contexts should be reused, false if they should be rebuilt.
+     */
+    private boolean canReuseStreamContexts() {
+        if (!reconnecting) {
+            return false;
+        }
+
+        int retainedStreamCount = streamCollection.getStreamContexts().size();
+        if (retainedStreamCount == 0) {
+            return false;
+        }
+
+        int currentStreamCount = avFormatContext.nb_streams();
+        if (currentStreamCount < retainedStreamCount) {
+            logger.warn("Re-opened source has {} stream(s) but {} were expected. Rebuilding stream contexts; " +
+                    "re-initialize the driver to attach outputs to the new streams.", currentStreamCount, retainedStreamCount);
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Required to identify if the transport stream contains a video stream and/or an audio stream.
+     * Invoked after {@link MpegTsProcessor#openStream()}.
+     */
+    private void queryEmbeddedStreams() {
+        streamCollection = new StreamCollection(avFormatContext.nb_streams());
+
+        for (int streamId = 0; streamId < avFormatContext.nb_streams(); ++streamId) {
+            int codecType = avFormatContext.streams(streamId).codecpar().codec_type();
+
+            AVRational timeBase = avFormatContext.streams(streamId).time_base();
+            double timeBaseUnits = (double) timeBase.num() / timeBase.den();
+
+            var streamContext = new StreamContext(streamId, StreamType.fromFFmpeg(codecType), timeBaseUnits);
+
+            if (streamContext.getStreamType() == StreamType.VIDEO)
+                streamContext.setInjectingExtradata(injectVideoExtradata);
+
+            streamCollection.addStreamContext(streamContext);
+        }
+    }
+
+    /**
+     * Required to identify if the transport stream contains a video stream.
+     * Should be used in conjunction with {@link MpegTsProcessor#setVideoDataBufferListener(DataBufferListener)}
+     * to register callbacks for appropriate buffers.
+     */
+    public boolean hasVideoStream() {
+        return streamCollection.hasStreamContextType(StreamType.VIDEO);
+    }
+
+    /**
+     * Required to identify if the transport stream contains an audio stream.
+     * Should be used in conjunction with {@link MpegTsProcessor#setAudioDataBufferListener(DataBufferListener)}
+     * to register callbacks for appropriate buffers.
+     */
+    public boolean hasAudioStream() {
+        return streamCollection.hasStreamContextType(StreamType.AUDIO);
+    }
+
+    /**
+     * Required to identify if the transport stream contains a data stream.
+     * Should be used in conjunction with {@link MpegTsProcessor#setDataDataBufferListener(DataBufferListener)}
+     * to register callbacks for appropriate buffers.
+     */
+    public boolean hasDataStream() {
+        return streamCollection.hasStreamContextType(StreamType.DATA);
+    }
+
+    /**
+     * Retrieves the average frame rate for the embedded video if there is one
+     * Should be invoked after {@link MpegTsProcessor#hasVideoStream()}
+     * to retrieve the video average frame rate.
+     *
+     * @return The average frame rate for the video.
+     * @throws IllegalStateException if there is no video stream embedded
+     */
+    public double getVideoStreamAvgFrameRate() throws IllegalStateException {
+        if (!hasVideoStream()) {
+            throw new IllegalStateException("Stream does not contain video frames");
+        }
+
+        AVRational rational = avFormatContext.streams(getVideoStreamContext().getStreamId()).avg_frame_rate();
+        return (double) rational.num() / rational.den();
+    }
+
+    /**
+     * Required to identify the width and height of the video frames.
+     * Should be invoked after {@link MpegTsProcessor#hasVideoStream()} to retrieve the video frame dimensions.
+     *
+     * @return An int[] where index 0 is the width and index 1 is the height of the frames.
+     * @throws IllegalStateException If there is no video stream embedded.
+     */
+    public int[] getVideoStreamFrameDimensions() {
+        final int WIDTH_IDX = 0;
+        final int HEIGHT_IDX = 1;
+
+        logger.debug("getVideoStreamFrameDimensions");
+
+        if (!hasVideoStream()) {
+            throw new IllegalStateException("Stream does not contain video frames");
+        }
+
+        AVCodecParameters codecParameters = avFormatContext.streams(getVideoStreamContext().getStreamId()).codecpar();
+        int[] dimensions = {codecParameters.width(), codecParameters.height()};
+
+        logger.debug("Frame [width, height] = [ {}, {} ]", dimensions[WIDTH_IDX], dimensions[HEIGHT_IDX]);
+
+        return dimensions;
+    }
+
+    /**
+     * Retrieves the sample rate for the embedded audio.
+     * Should be invoked after {@link MpegTsProcessor#hasAudioStream()} to retrieve the audio sample rate.
+     *
+     * @return The audio sample rate.
+     * @throws IllegalStateException If there is no audio stream embedded.
+     */
+    public int getAudioSampleRate() {
+        if (!hasAudioStream()) {
+            throw new IllegalStateException("Stream does not contain audio data");
+        }
+
+        int sampleRate = avFormatContext.streams(getAudioStreamContext().getStreamId()).codecpar().sample_rate();
+
+        logger.debug("Audio sample rate: {}", sampleRate);
+        return sampleRate;
+    }
+
+    /**
+     * Registers a video buffer listener to call if clients are interested in demuxed video buffers
+     *
+     * <br>Legacy method; this only sets the listener for the first data stream (if present).
+     *
+     * Instead, use {@link MpegTsProcessor#getStreamCollection()} to retrieve a collection of all stream contexts.
+     *
+     * @param videoDataBufferListener The listener to invoke when a video buffer is retrieved from
+     *                                the transport stream.
+     */
+    public void setVideoDataBufferListener(@Nonnull DataBufferListener videoDataBufferListener) {
+        getVideoStreamContext().setDataBufferListener(videoDataBufferListener);
+    }
+
+    /**
+     * Registers an audio buffer listener to call if clients are interested in demuxed audio buffers
+     *
+     * <br>Legacy method; this only sets the listener for the first data stream (if present).
+     *
+     * Instead, use {@link MpegTsProcessor#getStreamCollection()} to retrieve a collection of all stream contexts.
+     *
+     * @param audioDataBufferListener The listener to invoke when an audio buffer is retrieved from
+     *                                the transport stream.
+     */
+    public void setAudioDataBufferListener(@Nonnull DataBufferListener audioDataBufferListener) {
+        getAudioStreamContext().setDataBufferListener(audioDataBufferListener);
+    }
+
+    /**
+     * Registers a data buffer listener to call if clients are interested in demuxed data buffers.
+     *
+     * <br>Legacy method; this only sets the listener for the first data stream (if present).
+     *
+     * Instead, use {@link MpegTsProcessor#getStreamCollection()} to retrieve a collection of all stream contexts.
+     *
+     * @param dataDataBufferListener The listener to invoke when a data buffer is retrieved from
+     *                               the transport stream.
+     */
+    public void setDataDataBufferListener(@Nonnull DataBufferListener dataDataBufferListener) {
+        getDataStreamContext().setDataBufferListener(dataDataBufferListener);
+    }
+
+    public void setInjectVideoExtradata(boolean injectVideoExtradata) {
+        this.injectVideoExtradata = injectVideoExtradata;
+    }
+
+
+    /**
+     * Returns the first video stream context.
+     * Used for backwards compatibility in functions like {@link MpegTsProcessor#setVideoDataBufferListener(DataBufferListener)}.
+     */
+    public StreamContext getVideoStreamContext() {
+        if (!hasVideoStream()) {
+            return null;
+        }
+
+        return streamCollection.getStreamContextsByType(StreamType.VIDEO).stream().findFirst().orElse(null);
+    }
+
+    public StreamContext getAudioStreamContext() {
+        if (!hasAudioStream()) {
+            return null;
+        }
+
+        return streamCollection.getStreamContextsByType(StreamType.AUDIO).stream().findFirst().orElse(null);
+    }
+
+    public StreamContext getDataStreamContext() {
+        if (!hasDataStream()) {
+            return null;
+        }
+
+        return streamCollection.getStreamContextsByType(StreamType.DATA).stream().findFirst().orElse(null);
+    }
+
+    public StreamCollection getStreamCollection() {
+        return streamCollection;
+    }
+
+    public void registerDevices(boolean registerDevices) {
+        this.registerDevices = registerDevices;
+    }
+
+    /**
+     * Retrieves the codec name for the video stream.
+     * Should be invoked after {@link MpegTsProcessor#hasVideoStream()} to retrieve the video codec name.
+     *
+     * @return The codec name for the video stream.
+     */
+    public String getVideoCodecName() {
+        return getVideoStreamContext().getCodecName();
+    }
+
+    /**
+     * Retrieves the codec name for the audio stream.
+     * Should be invoked after {@link MpegTsProcessor#hasAudioStream()} to retrieve the audio codec name.
+     *
+     * @return The codec name for the audio stream.
+     */
+    public String getAudioCodecName() {
+        return getAudioStreamContext().getCodecName();
+    }
+
+    /**
+     * Starts the threaded process for demuxing the transport stream.
+     * Should only be invoked if the stream is successfully opened.
+     * <p>
+     * Call this method instead of invoking {@link MpegTsProcessor#start()} directly,
+     * as this method will ensure the codec context is set up for use with the transport stream.
+     *
+     * @throws IllegalStateException If the stream has not been opened or failed to open.
+     */
+    public void processStream() throws IllegalStateException {
+        logger.debug("processStream");
+
+        if (streamOpened) {
+            start();
+        } else {
+            throw new IllegalStateException("Stream has not been opened or failed to open");
+        }
+    }
+
+    @Override
+    public void run() {
+        if (fps > 0) {
+            // Use a scheduled executor to enforce the FPS
+            ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
+            long initialDelay = 0;
+            long period = fps > 0 ? (1000 / fps) : 0;
+
+            executor.scheduleAtFixedRate(() -> {
+                if (terminateProcessing.get()) {
+                    executor.shutdown();
+                } else {
+                    processPacket();
+                }
+            }, initialDelay, period, TimeUnit.MILLISECONDS);
+        } else {
+            // Process packets as fast as possible
+            while (!terminateProcessing.get()) {
+                processPacket();
+            }
+        }
+    }
+
+    /**
+     * Stream processing where the demuxing is invoked on underlying FFmpeg libraries and callbacks,
+     * if registered, are invoked for appropriate buffers.
+     */
+    private void processPacket() {
+        if (!streamOpened) return;
+
+        synchronized (avFormatContextLock) {
+            AVPacket avPacket = new AVPacket();
+
+            int ret = av_read_frame(avFormatContext, avPacket);
+
+            if (ret < 0) {
+                if (loop) {
+                    avformat.av_seek_frame(avFormatContext, 0, 0, avformat.AVSEEK_FLAG_ANY);
+                } else {
+                    // Release the connection but stay eligible to reconnect, since the stream dropping is
+                    // exactly the case the reconnect schedule exists to recover from.
+                    closeConnection();
+                }
+            } else {
+                streamCollection.processPacket(avPacket);
+            }
+
+            // Fully deallocate packet
+            avcodec.av_packet_unref(avPacket);
+            avPacket.deallocate();
+        }
+    }
+
+    /**
+     * Closes the transport stream, releasing allocated resources including the codec context,
+     * and stops any further attempts to reconnect.
+     */
+    public void closeStream() {
+        logger.debug("closeStream");
+
+        closeConnection();
+
+        // This is a deliberate close, so give up on reconnecting
+        if (restartExecutor != null) {
+            restartExecutor.shutdown();
+        }
+    }
+
+    /**
+     * Releases the resources held for the current connection, leaving the reconnect schedule alone.
+     * <p>
+     * Used when the stream drops mid-read: the connection is gone, but the processor should stay eligible
+     * to reconnect. {@link MpegTsProcessor#closeStream()} is the deliberate-shutdown counterpart, and also
+     * tears down the reconnect schedule.
+     */
+    private void closeConnection() {
+        if (streamOpened) {
+            streamCollection.closeStreams();
+
+            synchronized (avFormatContextLock) {
+                if (avFormatContext != null) {
+                    avformat.avformat_close_input(avFormatContext);
+                }
+            }
+
+            streamOpened = false;
+        }
+    }
+
+    /**
+     * Indicate to processor to stop processing packets from the stream.
+     */
+    public void stopProcessingStream() {
+        logger.debug("stopProcessingStream");
+        loop = false;
+        terminateProcessing.set(true);
+    }
+
+    /**
+     * Set the flag to attempt reconnection to the stream in case of failure.
+     * When set to true, the processor will attempt to reconnect to the stream if the connection is lost.
+     *
+     * @param reconnect True to attempt reconnection, false otherwise.
+     */
+    public void setReconnect(boolean reconnect) {
+        if (reconnect) {
+            restartExecutor = Executors.newScheduledThreadPool(1);
+            restartExecutor.scheduleAtFixedRate(() -> {
+                if (!streamOpened) {
+                    logger.debug("Attempting to reconnect to stream.");
+                    reconnecting = true;
+                    try {
+                        openStream();
+                    } finally {
+                        reconnecting = false;
+                    }
+                }
+            }, 5, 5, TimeUnit.SECONDS);
+        } else {
+            if (restartExecutor != null) {
+                restartExecutor.shutdown();
+            }
+        }
+    }
+}

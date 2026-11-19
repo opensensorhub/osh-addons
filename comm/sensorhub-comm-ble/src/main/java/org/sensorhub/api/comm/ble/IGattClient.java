@@ -48,6 +48,14 @@ public interface IGattClient
      */
     void connect();
     
+    /**
+     * this method is used to request a larger data packet size for a connection
+     * @param mtu
+     * @return
+     */
+    default boolean requestMtu(int mtu) {
+        return false;
+    }
     
     /**
      * Discovers services offered by a remote device as well as their

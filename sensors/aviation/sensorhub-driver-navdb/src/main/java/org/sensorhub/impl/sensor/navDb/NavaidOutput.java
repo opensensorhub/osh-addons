@@ -15,19 +15,18 @@ Copyright (C) 2018 Delta Air Lines, Inc. All Rights Reserved.
 package org.sensorhub.impl.sensor.navDb;
 
 import java.io.IOException;
-import java.util.List;
-import org.sensorhub.api.common.SensorHubException;
+import java.util.Collection;
+
 import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
+import org.sensorhub.utils.aero.AeroHelper;
+import org.sensorhub.utils.aero.INavDatabase.INavDbWaypoint;
 import org.vast.swe.SWEHelper;
 
 import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.DataEncoding;
 import net.opengis.swe.v20.DataRecord;
-import net.opengis.swe.v20.DataType;
-import net.opengis.swe.v20.Quantity;
-import net.opengis.swe.v20.Text;
 
 
 /**
@@ -37,113 +36,77 @@ import net.opengis.swe.v20.Text;
  */
 public class NavaidOutput extends AbstractSensorOutput<NavDriver>
 {
-	private static final int AVERAGE_SAMPLING_PERIOD = 1;
+    private static final int AVERAGE_SAMPLING_PERIOD = 1;
 
-	DataRecord navStruct;
+	DataRecord dataStruct;
 	DataEncoding encoding;
+	
 
 	public NavaidOutput(NavDriver parentSensor) throws IOException
 	{
 		super("navaids", parentSensor);
 	}
 
-	protected void init()
-	{
-		SWEHelper fac = new SWEHelper();
 
-		// Structure is {id, name, lat, lon}
+    protected void init()
+    {
+        var fac = new AeroHelper();
 
-		// SWE Common data structure
-		navStruct = fac.newDataRecord(4);
-		navStruct.setName(getName());
-		navStruct.setDefinition(SWEHelper.getPropertyUri("aero/Navaid"));
+        // SWE Common data structure
+        dataStruct = fac.createRecord()
+            .name(getName())
+            .definition(AeroHelper.AERO_RECORD_URI_PREFIX + "Navaid")
+            .addField("time", fac.createTime().asSamplingTimeIsoUTC())
+            .addField("code", fac.createWaypointCode()
+                .label("Navaid Code"))
+            .addField("name", fac.createText()
+                .definition(SWEHelper.getPropertyUri("EntityName"))
+                .label("Long Name"))
+            .addField("lat", fac.createLatitude())
+            .addField("lon", fac.createLongitude())
+            .build();
 
-		Text id = fac.newText(SWEHelper.getPropertyUri("aero/ICAO/Code"), "ICAO Code", "Navaid ICAO identification code");
-		navStruct.addComponent("code", id);
-		//		Text type = fac.newText(SWEHelper.getPropertyUri("Type"), "Type", "Type (Waypoint/Navaid/etc.)" );
-		//		waypt.addComponent("type", type);
-		Text name = fac.newText(SWEHelper.getPropertyUri("Name"), "Name", "Long name" );
-		navStruct.addComponent("name", name);
-		Quantity latQuant = fac.newQuantity(SWEHelper.getPropertyUri("GeodeticLatitude"), "Latitude", null, "deg", DataType.DOUBLE);
-		navStruct.addComponent("lat", latQuant);
-		Quantity lonQuant = fac.newQuantity(SWEHelper.getPropertyUri("Longitude"), "Longitude", null, "deg", DataType.DOUBLE);
-		navStruct.addComponent("lon", lonQuant);
+        // default encoding is text
+        encoding = fac.newTextEncoding(",", "\n");
+    }
 
-		// default encoding is text
-		encoding = fac.newTextEncoding(",", "\n");
-	}
 
-	public void start() throws SensorHubException {
-		// Nothing to do 
-	}
-
-	public double[] getLons (List<NavDbEntry> recs) {
-		double [] lons = new double[recs.size()];
-		int i=0;
-		for (NavDbEntry rec: recs) {
-			lons[i++] = rec.lon;
-		}
-		return lons;
-	}
-
-	public double[] getLats (List<NavDbEntry> recs) {
-		double [] lats = new double[recs.size()];
-		int i=0;
-		for (NavDbEntry rec: recs) {
-			lats[i++] = rec.lat;
-		}
-		return lats;
-	}
-
-	public String[] getNames (List<NavDbEntry> recs) {
-		String [] names = new String[recs.size()];
-		int i=0;
-		for (NavDbEntry rec: recs) {
-			names[i++] = rec.name;
-		}
-		return names;
-	}
-
-	public String[] getIds (List<NavDbEntry> recs) {
-		String [] ids = new String[recs.size()];
-		int i=0;
-		for (NavDbEntry rec: recs) {
-			ids[i++] = rec.id;
-		}
-		return ids;
-	}
-
-	public void sendEntries(List<NavDbEntry> recs)
+	public void sendEntries(Collection<? extends INavDbWaypoint> recs)
 	{                
 	    long time = System.currentTimeMillis();
+	    
+	    int i = 0;
+        var dblkArray = new DataBlock[recs.size()];
+        var airacTime = parent.getAiracTime();
+        var ts = airacTime.toEpochMilli();
         
-        for(NavDbEntry rec: recs) {
-			DataBlock dataBlock = navStruct.createDataBlock();
+        for(var rec: recs) {
+			DataBlock dataBlock = dataStruct.createDataBlock();
 
-			dataBlock.setStringValue(0, rec.id);
-			dataBlock.setStringValue(1, rec.name);
-			dataBlock.setDoubleValue(2, rec.lat);
-			dataBlock.setDoubleValue(3, rec.lon);
+			dataBlock.setDoubleValue(0, ts++/1000.);
+            dataBlock.setStringValue(1, rec.getCode());
+            dataBlock.setStringValue(2, rec.getName());
+            dataBlock.setDoubleValue(3, rec.getLatitude());
+            dataBlock.setDoubleValue(4, rec.getLongitude());
 			
-			//if("USA".equals(rec.region) || "CAN".equals("rec.region"))
-			// TODO send as a single ObsEvent w/ multiple IObsData
-            var foiUID = NavDriver.NAVAID_UID_PREFIX + rec.id;
-            eventHandler.publish(new DataEvent(time, NavaidOutput.this, foiUID, dataBlock));
+            dblkArray[i++] = dataBlock;
 		}
+        
+        eventHandler.publish(new DataEvent(time, NavaidOutput.this, airacTime, null, dblkArray));
 	}
 	
 
-	public double getAverageSamplingPeriod()
-	{
-		return AVERAGE_SAMPLING_PERIOD;
-	}
+    public double getAverageSamplingPeriod()
+    {
+        return AVERAGE_SAMPLING_PERIOD;
+    }
 
 
-	@Override 
-	public DataComponent getRecordDescription()
-	{
-		return navStruct;
-	}
+    @Override 
+    public DataComponent getRecordDescription()
+    {
+        return dataStruct;
+    }
 
 
 	@Override

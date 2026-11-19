@@ -28,6 +28,7 @@ import org.sensorhub.api.event.IEventListener;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.data.IStreamingDataInterface;
 import org.sensorhub.api.data.DataEvent;
+import org.sensorhub.impl.sensor.trupulse.SimulatedDataStream;
 import org.sensorhub.impl.sensor.trupulse.TruPulseConfig;
 import org.sensorhub.impl.sensor.trupulse.TruPulseSensor;
 import org.vast.data.TextEncodingImpl;

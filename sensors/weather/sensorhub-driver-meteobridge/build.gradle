@@ -1,7 +1,7 @@
 group = 'uk.co.envsys'
 description = 'MeteoBridge Sensor'
 ext.details = 'Sensor driver for the MeteoBridge weather gateway'
-version = '0.1-SNAPSHOT'
+version = '0.1.1'
 
 dependencies {
   implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion

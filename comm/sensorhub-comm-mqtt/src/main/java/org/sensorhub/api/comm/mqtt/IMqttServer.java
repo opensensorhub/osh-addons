@@ -50,29 +50,62 @@ public interface IMqttServer
          * @throws InvalidTopicException if the topic is invalid
          * @throws InvalidPayloadException if the payload is invalid
          * @throws AccessControlException if the user is not allowed to publish to the topic
+         * @throws MqttException for all other errors
          */
-        void onPublish(String userID, String topic, ByteBuffer payload, ByteBuffer correlData) throws InvalidTopicException, InvalidPayloadException;
+        void onPublish(String userID, String topic, ByteBuffer payload, ByteBuffer correlData) throws MqttException;
     
         
         /**
          * Notify handler of an incoming subscribe request
          * @param userID Authenticated user who wants to subscribe
          * @param topic Topic the user wants to subscribe to
-         * @param server MQTT server where to publish the messages
+         * @param server MQTT server where subscribe request was received
          * @throws InvalidTopicException if the topic is invalid
          * @throws AccessControlException if the user is not allowed to subscribe to the topic
+         * @throws MqttException for all other errors
          */
-        void onSubscribe(String userID, String topic, IMqttServer server) throws InvalidTopicException;
+        void onSubscribe(String userID, String topic, IMqttServer server) throws MqttException;
     
         
         /**
          * Notify handler of an incoming unsubscribe request
          * @param userID Authenticated user who wants to unsubscribe
          * @param topic Topic the user wants to unsubscribe from
-         * @param topic
+         * @param server MQTT server where unsubscribe request was received
+         * @throws InvalidTopicException if the topic is invalid
+         * @throws AccessControlException if the user is not allowed to unsubscribe from the topic
+         * @throws MqttException for all other errors
          */
-        @SuppressWarnings("javadoc")
-        void onUnsubscribe(String userID, String topic, IMqttServer server) throws InvalidTopicException;
+        void onUnsubscribe(String userID, String topic, IMqttServer server) throws MqttException;
+
+
+        /**
+         * @return true if the handler accepts wildcard topic filters ({@code +},
+         * {@code #}) in {@link #onSubscribe}. If false, the server rejects them
+         * before it calls the handler. The default is false.
+         */
+        default boolean supportsWildcards()
+        {
+            return false;
+        }
+        
+        
+        /**
+         * Check if a message can be sent to a user whose subscription matches
+         * the topic only through a wildcard topic filter ({@code +} or {@code #}).
+         * The server does not call this method for a topic that the client
+         * subscribed to exactly, because {@link #onSubscribe} checked it.
+         * The server can call this method for each message, so implementations
+         * should be fast or cache their decisions. It can block.
+         * @param userID Authenticated user of the subscribing client
+         * @param topic Topic of the message (no wildcards)
+         * @return true to send the message to this client, false to drop it.
+         * The default is false: wildcard subscriptions get no messages.
+         */
+        default boolean canDeliver(String userID, String topic)
+        {
+            return false;
+        }
     }
     
     

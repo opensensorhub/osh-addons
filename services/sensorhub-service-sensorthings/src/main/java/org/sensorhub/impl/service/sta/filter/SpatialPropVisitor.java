@@ -16,9 +16,9 @@ package org.sensorhub.impl.service.sta.filter;
 
 import org.sensorhub.api.datastore.SpatialFilter;
 import org.sensorhub.api.datastore.SpatialFilter.SpatialOp;
-import com.vividsolutions.jts.geom.Geometry;
-import com.vividsolutions.jts.io.ParseException;
-import com.vividsolutions.jts.io.WKTReader;
+import org.locationtech.jts.geom.Geometry;
+import org.locationtech.jts.io.ParseException;
+import org.locationtech.jts.io.WKTReader;
 import de.fraunhofer.iosb.ilt.frostserver.query.expression.constant.GeoJsonConstant;
 import de.fraunhofer.iosb.ilt.frostserver.query.expression.constant.LineStringConstant;
 import de.fraunhofer.iosb.ilt.frostserver.query.expression.constant.NumericConstant;

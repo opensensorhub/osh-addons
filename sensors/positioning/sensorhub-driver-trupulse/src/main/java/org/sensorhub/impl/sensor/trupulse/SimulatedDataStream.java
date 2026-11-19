@@ -12,7 +12,7 @@ Copyright (C) 2012-2015 Sensia Software LLC. All Rights Reserved.
  
 ******************************* END LICENSE BLOCK ***************************/
 
-package org.sensorhub.test.sensor.trupulse;
+package org.sensorhub.impl.sensor.trupulse;
 
 import java.io.IOException;
 import java.io.InputStream;

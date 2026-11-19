@@ -2,22 +2,38 @@ description = 'Gridded Dataset Utilities'
 ext.details = 'Various utilities for handling grid formats based on Unidata library'
 version = '0.3.3'
 
+def thisProjectDir = projectDir
 rootProject.allprojects {
   repositories {
-    maven { url 'https://artifacts.unidata.ucar.edu/content/repositories/unidata-releases' }
+    /*maven {
+      name 'unidata'
+      url 'https://artifacts.unidata.ucar.edu/repository/unidata-all'
+    }*/
+    maven {
+      name 'unidata-local'
+      url "file:///$thisProjectDir/libs"
+    }
   }
 }
 
 dependencies {
   implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
+  api project(':sensorhub-utils-datafiles')
   embeddedApi ('edu.ucar:grib:4.6.10') {
     exclude group: 'com.amazonaws', module: 'aws-java-sdk-s3'
-    exclude group: 'edu.ucar', module: 'jj2000'  
     exclude group: 'org.apache.httpcomponents', module: 'httpcore'
     exclude group: 'org.apache.httpcomponents', module: 'httpclient'
     exclude group: 'org.apache.httpcomponents', module: 'httpmime'
     exclude group: 'com.google.guava', module: 'guava'
+    exclude group: 'com.google.protobuf', module: 'protobuf-java'
+    exclude group: 'org.jsoup', module: 'jsoup'
     exclude group: 'org.slf4j', module: 'slf4j-api'
+  }
+  
+  implementation('com.google.protobuf:protobuf-java') {
+    version {
+      strictly '3.25.5' 
+    }
   }
 }
 

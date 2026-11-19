@@ -16,7 +16,7 @@ package org.sensorhub.impl.utils.grid;
 
 import java.io.IOException;
 
-import com.vividsolutions.jts.geom.Coordinate;
+import org.locationtech.jts.geom.Coordinate;
 import ucar.nc2.dt.GridCoordSystem;
 
 

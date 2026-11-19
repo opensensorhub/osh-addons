@@ -1,0 +1,2 @@
+org.sensorhub.impl.process.video.transcoder.FFmpegTranscoderDescriptor
+org.sensorhub.impl.process.video.FFmpegDecoderDescriptor

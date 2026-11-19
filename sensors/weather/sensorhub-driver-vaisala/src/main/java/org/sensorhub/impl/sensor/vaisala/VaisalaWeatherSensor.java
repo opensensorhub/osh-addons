@@ -387,7 +387,7 @@ public class VaisalaWeatherSensor extends AbstractSensorModule<VaisalaWeatherCon
             serialNumber = config.id.substring(0, endIndex);
         }
         // add unique ID based on serial number
-        this.uniqueID = "urn:vaisala:" + modelNumber + ":" + serialNumber;
+        this.uniqueID = "urn:osh:sensor:georobotix:vaisala:" + modelNumber + ":" + serialNumber;
         this.xmlID = "VAISALA_" + modelNumber + "_" + serialNumber.toUpperCase();
         
         // execute initializations in each output class

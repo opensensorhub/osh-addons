@@ -1,12 +1,12 @@
 description = 'FFMPEG processing modules'
 ext.details = 'FFMPEG based modules for video processing'
-version = '0.1'
+version = '0.1.1'
 
 
 dependencies {
   implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
   implementation 'org.sensorhub:sensorhub-service-swe:' + oshCoreVersion
-  embeddedApi 'org.bytedeco:ffmpeg-platform:4.3.2-1.5.5'
+  embeddedApi 'org.bytedeco:ffmpeg-platform:7.1-1.5.11'
   
   testImplementation project(':sensorhub-driver-v4l')
 }

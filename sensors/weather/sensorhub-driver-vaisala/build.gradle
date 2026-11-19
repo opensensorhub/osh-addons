@@ -1,6 +1,6 @@
 description = 'Vaisala Weather Station'
 ext.details = 'Driver for Vaisala WXT520 Weather Transmitter'
-version = '1.0.0-SNAPSHOT'
+version = '1.0.1'
 
 dependencies {
   implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion

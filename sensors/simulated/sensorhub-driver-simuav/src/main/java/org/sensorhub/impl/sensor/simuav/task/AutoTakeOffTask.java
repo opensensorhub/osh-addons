@@ -94,6 +94,9 @@ public class AutoTakeOffTask extends UavTask
         long dt = now - startTime;
         double f = Math.min(verticalSpeed * dt/1000. / takeOffAlt, 1.0);
         simState.alt = startAlt + takeOffAlt * f;
+        simState.vz = f < 1.0 ? verticalSpeed : 0.0;
+        
+        // update simulation state
         sim.updateSimulatorState(simState);
         
         // send status report if needed

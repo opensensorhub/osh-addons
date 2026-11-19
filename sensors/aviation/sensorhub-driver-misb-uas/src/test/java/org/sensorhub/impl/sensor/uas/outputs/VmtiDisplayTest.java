@@ -131,7 +131,7 @@ public class VmtiDisplayTest {
         
         
         // register listener on video output
-        IStreamingDataInterface videoOutput = driver.getOutputs().get("UasVideo");
+        IStreamingDataInterface videoOutput = driver.getOutputs().get("video");
         
         // init decoder context
         AVCodec decoder = avcodec_find_decoder_by_name("h264");

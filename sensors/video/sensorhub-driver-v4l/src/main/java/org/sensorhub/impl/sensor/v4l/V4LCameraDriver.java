@@ -20,6 +20,7 @@ import org.sensorhub.impl.sensor.AbstractSensorModule;
 import au.edu.jcu.v4l4j.DeviceInfo;
 import au.edu.jcu.v4l4j.ImageFormat;
 import au.edu.jcu.v4l4j.VideoDevice;
+import org.slf4j.LoggerFactory;
 
 
 /**
@@ -49,7 +50,7 @@ public class V4LCameraDriver extends AbstractSensorModule<V4LCameraConfig>
         }
         catch (Exception e)
         {
-            e.printStackTrace();
+            LoggerFactory.getLogger(V4LCameraDriver.class).error("Unable to load native v4l library", e);
         }
     }
     
@@ -66,15 +67,19 @@ public class V4LCameraDriver extends AbstractSensorModule<V4LCameraConfig>
         super.doInit();
         
         // generate IDs
-        generateUniqueID("urn:osh:sensor:v4l-cam:", config.serialNumber);
+        generateUniqueID("urn:osh:sensor:georobotix:v4l-cam:", config.serialNumber);
         generateXmlID("V4L_CAMERA_", config.serialNumber);
         this.camParams = config.defaultParams.clone();
         
         // init video device
         DeviceInfo deviceInfo = initVideoDevice();
+        var nativeFormats = deviceInfo.getFormatList().getNativeFormats();
+        
+        if (nativeFormats == null || nativeFormats.isEmpty())
+            throw new SensorException("Video device " + config.deviceName + " cannot be used for capture");
         
         // init video output
-        for (ImageFormat fmt: deviceInfo.getFormatList().getNativeFormats())
+        for (ImageFormat fmt: nativeFormats)
         {
             if ("MJPEG".equals(fmt.getName()))
             {

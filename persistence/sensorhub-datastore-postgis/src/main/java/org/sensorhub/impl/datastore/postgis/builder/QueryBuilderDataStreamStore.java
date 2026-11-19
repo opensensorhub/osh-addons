@@ -1,0 +1,111 @@
+/***************************** BEGIN LICENSE BLOCK ***************************
+
+ The contents of this file are subject to the Mozilla Public License, v. 2.0.
+ If a copy of the MPL was not distributed with this file, You can obtain one
+ at http://mozilla.org/MPL/2.0/.
+
+ Software distributed under the License is distributed on an "AS IS" basis,
+ WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+ for the specific language governing rights and limitations under the License.
+
+ Copyright (C) 2023 Georobotix. All Rights Reserved.
+
+ ******************************* END LICENSE BLOCK ***************************/
+
+package org.sensorhub.impl.datastore.postgis.builder;
+
+import org.sensorhub.api.datastore.obs.DataStreamFilter;
+import org.sensorhub.api.datastore.obs.IDataStreamStore;
+import org.sensorhub.impl.datastore.postgis.builder.query.datastream.SelectEntriesDataStreamQuery;
+import org.sensorhub.impl.datastore.postgis.utils.PostgisUtils;
+
+import java.time.Instant;
+import java.util.Set;
+
+public class QueryBuilderDataStreamStore extends QueryBuilder {
+    public final static String DATASTREAM_TABLE_NAME = "datastreams";
+
+    public QueryBuilderDataStreamStore() {
+        this(DATASTREAM_TABLE_NAME);
+    }
+
+    public QueryBuilderDataStreamStore(String tableName) {
+        super(tableName);
+    }
+
+    public String createTableQuery() {
+        return "CREATE TABLE IF NOT EXISTS " + this.getStoreTableName() + " (id BIGSERIAL PRIMARY KEY,data JSONB)";
+    }
+
+    public String createIndexQuery() {
+        return "CREATE INDEX IF NOT EXISTS " + this.getStoreTableName() + "_data_idx on " + this.getStoreTableName() + " USING GIN(data jsonb_ops)";
+    }
+
+    public String createUniqueIndexQuery() {
+        return "CREATE UNIQUE INDEX IF NOT EXISTS " + this.getStoreTableName() + "_data_output_idx ON " + this.getStoreTableName()
+                + " USING BTREE((data->'name'), (data->'system@id'), (data->'validTime'))";
+    }
+
+    public String createImmutubleFunctionForValidTime() {
+        return "CREATE OR REPLACE FUNCTION parse_utc_timestamp(txt text) " +
+                "RETURNS timestamp " +
+                "IMMUTABLE " +
+                "LANGUAGE sql " +
+                "AS $$ " +
+                "    SELECT (txt::timestamptz AT TIME ZONE 'UTC')::timestamp " +
+                "$$;";
+    }
+    public String createValidTimeIndexQuery() {
+        return "CREATE INDEX IF NOT EXISTS "+this.getStoreTableName()+"_date_range_begin_idx ON " + this.getStoreTableName() +" "+
+        "USING GIST (tsrange(parse_utc_timestamp(data->'validTime'->>'begin'),parse_utc_timestamp(data->'validTime'->>'end')))";
+    }
+
+    public String createTrigramExtensionQuery() {
+        return "CREATE EXTENSION IF NOT EXISTS pg_trgm";
+    }
+
+    public String createTrigramDescriptionFullTextIndexQuery() {
+        return "CREATE INDEX IF NOT EXISTS "+this.getStoreTableName()+"_desc_full_text_datastream_idx ON  " + this.getStoreTableName() + " USING GIN ((data->'recordSchema'->>'description') gin_trgm_ops)";
+    }
+
+    //SELECT * from test_obs_datastreams where to_tsvector(data->'recordStruct'->'description') @@ to_tsquery('video | Air');
+    public String createDescriptionFullTextIndexQuery() {
+        return "CREATE INDEX IF NOT EXISTS "+this.getStoreTableName()+"_desc_full_text_datastream_idx ON " + this.getStoreTableName() + " USING " +
+                "GIN (to_tsvector('english', data->'recordSchema'->'description'))";
+    }
+
+    public String updateByIdQuery() {
+        return "UPDATE " + this.getStoreTableName() + " SET data = ? WHERE id = ?";
+    }
+
+    public String updateValidTimeByIdQuery() {
+        return "UPDATE " + this.getStoreTableName() + " SET data = jsonb_set(data, '{validTime}'::text[], to_jsonb(?), true) WHERE id = ?";
+    }
+
+    public String updateDataByIdQuery() {
+        return "UPDATE " + this.getStoreTableName() + " SET data = ? WHERE id = ?";
+    }
+
+    public String removeUniqueConstraint() {
+        return "DROP INDEX IF EXISTS "+this.getStoreTableName() + "_data_output_idx";
+    }
+    public String insertInfoQuery() {
+        return "INSERT INTO " + this.getStoreTableName() + " (data) SELECT (?) ";
+    }
+
+    public String getAllDataStreams(Instant min, Instant max) {
+        return "SELECT id FROM "+this.getStoreTableName()+" WHERE tsrange((data->'validTime'->>'begin')::timestamp," +
+                "(data->'validTime'->>'end')::timestamp) <@ '["+ PostgisUtils.checkAndGetValidInstant(min)+","+PostgisUtils.checkAndGetValidInstant(max)+"]'::tsrange";
+    }
+
+    public String createSelectEntriesQuery(DataStreamFilter filter, Set<IDataStreamStore.DataStreamInfoField> fields) {
+        SelectEntriesDataStreamQuery selectEntriesDataStreamQuery = new SelectEntriesDataStreamQuery.Builder()
+                .tableName(this.getStoreTableName())
+                .linkTo(this.systemStore)
+                .withFields(fields)
+                .withDataStreamFilter(filter)
+                .withLimit(filter.getLimit())
+                .build();
+        return selectEntriesDataStreamQuery.toQuery();
+    }
+}

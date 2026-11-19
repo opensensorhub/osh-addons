@@ -1,6 +1,6 @@
 description = 'PCA9685 PWM Servos Driver'
 ext.details = 'Driver for Adafruit PCA9685 16-channels PWM servo board'
-version = '0.1-SNAPSHOT'
+version = '0.1.1'
 
 rootProject.allprojects {
   repositories {

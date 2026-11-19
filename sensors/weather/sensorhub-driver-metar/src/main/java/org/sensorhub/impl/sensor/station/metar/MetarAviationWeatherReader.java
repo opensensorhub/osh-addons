@@ -21,6 +21,9 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * <p>
  * Pull Metar data from https://aviationweather.gov/adds/dataserver_current/current/metars.cache.csv
@@ -34,9 +37,15 @@ import java.util.List;
 public class MetarAviationWeatherReader 
 {
 	public final String serverUrl;
+	Logger logger;
 	
-	public MetarAviationWeatherReader(String serverUrl) {
+	public MetarAviationWeatherReader(String serverUrl, Logger logger) {
 		this.serverUrl = serverUrl;
+		this.logger = logger;
+	}	
+		
+	public MetarAviationWeatherReader(String serverUrl) {
+		this(serverUrl, LoggerFactory.getLogger(MetarAviationWeatherReader.class));
 	}
 	
 	public List<Metar> read() throws IOException {
@@ -59,12 +68,13 @@ public class MetarAviationWeatherReader
 				if(commaIdx == -1)  continue;
 				String rawText = inline.substring(0, commaIdx);
 				Metar metar = parser.parseMetar(rawText);
-				if(metar != null)
+				if(metar != null) {
 					metars.add(metar);
-//				System.err.println(metar);
+					logger.trace(metar.toString());
+				}
 			} 
 		}
-		System.err.println(metars.size());
+		logger.debug("Read {} records", metars.size());
 		
 		return metars;
 	}

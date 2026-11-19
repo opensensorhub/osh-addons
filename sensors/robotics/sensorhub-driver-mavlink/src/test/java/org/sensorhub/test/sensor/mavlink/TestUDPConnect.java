@@ -195,7 +195,7 @@ public class TestUDPConnect
     
     static void sendCommand(MAVLinkPacket pkt) throws IOException
     {
-        pkt.generateCRC();
+        pkt.generateCRC(pkt.len);
         byte[] cmdData = pkt.encodePacket();
         DatagramPacket dgm = new DatagramPacket(cmdData, cmdData.length, InetAddress.getByName("10.1.1.10"), 14560);
         socket.send(dgm);

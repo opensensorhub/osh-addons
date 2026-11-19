@@ -23,6 +23,7 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
+import org.sensorhub.impl.sensor.simuav.feasibility.WaypointTaskFeasibility;
 import org.sensorhub.impl.sensor.simuav.task.UavTask;
 import org.sensorhub.utils.NamedThreadFactory;
 import org.vast.sensorML.SMLHelper;
@@ -41,6 +42,7 @@ public class SimUavDriver extends AbstractSensorModule<SimUavConfig>
 {
     PositionOutput posOutput;
     AttitudeOutput attOutput;
+    StateOutput stateOutput;
     GimbalOutput gimbalOutput;
     StatusOutput statusOutput;
     
@@ -56,15 +58,21 @@ public class SimUavDriver extends AbstractSensorModule<SimUavConfig>
         super.doInit();
         
         // generate identifiers
-        generateUniqueID("urn:osh:system:simuav:", config.serialNumber);
+        generateUniqueID("urn:osh:system:georobotix:simuav:", config.serialNumber);
         generateXmlID("SIMULATED_UAV_", config.serialNumber);
         
-        // init otuputs
+        // init outputs
         posOutput = new PositionOutput(this);
         addOutput(posOutput, false);
+        stateOutput = new StateOutput(this);
+        addOutput(stateOutput, false);
         
         // init control inputs
-        addControlInput(new VehicleControl(this));
+        var control1 = new VehicleControl(this);
+        addControlInput(control1);
+        var mission1 = new MissionControl(this, control1);
+        addControlInput(mission1);
+        addControlInput(new WaypointTaskFeasibility(this));
         taskQueue.clear();
         
         // set initial state

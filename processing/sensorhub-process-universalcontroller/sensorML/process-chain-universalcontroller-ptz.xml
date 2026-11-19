@@ -1,0 +1,544 @@
+<sml:AggregateProcess xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:sml="http://www.opengis.net/sensorml/2.0" xmlns:swe="http://www.opengis.net/swe/2.0" xmlns:gml="http://www.opengis.net/gml/3.2" xmlns:gco="http://www.isotc211.org/2005/gco" xmlns:gmd="http://www.isotc211.org/2005/gmd" gml:id="F1">
+    <gml:identifier codeSpace="uid">861a1f13-aee5-463e-a19e-8f0f9103375f</gml:identifier>
+    <sml:outputs>
+        <sml:OutputList>
+            <sml:output name="rpan">
+                <swe:Quantity definition="http://sensorml.com/ont/swe/property/RelativePan">
+                    <swe:label>Relative Pan</swe:label>
+                    <swe:uom code="deg"/>
+                </swe:Quantity>
+            </sml:output>
+            <sml:output name="rtilt">
+                <swe:Quantity definition="http://sensorml.com/ont/swe/property/RelativeTilt">
+                    <swe:label>Relative Tilt</swe:label>
+                    <swe:uom code="deg"/>
+                </swe:Quantity>
+            </sml:output>
+            <sml:output name="rzoom">
+                <swe:Quantity definition="http://sensorml.com/ont/swe/property/RelativeZoomFactor">
+                    <swe:label>Relative Zoom Factor</swe:label>
+                    <swe:uom code="1"/>
+                </swe:Quantity>
+            </sml:output>
+            <sml:output name="sensitivity">
+                <swe:Quantity definition="http://sensorml.com/ont/swe/property/JoystickSensitivity">
+                    <swe:label>Sensitivity</swe:label>
+                    <swe:uom code=""/>
+                </swe:Quantity>
+            </sml:output>
+        </sml:OutputList>
+    </sml:outputs>
+    <sml:components>
+        <sml:ComponentList>
+            <sml:component name="gamepadsource">
+                <sml:SimpleProcess gml:id="F2">
+                    <sml:typeOf xlink:href="urn:osh:process:datasource:stream"/>
+                    <sml:configuration>
+                        <sml:Settings>
+                            <sml:setValue ref="parameters/producerURI">urn:osh:sensor:universalcontroller</sml:setValue>
+                        </sml:Settings>
+                    </sml:configuration>
+                </sml:SimpleProcess>
+            </sml:component>
+            <sml:component name="primaryselector">
+                <sml:SimpleProcess gml:id="F3">
+                    <sml:typeOf xlink:href="urn:osh:process:primarycontrollerselector"/>
+                    <sml:inputs>
+                        <sml:InputList>
+                            <sml:input name="gamepadRecord">
+                                <swe:DataRecord definition="http://sensorml.com/ont/swe/property/GamepadOutputRecord">
+                                    <swe:label>Gamepad Output Record</swe:label>
+                                    <swe:field name="primaryControlStreamIndex">
+                                        <swe:Count definition="http://sensorml.com/ont/swe/property/PrimaryControlStreamIndex">
+                                            <swe:label>Primary Control Stream Index</swe:label>
+                                            <swe:description>Index of the primary control stream</swe:description>
+                                        </swe:Count>
+                                    </swe:field>
+                                    <swe:field name="numControlStreams">
+                                        <swe:Count definition="http://sensorml.com/ont/swe/property/NumControlStreams">
+                                            <swe:label>Num Control Streams</swe:label>
+                                            <swe:description>Number of Control Streams</swe:description>
+                                        </swe:Count>
+                                    </swe:field>
+                                    <swe:field name="numGamepads">
+                                        <swe:Count id="numGamepads" definition="http://sensorml.com/ont/swe/property/GamepadCount">
+                                            <swe:label>Num Gamepads</swe:label>
+                                            <swe:description>Number of connected gamepads</swe:description>
+                                        </swe:Count>
+                                    </swe:field>
+                                    <swe:field name="gamepads">
+                                        <swe:DataArray definition="http://sensorml.com/ont/swe/property/GamepadArray">
+                                            <swe:label>Gamepads</swe:label>
+                                            <swe:description>List of connected gamepads.</swe:description>
+                                            <swe:elementCount xlink:href="#numGamepads"/>
+                                            <swe:elementType name="gamepad">
+                                                <swe:DataRecord definition="http://sensorml.com/ont/swe/property/Gamepad">
+                                                    <swe:label>Gamepad</swe:label>
+                                                    <swe:description>Gamepad Data</swe:description>
+                                                    <swe:field name="gamepadName">
+                                                        <swe:Text definition="GamepadName">
+                                                            <swe:label>Gamepad Name</swe:label>
+                                                        </swe:Text>
+                                                    </swe:field>
+                                                    <swe:field name="isPrimaryController">
+                                                        <swe:Boolean definition="http://sensorml.com/ont/swe/property/IsPrimaryController">
+                                                            <swe:label>Is Primary Controller</swe:label>
+                                                        </swe:Boolean>
+                                                    </swe:field>
+                                                    <swe:field name="numComponents">
+                                                        <swe:Count id="numComponents" definition="http://sensorml.com/ont/swe/property/NumGamepadComponents">
+                                                            <swe:label>Num Components</swe:label>
+                                                            <swe:description>Number of button and axis components on gamepad</swe:description>
+                                                        </swe:Count>
+                                                    </swe:field>
+                                                    <swe:field name="gamepadComponents">
+                                                        <swe:DataArray definition="http://sensorml.com/ont/swe/property/GamepadComponentArray">
+                                                            <swe:label>Gamepad Components</swe:label>
+                                                            <swe:description>Data of Connected Gamepad Components</swe:description>
+                                                            <swe:elementCount xlink:href="#numComponents"/>
+                                                            <swe:elementType name="component">
+                                                                <swe:DataRecord definition="http://sensorml.com/ont/swe/property/GamepadComponent">
+                                                                    <swe:label>Component</swe:label>
+                                                                    <swe:description>Gamepad Component (A button, B button, X axis, etc.)</swe:description>
+                                                                    <swe:field name="componentName">
+                                                                        <swe:Text definition="http://sensorml.com/ont/swe/property/ComponentName">
+                                                                            <swe:label>Component Name</swe:label>
+                                                                            <swe:description>Name of component</swe:description>
+                                                                        </swe:Text>
+                                                                    </swe:field>
+                                                                    <swe:field name="componentValue">
+                                                                        <swe:Quantity definition="http://sensorml.com/ont/swe/property/ComponentValue">
+                                                                            <swe:label>Component Value</swe:label>
+                                                                            <swe:description>Value of component</swe:description>
+                                                                            <swe:uom xlink:href="http://qudt.org/vocab/unit/UNITLESS"/>
+                                                                            <swe:constraint>
+                                                                                <swe:AllowedValues>
+                                                                                    <swe:interval>-1.0 1.0</swe:interval>
+                                                                                </swe:AllowedValues>
+                                                                            </swe:constraint>
+                                                                        </swe:Quantity>
+                                                                    </swe:field>
+                                                                </swe:DataRecord>
+                                                            </swe:elementType>
+                                                        </swe:DataArray>
+                                                    </swe:field>
+                                                </swe:DataRecord>
+                                            </swe:elementType>
+                                        </swe:DataArray>
+                                    </swe:field>
+                                </swe:DataRecord>
+                            </sml:input>
+                        </sml:InputList>
+                    </sml:inputs>
+                    <sml:outputs>
+                        <sml:OutputList>
+                            <sml:output name="componentRecord">
+                                <swe:DataRecord definition="ControllerTaskingProcessInput">
+                                    <swe:label>Process Input Record</swe:label>
+                                    <swe:description>Component Data of Primary Controller</swe:description>
+                                    <swe:field name="primaryControlStreamIndex">
+                                        <swe:Count definition="http://sensorml.com/ont/swe/property/PrimaryControlStreamIndex">
+                                            <swe:label>Primary Control Stream Index</swe:label>
+                                            <swe:description>Index of the primary control stream</swe:description>
+                                        </swe:Count>
+                                    </swe:field>
+                                    <swe:field name="numComponents">
+                                        <swe:Count id="numComponents" definition="http://sensorml.com/ont/swe/property/NumGamepadComponents">
+                                            <swe:label>Num Components</swe:label>
+                                            <swe:description>Number of button and axis components on gamepad</swe:description>
+                                        </swe:Count>
+                                    </swe:field>
+                                    <swe:field name="gamepadComponents">
+                                        <swe:DataArray definition="http://sensorml.com/ont/swe/property/GamepadComponentArray">
+                                            <swe:label>Gamepad Components</swe:label>
+                                            <swe:description>Data of Connected Gamepad Components</swe:description>
+                                            <swe:elementCount xlink:href="#numComponents"/>
+                                            <swe:elementType name="component">
+                                                <swe:DataRecord definition="http://sensorml.com/ont/swe/property/GamepadComponent">
+                                                    <swe:label>Component</swe:label>
+                                                    <swe:description>Gamepad Component (A button, B button, X axis, etc.)</swe:description>
+                                                    <swe:field name="componentName">
+                                                        <swe:Text definition="http://sensorml.com/ont/swe/property/ComponentName">
+                                                            <swe:label>Component Name</swe:label>
+                                                            <swe:description>Name of component</swe:description>
+                                                        </swe:Text>
+                                                    </swe:field>
+                                                    <swe:field name="componentValue">
+                                                        <swe:Quantity definition="http://sensorml.com/ont/swe/property/ComponentValue">
+                                                            <swe:label>Component Value</swe:label>
+                                                            <swe:description>Value of component</swe:description>
+                                                            <swe:uom xlink:href="http://qudt.org/vocab/unit/UNITLESS"/>
+                                                            <swe:constraint>
+                                                                <swe:AllowedValues>
+                                                                    <swe:interval>-1.0 1.0</swe:interval>
+                                                                </swe:AllowedValues>
+                                                            </swe:constraint>
+                                                        </swe:Quantity>
+                                                    </swe:field>
+                                                </swe:DataRecord>
+                                            </swe:elementType>
+                                        </swe:DataArray>
+                                    </swe:field>
+                                </swe:DataRecord>
+                            </sml:output>
+                        </sml:OutputList>
+                    </sml:outputs>
+                </sml:SimpleProcess>
+            </sml:component>
+            <sml:component name="axisprocess">
+                <sml:SimpleProcess gml:id="F4">
+                    <sml:typeOf xlink:href="urn:osh:process:universalcontrollerptz"/>
+                    <sml:inputs>
+                        <sml:InputList>
+                            <sml:input name="componentRecord">
+                                <swe:DataRecord definition="ControllerTaskingProcessInput">
+                                    <swe:label>Process Input Record</swe:label>
+                                    <swe:description>Component Data of Primary Controller</swe:description>
+                                    <swe:field name="primaryControlStreamIndex">
+                                        <swe:Count definition="http://sensorml.com/ont/swe/property/PrimaryControlStreamIndex">
+                                            <swe:label>Primary Control Stream Index</swe:label>
+                                            <swe:description>Index of the primary control stream</swe:description>
+                                        </swe:Count>
+                                    </swe:field>
+                                    <swe:field name="numComponents">
+                                        <swe:Count id="numComponents" definition="http://sensorml.com/ont/swe/property/NumGamepadComponents">
+                                            <swe:label>Num Components</swe:label>
+                                            <swe:description>Number of button and axis components on gamepad</swe:description>
+                                        </swe:Count>
+                                    </swe:field>
+                                    <swe:field name="gamepadComponents">
+                                        <swe:DataArray definition="http://sensorml.com/ont/swe/property/GamepadComponentArray">
+                                            <swe:label>Gamepad Components</swe:label>
+                                            <swe:description>Data of Connected Gamepad Components</swe:description>
+                                            <swe:elementCount xlink:href="#numComponents"/>
+                                            <swe:elementType name="component">
+                                                <swe:DataRecord definition="http://sensorml.com/ont/swe/property/GamepadComponent">
+                                                    <swe:label>Component</swe:label>
+                                                    <swe:description>Gamepad Component (A button, B button, X axis, etc.)</swe:description>
+                                                    <swe:field name="componentName">
+                                                        <swe:Text definition="http://sensorml.com/ont/swe/property/ComponentName">
+                                                            <swe:label>Component Name</swe:label>
+                                                            <swe:description>Name of component</swe:description>
+                                                        </swe:Text>
+                                                    </swe:field>
+                                                    <swe:field name="componentValue">
+                                                        <swe:Quantity definition="http://sensorml.com/ont/swe/property/ComponentValue">
+                                                            <swe:label>Component Value</swe:label>
+                                                            <swe:description>Value of component</swe:description>
+                                                            <swe:uom xlink:href="http://qudt.org/vocab/unit/UNITLESS"/>
+                                                            <swe:constraint>
+                                                                <swe:AllowedValues>
+                                                                    <swe:interval>-1.0 1.0</swe:interval>
+                                                                </swe:AllowedValues>
+                                                            </swe:constraint>
+                                                        </swe:Quantity>
+                                                    </swe:field>
+                                                </swe:DataRecord>
+                                            </swe:elementType>
+                                        </swe:DataArray>
+                                    </swe:field>
+                                </swe:DataRecord>
+                            </sml:input>
+                        </sml:InputList>
+                    </sml:inputs>
+                    <sml:outputs>
+                        <sml:OutputList>
+                            <sml:output name="rpan">
+                                <swe:Quantity definition="http://sensorml.com/ont/swe/property/RelativePan">
+                                    <swe:label>Relative Pan</swe:label>
+                                    <swe:uom code="deg"/>
+                                </swe:Quantity>
+                            </sml:output>
+                            <sml:output name="rtilt">
+                                <swe:Quantity definition="http://sensorml.com/ont/swe/property/RelativeTilt">
+                                    <swe:label>Relative Tilt</swe:label>
+                                    <swe:uom code="deg"/>
+                                </swe:Quantity>
+                            </sml:output>
+                            <sml:output name="rzoom">
+                                <swe:Quantity definition="http://sensorml.com/ont/swe/property/RelativeZoomFactor">
+                                    <swe:label>Relative Zoom Factor</swe:label>
+                                    <swe:uom code="1"/>
+                                </swe:Quantity>
+                            </sml:output>
+                            <sml:output name="sensitivity">
+                                <swe:Quantity definition="http://sensorml.com/ont/swe/property/JoystickSensitivity">
+                                    <swe:label>Sensitivity</swe:label>
+                                    <swe:uom xlink:href="http://qudt.org/vocab/unit/UNITLESS"/>
+                                </swe:Quantity>
+                            </sml:output>
+                        </sml:OutputList>
+                    </sml:outputs>
+                    <sml:parameters>
+                        <sml:ParameterList>
+                            <sml:parameter name="controlStreamIndex">
+                                <swe:Count definition="http://sensorml.com/ont/swe/property/ControlStream">
+                                    <swe:label>Control Stream Index</swe:label>
+                                    <swe:description>Index of this process's control stream</swe:description>
+                                    <swe:value>0</swe:value>
+                                </swe:Count>
+                            </sml:parameter>
+                        </sml:ParameterList>
+                    </sml:parameters>
+                </sml:SimpleProcess>
+            </sml:component>
+            <sml:component name="dahuaprocess">
+                <sml:SimpleProcess gml:id="F5">
+                    <sml:typeOf xlink:href="urn:osh:process:universalcontrollerptz"/>
+                    <sml:inputs>
+                        <sml:InputList>
+                            <sml:input name="componentRecord">
+                                <swe:DataRecord definition="ControllerTaskingProcessInput">
+                                    <swe:label>Process Input Record</swe:label>
+                                    <swe:description>Component Data of Primary Controller</swe:description>
+                                    <swe:field name="primaryControlStreamIndex">
+                                        <swe:Count definition="http://sensorml.com/ont/swe/property/PrimaryControlStreamIndex">
+                                            <swe:label>Primary Control Stream Index</swe:label>
+                                            <swe:description>Index of the primary control stream</swe:description>
+                                        </swe:Count>
+                                    </swe:field>
+                                    <swe:field name="numComponents">
+                                        <swe:Count id="numComponents" definition="http://sensorml.com/ont/swe/property/NumGamepadComponents">
+                                            <swe:label>Num Components</swe:label>
+                                            <swe:description>Number of button and axis components on gamepad</swe:description>
+                                        </swe:Count>
+                                    </swe:field>
+                                    <swe:field name="gamepadComponents">
+                                        <swe:DataArray definition="http://sensorml.com/ont/swe/property/GamepadComponentArray">
+                                            <swe:label>Gamepad Components</swe:label>
+                                            <swe:description>Data of Connected Gamepad Components</swe:description>
+                                            <swe:elementCount xlink:href="#numComponents"/>
+                                            <swe:elementType name="component">
+                                                <swe:DataRecord definition="http://sensorml.com/ont/swe/property/GamepadComponent">
+                                                    <swe:label>Component</swe:label>
+                                                    <swe:description>Gamepad Component (A button, B button, X axis, etc.)</swe:description>
+                                                    <swe:field name="componentName">
+                                                        <swe:Text definition="http://sensorml.com/ont/swe/property/ComponentName">
+                                                            <swe:label>Component Name</swe:label>
+                                                            <swe:description>Name of component</swe:description>
+                                                        </swe:Text>
+                                                    </swe:field>
+                                                    <swe:field name="componentValue">
+                                                        <swe:Quantity definition="http://sensorml.com/ont/swe/property/ComponentValue">
+                                                            <swe:label>Component Value</swe:label>
+                                                            <swe:description>Value of component</swe:description>
+                                                            <swe:uom xlink:href="http://qudt.org/vocab/unit/UNITLESS"/>
+                                                            <swe:constraint>
+                                                                <swe:AllowedValues>
+                                                                    <swe:interval>-1.0 1.0</swe:interval>
+                                                                </swe:AllowedValues>
+                                                            </swe:constraint>
+                                                        </swe:Quantity>
+                                                    </swe:field>
+                                                </swe:DataRecord>
+                                            </swe:elementType>
+                                        </swe:DataArray>
+                                    </swe:field>
+                                </swe:DataRecord>
+                            </sml:input>
+                        </sml:InputList>
+                    </sml:inputs>
+                    <sml:outputs>
+                        <sml:OutputList>
+                            <sml:output name="rpan">
+                                <swe:Quantity definition="http://sensorml.com/ont/swe/property/RelativePan">
+                                    <swe:label>Relative Pan</swe:label>
+                                    <swe:uom code="deg"/>
+                                </swe:Quantity>
+                            </sml:output>
+                            <sml:output name="rtilt">
+                                <swe:Quantity definition="http://sensorml.com/ont/swe/property/RelativeTilt">
+                                    <swe:label>Relative Tilt</swe:label>
+                                    <swe:uom code="deg"/>
+                                </swe:Quantity>
+                            </sml:output>
+                            <sml:output name="rzoom">
+                                <swe:Quantity definition="http://sensorml.com/ont/swe/property/RelativeZoomFactor">
+                                    <swe:label>Relative Zoom Factor</swe:label>
+                                    <swe:uom code="1"/>
+                                </swe:Quantity>
+                            </sml:output>
+                            <sml:output name="sensitivity">
+                                <swe:Quantity definition="http://sensorml.com/ont/swe/property/JoystickSensitivity">
+                                    <swe:label>Sensitivity</swe:label>
+                                    <swe:uom xlink:href="http://qudt.org/vocab/unit/UNITLESS"/>
+                                </swe:Quantity>
+                            </sml:output>
+                        </sml:OutputList>
+                    </sml:outputs>
+                    <sml:parameters>
+                        <sml:ParameterList>
+                            <sml:parameter name="controlStreamIndex">
+                                <swe:Count definition="http://sensorml.com/ont/swe/property/ControlStream">
+                                    <swe:label>Control Stream Index</swe:label>
+                                    <swe:description>Index of this process's control stream</swe:description>
+                                    <swe:value>1</swe:value>
+                                </swe:Count>
+                            </sml:parameter>
+                        </sml:ParameterList>
+                    </sml:parameters>
+                </sml:SimpleProcess>
+            </sml:component>
+            <sml:component name="axiscamcontrolrpan">
+            <sml:SimpleProcess gml:id="F6">
+                <sml:typeOf xlink:href="urn:osh:process:datasink:commandstream"/>
+                <sml:configuration>
+                    <sml:Settings>
+                        <sml:setValue ref="parameters/systemUID">urn:axis:cam:00408CA0FF1C</sml:setValue>
+                        <sml:setValue ref="parameters/inputName">ptzControl</sml:setValue>
+                    </sml:Settings>
+                </sml:configuration>
+            </sml:SimpleProcess>
+        </sml:component>
+            <sml:component name="axiscamcontrolrtilt">
+                <sml:SimpleProcess gml:id="F7">
+                    <sml:typeOf xlink:href="urn:osh:process:datasink:commandstream"/>
+                    <sml:configuration>
+                        <sml:Settings>
+                            <sml:setValue ref="parameters/systemUID">urn:axis:cam:00408CA0FF1C</sml:setValue>
+                            <sml:setValue ref="parameters/inputName">ptzControl</sml:setValue>
+                        </sml:Settings>
+                    </sml:configuration>
+                </sml:SimpleProcess>
+            </sml:component>
+            <sml:component name="axiscamcontrolrzoom">
+                <sml:SimpleProcess gml:id="F8">
+                    <sml:typeOf xlink:href="urn:osh:process:datasink:commandstream"/>
+                    <sml:configuration>
+                        <sml:Settings>
+                            <sml:setValue ref="parameters/systemUID">urn:axis:cam:00408CA0FF1C</sml:setValue>
+                            <sml:setValue ref="parameters/inputName">ptzControl</sml:setValue>
+                        </sml:Settings>
+                    </sml:configuration>
+                </sml:SimpleProcess>
+            </sml:component>
+            <sml:component name="dahuacontrolrpan">
+                <sml:SimpleProcess gml:id="F9">
+                    <sml:typeOf xlink:href="urn:osh:process:datasink:commandstream"/>
+                    <sml:configuration>
+                        <sml:Settings>
+                            <sml:setValue ref="parameters/systemUID">urn:dahua:cam:1G0215CGAK00046</sml:setValue>
+                            <sml:setValue ref="parameters/inputName">ptzControl</sml:setValue>
+                        </sml:Settings>
+                    </sml:configuration>
+                </sml:SimpleProcess>
+            </sml:component>
+            <sml:component name="dahuacontrolrtilt">
+                <sml:SimpleProcess gml:id="F10">
+                    <sml:typeOf xlink:href="urn:osh:process:datasink:commandstream"/>
+                    <sml:configuration>
+                        <sml:Settings>
+                            <sml:setValue ref="parameters/systemUID">urn:dahua:cam:1G0215CGAK00046</sml:setValue>
+                            <sml:setValue ref="parameters/inputName">ptzControl</sml:setValue>
+                        </sml:Settings>
+                    </sml:configuration>
+                </sml:SimpleProcess>
+            </sml:component>
+            <sml:component name="dahuacontrolrzoom">
+                <sml:SimpleProcess gml:id="F11">
+                    <sml:typeOf xlink:href="urn:osh:process:datasink:commandstream"/>
+                    <sml:configuration>
+                        <sml:Settings>
+                            <sml:setValue ref="parameters/systemUID">urn:dahua:cam:1G0215CGAK00046</sml:setValue>
+                            <sml:setValue ref="parameters/inputName">ptzControl</sml:setValue>
+                        </sml:Settings>
+                    </sml:configuration>
+                </sml:SimpleProcess>
+            </sml:component>
+        </sml:ComponentList>
+    </sml:components>
+    <sml:connections>
+        <sml:ConnectionList>
+            <sml:connection>
+                <sml:Link>
+                    <sml:source ref="components/gamepadsource/outputs/UniversalControllerOutput/primaryControlStreamIndex"/>
+                    <sml:destination ref="components/primaryselector/inputs/gamepadRecord/primaryControlStreamIndex"/>
+                </sml:Link>
+            </sml:connection>
+            <sml:connection>
+                <sml:Link>
+                    <sml:source ref="components/gamepadsource/outputs/UniversalControllerOutput/numControlStreams"/>
+                    <sml:destination ref="components/primaryselector/inputs/gamepadRecord/numControlStreams"/>
+                </sml:Link>
+            </sml:connection>
+            <sml:connection>
+                <sml:Link>
+                    <sml:source ref="components/gamepadsource/outputs/UniversalControllerOutput/numGamepads"/>
+                    <sml:destination ref="components/primaryselector/inputs/gamepadRecord/numGamepads"/>
+                </sml:Link>
+            </sml:connection>
+            <sml:connection>
+                <sml:Link>
+                    <sml:source ref="components/gamepadsource/outputs/UniversalControllerOutput/gamepads"/>
+                    <sml:destination ref="components/primaryselector/inputs/gamepadRecord/gamepads"/>
+                </sml:Link>
+            </sml:connection>
+            <sml:connection>
+                <sml:Link>
+                    <sml:source ref="components/primaryselector/outputs/componentRecord"/>
+                    <sml:destination ref="components/axisprocess/inputs/componentRecord"/>
+                </sml:Link>
+            </sml:connection>
+            <sml:connection>
+                <sml:Link>
+                    <sml:source ref="components/primaryselector/outputs/componentRecord"/>
+                    <sml:destination ref="components/dahuaprocess/inputs/componentRecord"/>
+                </sml:Link>
+            </sml:connection>
+            <sml:connection>
+                <sml:Link>
+                    <sml:source ref="components/axisprocess/outputs/rpan"/>
+                    <sml:destination ref="components/axiscamcontrolrpan/inputs/ptzControl/rpan"/>
+                </sml:Link>
+            </sml:connection>
+            <sml:connection>
+                <sml:Link>
+                    <sml:source ref="components/axisprocess/outputs/rtilt"/>
+                    <sml:destination ref="components/axiscamcontrolrtilt/inputs/ptzControl/rtilt"/>
+                </sml:Link>
+            </sml:connection>
+            <sml:connection>
+                <sml:Link>
+                    <sml:source ref="components/axisprocess/outputs/rzoom"/>
+                    <sml:destination ref="components/axiscamcontrolrzoom/inputs/ptzControl/rzoom"/>
+                </sml:Link>
+            </sml:connection>
+            <sml:connection>
+                <sml:Link>
+                    <sml:source ref="components/dahuaprocess/outputs/rpan"/>
+                    <sml:destination ref="components/dahuacontrolrpan/inputs/ptzControl/rpan"/>
+                </sml:Link>
+            </sml:connection>
+            <sml:connection>
+                <sml:Link>
+                    <sml:source ref="components/dahuaprocess/outputs/rtilt"/>
+                    <sml:destination ref="components/dahuacontrolrtilt/inputs/ptzControl/rtilt"/>
+                </sml:Link>
+            </sml:connection>
+            <sml:connection>
+                <sml:Link>
+                    <sml:source ref="components/dahuaprocess/outputs/rzoom"/>
+                    <sml:destination ref="components/dahuacontrolrzoom/inputs/ptzControl/rzoom"/>
+                </sml:Link>
+            </sml:connection>
+            <sml:connection>
+                <sml:Link>
+                    <sml:source ref="components/axisprocess/outputs/rtilt"/>
+                    <sml:destination ref="outputs/rtilt"/>
+                </sml:Link>
+            </sml:connection>
+            <sml:connection>
+                <sml:Link>
+                    <sml:source ref="components/axisprocess/outputs/rzoom"/>
+                    <sml:destination ref="outputs/rzoom"/>
+                </sml:Link>
+            </sml:connection>
+            <sml:connection>
+                <sml:Link>
+                    <sml:source ref="components/axisprocess/outputs/sensitivity"/>
+                    <sml:destination ref="outputs/sensitivity"/>
+                </sml:Link>
+            </sml:connection>
+        </sml:ConnectionList>
+    </sml:connections>
+</sml:AggregateProcess>

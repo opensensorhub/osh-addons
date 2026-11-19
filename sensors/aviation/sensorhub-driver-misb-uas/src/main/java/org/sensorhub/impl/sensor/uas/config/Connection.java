@@ -32,7 +32,8 @@ public class Connection {
         + " 0 means the stream will be played as fast as possible.")
     public int fps = 0;
     
-    @DisplayInfo(desc = "Continuously loop video playback (only available when reading from file).")
+    @DisplayInfo(desc = "Continuously loop video playback (only available when reading from file)."
+        + "In this mode, timestamps are adjusted to simulate a real-time stream")
     public boolean loop = false;
 
     @DisplayInfo(label = "Connection String", desc = "Connection string that the driver will pass to ffmpeg to connect to the MISB STANAG 4609 MPEG-TS stream. This value is ignored if an input file path is also set in the configuration. See https://www.ffmpeg.org/ffmpeg-protocols.html#Protocols for details of allowed values.")

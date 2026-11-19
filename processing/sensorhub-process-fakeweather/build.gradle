@@ -1,0 +1,29 @@
+description = 'Simple Weather Process'
+ext.details = 'Test process for weather'
+version = '1.0.0'
+
+dependencies {
+  implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
+  implementation project(':sensorhub-process-helpers')
+}
+
+// add info to OSGi manifest
+osgi {
+  manifest {
+    attributes 'Bundle-Vendor': 'Botts Innovative Research'
+    attributes 'Bundle-Activator': 'com.botts.process.weather.Activator'
+  }
+}
+
+// add info to maven pom
+ext.pom >>= {
+  developers {
+    developer {
+      id 'earocorn'
+      name 'Alex Almanza'
+      organization 'Botts Innovative Research, Inc.'
+      organizationUrl 'https://botts-inc.com'
+    }
+  }
+}
+

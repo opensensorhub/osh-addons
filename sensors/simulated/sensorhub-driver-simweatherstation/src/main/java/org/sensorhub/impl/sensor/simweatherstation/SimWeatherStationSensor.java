@@ -24,7 +24,7 @@ public class SimWeatherStationSensor extends AbstractSensorModule<SimWeatherStat
         super.doInit();
 
         // add unique ID based on serial number
-        this.uniqueID = "urn:simweatherstation:" + config.modelNumber + ":" + config.serialNumber;
+        this.uniqueID = "urn:osh:sensor:georobotix:simweatherstation:" + config.modelNumber + ":" + config.serialNumber;
         this.xmlID = "SIMWEATHERSTATION_" + config.modelNumber + "_" + config.serialNumber.toUpperCase();
         
         // create data interfaces

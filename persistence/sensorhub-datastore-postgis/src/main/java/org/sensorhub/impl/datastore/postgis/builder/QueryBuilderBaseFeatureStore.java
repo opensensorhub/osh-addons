@@ -1,0 +1,154 @@
+/***************************** BEGIN LICENSE BLOCK ***************************
+
+ The contents of this file are subject to the Mozilla Public License, v. 2.0.
+ If a copy of the MPL was not distributed with this file, You can obtain one
+ at http://mozilla.org/MPL/2.0/.
+
+ Software distributed under the License is distributed on an "AS IS" basis,
+ WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+ for the specific language governing rights and limitations under the License.
+
+ Copyright (C) 2023 Georobotix. All Rights Reserved.
+
+ ******************************* END LICENSE BLOCK ***************************/
+
+package org.sensorhub.impl.datastore.postgis.builder;
+
+import org.sensorhub.api.datastore.RangeFilter;
+import org.sensorhub.api.datastore.TemporalFilter;
+import org.sensorhub.api.datastore.feature.FeatureFilterBase;
+import org.sensorhub.api.datastore.feature.IFeatureStoreBase;
+import org.sensorhub.impl.datastore.postgis.utils.PostgisUtils;
+import org.vast.ogc.gml.IFeature;
+
+import java.util.Set;
+
+import static org.sensorhub.api.datastore.feature.IFeatureStoreBase.FeatureField.GEOMETRY;
+import static org.sensorhub.api.datastore.feature.IFeatureStoreBase.FeatureField.VALID_TIME;
+
+public abstract class QueryBuilderBaseFeatureStore<V extends IFeature,VF extends IFeatureStoreBase.FeatureField,
+        F extends FeatureFilterBase<? super V>> extends QueryBuilder {
+
+    public final static String EXTENT_COLUMN_NAME = "bextent";
+
+    public QueryBuilderBaseFeatureStore(String tableName) {
+        super(tableName);
+    }
+
+    public String createTableQuery() {
+        // NOTE: do not use JSONB because we need to keep order to the properties for geoGSON
+        // see: https://www.postgresql.org/docs/current/datatype-json.html
+        return "CREATE TABLE IF NOT EXISTS " + this.getStoreTableName() +
+                " (pkId BIGSERIAL PRIMARY KEY," +
+                "id bigint," +
+                " parentId bigint,"+
+                GEOMETRY +" GEOMETRY, "+
+                VALID_TIME +" tsrange,"+
+                "data JSONB)";
+    }
+
+    public String createSpatialIndex() {
+        return "CREATE INDEX IF NOT EXISTS "+this.getStoreTableName()+"_features_geometry ON "+this.getStoreTableName()+" USING GIST ("+GEOMETRY+");";
+    }
+
+    public String createParentIdIndex() {
+        return "CREATE INDEX IF NOT EXISTS "+this.getStoreTableName()+"_features_parentId ON "+this.getStoreTableName()+" (parentId);";
+    }
+
+    public String insertFeatureQuery() {
+        return "INSERT INTO "+this.getStoreTableName()+" (parentId,"+GEOMETRY+", "+VALID_TIME+", data) VALUES (?,?,?,?)";
+    }
+
+    public String insertFeatureByIdQuery() {
+        return "INSERT INTO "+this.getStoreTableName()+" (id, parentId,"+GEOMETRY+", "+VALID_TIME+", data) " +
+                "SELECT (${1}),(${2}),(${3}),(${4}),(${5})";
+    }
+
+    public String selectByIdQuery() {
+        return "SELECT data FROM " + this.getStoreTableName() + " WHERE id = ? AND lower(" + this.getStoreTableName() + ".validTime) = ?::timestamp";
+    }
+
+    public String existsByIdQuery() {
+        return "SELECT EXISTS(SELECT 1 from "+this.getStoreTableName()+" WHERE id = ?)";
+    }
+
+    public String existsByUidQuery() {
+        return "SELECT EXISTS(SELECT 1 from "+this.getStoreTableName()+" WHERE (data->'properties'->>'uid') = ?)";
+    }
+    public String updateByIdQuery() {
+        return "UPDATE "+this.getStoreTableName()+" SET "+GEOMETRY+" = ?, " +VALID_TIME+" = ?, " +
+                "data = ?  " +
+                "WHERE id = ?";
+    }
+
+    public String addOrUpdateByIdQuery() {
+        return this.insertFeatureByIdQuery()+" ON CONFLICT ((data->'properties'->>'uid'), "+VALID_TIME +") DO "+
+                "UPDATE SET "+GEOMETRY+" = (${6}), " +VALID_TIME+" = (${7}), data = (${8})  ";
+    }
+
+    public String selectExtentQuery() {
+        return "SELECT ST_Extent("+GEOMETRY+") as "+EXTENT_COLUMN_NAME+" FROM "+this.getStoreTableName();
+    }
+
+    public String selectUidQuery() {
+        return "SELECT count(*) as uidCount FROM "+this.getStoreTableName()+" where data->'properties'->>'uid' = ? LIMIT 1";
+    }
+
+    public String selectLastVersionByUidQuery(String uid, String timestamp) {
+        return "SELECT DISTINCT ON (id) id,validTime,parentid " +
+                "FROM " + this.getStoreTableName() + " WHERE (data->'properties'->>'uid') = '" + uid +"'" +
+                "AND validTime " +
+                PostgisUtils.getOperator(RangeFilter.RangeOp.CONTAINS) +
+                " CURRENT_TIMESTAMP::timestamp order by id, lower(validTime) DESC ";
+    }
+
+    public String selectLastVersionByIdQuery(long id, String timestamp) {
+        return "SELECT id,validTime,parentid "+
+                "FROM "+this.getStoreTableName()+" WHERE id = "+id+" AND " +
+                this.getStoreTableName()+".validTime " +
+                PostgisUtils.getOperator(RangeFilter.RangeOp.CONTAINS) +
+                " '" + timestamp + "'::timestamp "+
+                "order by lower(validTime) ASC";
+    }
+
+    public String countFeatureQuery() {
+        return "SELECT COUNT(DISTINCT data->'properties'->>'uid') AS recordsCount FROM " + this.getStoreTableName();
+    }
+
+    public String removeByPrimaryKeyQuery() {
+        return "DELETE FROM "+this.getStoreTableName()+" WHERE id = ? AND  lower("+this.getStoreTableName()+".validTime)::timestamp =  ?::timestamp";
+    }
+
+    public String removeByTimeRangeQuery(TemporalFilter temporalFilter) {
+        return "DELETE FROM "+this.getStoreTableName()+" WHERE validTime "+ PostgisUtils.getOperator(temporalFilter) +" ?";
+    }
+
+    public String createUidUniqueIndexQuery() {
+        return "CREATE UNIQUE INDEX IF NOT EXISTS "+this.getStoreTableName()+"_feature_uid_idx ON "+this.getStoreTableName()+" " +
+                "((data->'properties'->>'uid'), "+VALID_TIME+")";
+    }
+    public String createValidTimeIndexQuery() {
+        return "CREATE INDEX IF NOT EXISTS  "+this.getStoreTableName()+"_feature_valid_time_0_idx ON "+this.getStoreTableName()+ " using GIST (validTime)";
+    }
+
+    public String createLowerValidTimeIndexQuery() {
+        return "CREATE INDEX IF NOT EXISTS  "+this.getStoreTableName()+"_feature_valid_time_lower_desc_idx ON "+this.getStoreTableName()+ "  ((lower(validTime)) DESC, id DESC)";
+    }
+
+    public String createIdIndexQuery() {
+        return "CREATE INDEX IF NOT EXISTS "+this.getStoreTableName()+"_feature_id_idx ON "+this.getStoreTableName()+" (id)";
+    }
+
+    public String createTrigramExtensionQuery() {
+        return "CREATE EXTENSION IF NOT EXISTS pg_trgm";
+    }
+
+    public String createTrigramDescriptionFullTextIndexQuery() {
+        return "CREATE INDEX IF NOT EXISTS "+this.getStoreTableName()+"_feature_desc_full_text_datastream_idx ON  "+this.getStoreTableName()+" USING GIN ((data::text) gin_trgm_ops)";
+    }
+
+    public abstract String createSelectEntriesQuery(F filter, Set<VF> fields);
+
+    public abstract String createRemoveEntriesQuery(F filter);
+
+}

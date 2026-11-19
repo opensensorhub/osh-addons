@@ -18,8 +18,11 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.concurrent.CompletableFuture;
+import java.util.regex.Pattern;
 import org.sensorhub.api.comm.mqtt.IMqttServer;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.impl.module.AbstractModule;
@@ -42,6 +45,9 @@ public class MqttServer extends AbstractModule<MqttServerConfig> implements IMqt
 {
     private static final String CONFIG_FILE_NAME = "config.xml";
     
+    static final Pattern WILDCARDS_DISABLED = Pattern.compile(
+        "<wildcard-subscriptions>\\s*<enabled>\\s*false\\s*</enabled>");
+    
     EmbeddedHiveMQ hiveMQ;
     OshExtension oshExtension;
     
@@ -57,6 +63,7 @@ public class MqttServer extends AbstractModule<MqttServerConfig> implements IMqt
             configFolder.mkdirs();
         
         // if no config was provided, copy default config
+        // an existing config is never changed
         File configFile = new File(configFolder, CONFIG_FILE_NAME);
         if (!configFile.exists())
         {
@@ -69,6 +76,11 @@ public class MqttServer extends AbstractModule<MqttServerConfig> implements IMqt
             {
                 throw new SensorHubException("Error creating config file", e);
             }
+        }
+        else if (wildcardsDisabled(configFile.toPath()))
+        {
+            getLogger().warn("Wildcard subscriptions are disabled in {}. "
+                + "Set <wildcard-subscriptions><enabled>true</enabled> to allow them.", configFile);
         }
         
         // init embedded HiveMQ server
@@ -88,6 +100,19 @@ public class MqttServer extends AbstractModule<MqttServerConfig> implements IMqt
         catch (final Exception e)
         {
             throw new SensorHubException("Cannot start embedded HiveMQ server", e);
+        }
+    }
+    
+    
+    static boolean wildcardsDisabled(Path file)
+    {
+        try
+        {
+            return WILDCARDS_DISABLED.matcher(Files.readString(file, StandardCharsets.UTF_8)).find();
+        }
+        catch (IOException e)
+        {
+            return false;
         }
     }
     

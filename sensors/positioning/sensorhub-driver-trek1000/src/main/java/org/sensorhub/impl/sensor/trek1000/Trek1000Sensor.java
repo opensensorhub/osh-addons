@@ -62,7 +62,7 @@ public class Trek1000Sensor extends AbstractSensorModule<Trek1000Config>
         super.doInit();
 
         // generate identifiers
-        generateUniqueID("urn:osh:sensor:trek1000:", config.serialNumber);
+        generateUniqueID("urn:osh:sensor:georobotix:trek1000:", config.serialNumber);
         generateXmlID("TREK1000_", config.serialNumber);
         
         // init anchor positions

@@ -1,6 +1,6 @@
 description = 'Microstrain AHRS Sensor'
 ext.details = 'Driver for Microstrain 3DM-GX2 AHRS sensor'
-version = '0.1-SNAPSHOT'
+version = '0.1.1'
 
 dependencies {
   implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion

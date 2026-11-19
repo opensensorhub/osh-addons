@@ -9,122 +9,176 @@ package com.MAVLink.ardupilotmega;
 import com.MAVLink.MAVLinkPacket;
 import com.MAVLink.Messages.MAVLinkMessage;
 import com.MAVLink.Messages.MAVLinkPayload;
-        
+import com.MAVLink.Messages.Units;
+import com.MAVLink.Messages.Description;
+
 /**
-* Status of compassmot calibration
-*/
-public class msg_compassmot_status extends MAVLinkMessage{
+ * Status of compassmot calibration.
+ */
+public class msg_compassmot_status extends MAVLinkMessage {
 
     public static final int MAVLINK_MSG_ID_COMPASSMOT_STATUS = 177;
     public static final int MAVLINK_MSG_LENGTH = 20;
     private static final long serialVersionUID = MAVLINK_MSG_ID_COMPASSMOT_STATUS;
 
-
-      
+    
     /**
-    * current (amps)
-    */
+     * Current.
+     */
+    @Description("Current.")
+    @Units("A")
     public float current;
-      
+    
     /**
-    * Motor Compensation X
-    */
+     * Motor Compensation X.
+     */
+    @Description("Motor Compensation X.")
+    @Units("")
     public float CompensationX;
-      
+    
     /**
-    * Motor Compensation Y
-    */
+     * Motor Compensation Y.
+     */
+    @Description("Motor Compensation Y.")
+    @Units("")
     public float CompensationY;
-      
+    
     /**
-    * Motor Compensation Z
-    */
+     * Motor Compensation Z.
+     */
+    @Description("Motor Compensation Z.")
+    @Units("")
     public float CompensationZ;
-      
+    
     /**
-    * throttle (percent*10)
-    */
+     * Throttle.
+     */
+    @Description("Throttle.")
+    @Units("d%")
     public int throttle;
-      
+    
     /**
-    * interference (percent)
-    */
+     * Interference.
+     */
+    @Description("Interference.")
+    @Units("%")
     public int interference;
     
 
     /**
-    * Generates the payload for a mavlink message for a message of this type
-    * @return
-    */
-    public MAVLinkPacket pack(){
-        MAVLinkPacket packet = new MAVLinkPacket();
-        packet.len = MAVLINK_MSG_LENGTH;
-        packet.sysid = 255;
-        packet.compid = 190;
+     * Generates the payload for a mavlink message for a message of this type
+     * @return
+     */
+    @Override
+    public MAVLinkPacket pack() {
+        MAVLinkPacket packet = new MAVLinkPacket(MAVLINK_MSG_LENGTH,isMavlink2);
+        packet.sysid = sysid;
+        packet.compid = compid;
         packet.msgid = MAVLINK_MSG_ID_COMPASSMOT_STATUS;
-              
+
         packet.payload.putFloat(current);
-              
         packet.payload.putFloat(CompensationX);
-              
         packet.payload.putFloat(CompensationY);
-              
         packet.payload.putFloat(CompensationZ);
-              
         packet.payload.putUnsignedShort(throttle);
-              
         packet.payload.putUnsignedShort(interference);
         
+        if (isMavlink2) {
+            
+        }
         return packet;
     }
 
     /**
-    * Decode a compassmot_status message into this class fields
-    *
-    * @param payload The message to decode
-    */
+     * Decode a compassmot_status message into this class fields
+     *
+     * @param payload The message to decode
+     */
+    @Override
     public void unpack(MAVLinkPayload payload) {
         payload.resetIndex();
-              
+
         this.current = payload.getFloat();
-              
         this.CompensationX = payload.getFloat();
-              
         this.CompensationY = payload.getFloat();
-              
         this.CompensationZ = payload.getFloat();
-              
         this.throttle = payload.getUnsignedShort();
-              
         this.interference = payload.getUnsignedShort();
+        
+        if (isMavlink2) {
+            
+        }
+    }
+
+    /**
+     * Constructor for a new message, just initializes the msgid
+     */
+    public msg_compassmot_status() {
+        this.msgid = MAVLINK_MSG_ID_COMPASSMOT_STATUS;
+    }
+
+    /**
+     * Constructor for a new message, initializes msgid and all payload variables
+     */
+    public msg_compassmot_status( float current, float CompensationX, float CompensationY, float CompensationZ, int throttle, int interference) {
+        this.msgid = MAVLINK_MSG_ID_COMPASSMOT_STATUS;
+
+        this.current = current;
+        this.CompensationX = CompensationX;
+        this.CompensationY = CompensationY;
+        this.CompensationZ = CompensationZ;
+        this.throttle = throttle;
+        this.interference = interference;
         
     }
 
     /**
-    * Constructor for a new message, just initializes the msgid
-    */
-    public msg_compassmot_status(){
-        msgid = MAVLINK_MSG_ID_COMPASSMOT_STATUS;
+     * Constructor for a new message, initializes everything
+     */
+    public msg_compassmot_status( float current, float CompensationX, float CompensationY, float CompensationZ, int throttle, int interference, int sysid, int compid, boolean isMavlink2) {
+        this.msgid = MAVLINK_MSG_ID_COMPASSMOT_STATUS;
+        this.sysid = sysid;
+        this.compid = compid;
+        this.isMavlink2 = isMavlink2;
+
+        this.current = current;
+        this.CompensationX = CompensationX;
+        this.CompensationY = CompensationY;
+        this.CompensationZ = CompensationZ;
+        this.throttle = throttle;
+        this.interference = interference;
+        
     }
 
     /**
-    * Constructor for a new message, initializes the message with the payload
-    * from a mavlink packet
-    *
-    */
-    public msg_compassmot_status(MAVLinkPacket mavLinkPacket){
+     * Constructor for a new message, initializes the message with the payload
+     * from a mavlink packet
+     *
+     */
+    public msg_compassmot_status(MAVLinkPacket mavLinkPacket) {
+        this.msgid = MAVLINK_MSG_ID_COMPASSMOT_STATUS;
+
         this.sysid = mavLinkPacket.sysid;
         this.compid = mavLinkPacket.compid;
-        this.msgid = MAVLINK_MSG_ID_COMPASSMOT_STATUS;
-        unpack(mavLinkPacket.payload);        
+        this.isMavlink2 = mavLinkPacket.isMavlink2;
+        unpack(mavLinkPacket.payload);
     }
 
                 
     /**
-    * Returns a string with the MSG name and data
-    */
-    public String toString(){
-        return "MAVLINK_MSG_ID_COMPASSMOT_STATUS -"+" current:"+current+" CompensationX:"+CompensationX+" CompensationY:"+CompensationY+" CompensationZ:"+CompensationZ+" throttle:"+throttle+" interference:"+interference+"";
+     * Returns a string with the MSG name and data
+     */
+    @Override
+    public String toString() {
+        return "MAVLINK_MSG_ID_COMPASSMOT_STATUS - sysid:"+sysid+" compid:"+compid+" current:"+current+" CompensationX:"+CompensationX+" CompensationY:"+CompensationY+" CompensationZ:"+CompensationZ+" throttle:"+throttle+" interference:"+interference+"";
+    }
+
+    /**
+     * Returns a human-readable string of the name of the message
+     */
+    @Override
+    public String name() {
+        return "MAVLINK_MSG_ID_COMPASSMOT_STATUS";
     }
 }
         

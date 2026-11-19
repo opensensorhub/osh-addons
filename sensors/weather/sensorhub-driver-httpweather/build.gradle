@@ -1,10 +1,16 @@
 group = 'uk.co.envsys'
 description = 'Generic HTTP Weather Driver'
 ext.details = 'Provides HTTP endpoint for weather stations to push measurements to'
-version = '0.1-SNAPSHOT'
+version = '0.1.1'
 
 dependencies {
   implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
+}
+
+// exclude tests requiring connection to the sensor
+// these have to be run manually
+test {
+  exclude '**/TestHttpWeatherDriver.class'
 }
 
 // add info to OSGi manifest

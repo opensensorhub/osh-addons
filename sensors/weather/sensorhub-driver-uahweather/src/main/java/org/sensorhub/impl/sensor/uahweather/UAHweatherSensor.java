@@ -64,7 +64,7 @@ public class UAHweatherSensor extends AbstractSensorModule<UAHweatherConfig>
         
         
         // add unique ID based on serial number
-        this.uniqueID = "urn:uahweather:" + config.modelNumber + ":" + config.serialNumber;
+        this.uniqueID = "urn:osh:sensor:georobotix:uahweather:" + config.modelNumber + ":" + config.serialNumber;
         this.xmlID = "UAHWEATHER_" + config.modelNumber + "_" + config.serialNumber.toUpperCase();
         
         // create data interfaces

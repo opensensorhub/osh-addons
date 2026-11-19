@@ -9,6 +9,7 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
+import javax.xml.XMLConstants;
 import javax.xml.namespace.NamespaceContext;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -45,24 +46,10 @@ public class TtmlHelpers {
             "    </xsl:template>\n" +
             "</xsl:stylesheet>").getBytes();
 
-    public static void main(String[] args) throws URISyntaxException, ParserConfigurationException, IOException, SAXException, XPathExpressionException, TransformerException {
-        DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
-        dbf.setNamespaceAware(true);
-        DocumentBuilder builder = dbf.newDocumentBuilder();
-        Document doc = builder.parse("C:\\dev\\mp4parser\\a.xml");
-        List<Document> split = TtmlSegmenter.split(doc, 60);
-/*        for (Document document : split) {
-            pretty(document, System.out, 4);
-        }*/
-        Track t = new TtmlTrackImpl("a.xml", split);
-        Movie m = new Movie();
-        m.addTrack(t);
-        Container c = new DefaultMp4Builder().build(m);
-        c.writeContainer(new FileOutputStream("output.mp4").getChannel());
-    }
-
     public static String[] getAllNamespaces(Document doc) {
         TransformerFactory tf = TransformerFactory.newInstance();
+        tf.setAttribute(XMLConstants.ACCESS_EXTERNAL_DTD, "");
+        tf.setAttribute(XMLConstants.ACCESS_EXTERNAL_STYLESHEET, "");
         Transformer transformer;
         try {
             transformer = tf.newTransformer(new StreamSource(new ByteArrayInputStream(namespacesStyleSheet1)));
@@ -132,6 +119,8 @@ public class TtmlHelpers {
 
     public static void pretty(Document document, OutputStream outputStream, int indent) throws IOException {
         TransformerFactory transformerFactory = TransformerFactory.newInstance();
+        transformerFactory.setAttribute(XMLConstants.ACCESS_EXTERNAL_DTD, "");
+        transformerFactory.setAttribute(XMLConstants.ACCESS_EXTERNAL_STYLESHEET, "");
         Transformer transformer = null;
         try {
             transformer = transformerFactory.newTransformer();

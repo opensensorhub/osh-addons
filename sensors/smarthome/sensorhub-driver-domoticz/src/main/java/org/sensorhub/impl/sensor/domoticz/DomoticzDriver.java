@@ -228,7 +228,7 @@ protected void doInit() throws SensorHubException
 	  }
 
       // add unique ID based on serial number
-      this.uniqueID = "urn:domoticz:" + config.modelNumber + ":" + config.serialNumber;
+      this.uniqueID = "urn:osh:sensor:georobotix:domoticz:" + config.modelNumber + ":" + config.serialNumber;
       this.xmlID = "DOMOTICZ_" + config.modelNumber + "_" + config.serialNumber.toUpperCase();
   }
   

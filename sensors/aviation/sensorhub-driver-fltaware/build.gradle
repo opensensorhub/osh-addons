@@ -1,10 +1,12 @@
 description = 'Flight Aware Adaptor'
 ext.details = 'Flight Aware flight plans and real-time position provider'
-version = '0.6.0'
+version = '0.8.1'
 
 dependencies {
   implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
-  embeddedImpl 'org.apache.httpcomponents:httpclient:4.5.2'
+  implementation project(':sensorhub-utils-aero')
+  embeddedImpl 'org.apache.httpcomponents:httpclient:4.5.13'
+  embeddedImpl 'com.j2html:j2html:1.5.0'
 }
 
 // add info to OSGi manifest

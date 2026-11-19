@@ -1,0 +1,70 @@
+name: Publish package to GitHub Packages
+on:
+  workflow_dispatch:
+    inputs:
+      run_all:
+        description: "Publish all subprojects"
+        required: true
+        default: "false"
+      run_specific:
+        description: "Publish specific subproject"
+        required: false
+        default: ""
+  push:
+    branches: [ "master" ]
+jobs:
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - name: Detect changed subprojects
+        id: changes
+        run: |
+          # get all projects
+          CHANGED=$(./gradlew projects --quiet | grep "Project " | awk '{print $3}' | sed "s/'\|://g")
+          
+          #handle if project is specified
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            if [ "${{ inputs.run_all }}" = "false" ]; then
+              CHANGED=${{ inputs.run_specific }}
+            fi
+          else #merge to master, detect specific changes
+            CHANGED=$(grep -F -o -f <(echo "$CHANGED") <(git diff --name-only HEAD~ HEAD) | sort -u)
+          fi
+          
+          CHANGED=$(echo -n "$CHANGED" | base64 -w 0)
+          
+          echo "changed=$CHANGED" >> $GITHUB_OUTPUT
+      - name: Build matrix
+        id: set-matrix
+        run: |
+          ENCODED=${{ steps.changes.outputs.changed }}
+          CHANGED=$(echo -n "$ENCODED" | base64 --decode)
+          ARR=$(echo "$CHANGED" | jq -R -s -c 'split("\n")[:-1]')
+          echo "matrix={\"project\":$ARR}" >> $GITHUB_OUTPUT
+
+  publish:
+    needs: detect-changes
+    runs-on: ubuntu-latest
+    strategy:
+      matrix: ${{ fromJson(needs.detect-changes.outputs.matrix) }}
+      fail-fast: false
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Publish project
+        run: |
+          echo "Publishing ${{ matrix.project }}"
+          VERSION=$(./gradlew --quiet :${{ matrix.project }}:printVersion)
+          if [ "${{ github.event_name }}" = "push" ]; then
+            ./gradlew :${{ matrix.project }}:publish -PbuildType="dev" -PpublishProject="${{ matrix.project }}"
+          else
+            ./gradlew :${{ matrix.project }}:publish
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

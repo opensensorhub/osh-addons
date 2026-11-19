@@ -1,0 +1,55 @@
+description = 'Rules Engine UI'
+ext.details = 'User interface for library providing a semantic rules based knowledge system'
+
+version= '1.0.1'
+if (project.hasProperty("snapshot") && project.property("snapshot") == "true") {
+  version = "${version}-SNAPSHOT"
+}
+
+dependencies {
+  implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
+  implementation 'org.sensorhub:sensorhub-webui-core:' + oshCoreVersion
+  implementation 'org.sensorhub:sensorhub-service-consys:' + oshCoreVersion
+  implementation project(':sensorhub-lib-rules-engine')
+
+  embeddedImpl 'com.google.code.gson:gson:2.9.0'
+
+  compileOnly 'com.vaadin:vaadin-server:8.14.3'
+  compileOnly 'com.vaadin:vaadin-compatibility-server:8.14.3'
+  compileOnly 'com.vaadin:vaadin-themes:8.14.3'
+}
+
+test {
+  useJUnit()
+}
+
+osgi {
+  manifest {
+    attributes('Bundle-Vendor': 'GeoRobotix Innovative Research')
+    attributes('Bundle-SymbolicName': 'com.georobotix.ui.rulesengine')
+    attributes('Bundle-Version': version)
+
+    // THIS is the important part:
+    attributes('Fragment-Host': 'org.sensorhub.sensorhub-webui-core')
+
+    attributes('-dsannotations': 'false')
+    attributes('Export-Package': '')
+    attributes('Import-Package': '*;resolution:=optional')
+  }
+}
+
+// add info to maven pom
+ext.pom >>= {
+  developers {
+    developer {
+      id 'nickgaray'
+      name 'Nicolas Garay'
+      organization 'GeoRobotix Innovative Research'
+      organizationUrl 'http://www.georobotix.us'
+    }
+  } 
+}
+
+repositories {
+  mavenCentral()
+}

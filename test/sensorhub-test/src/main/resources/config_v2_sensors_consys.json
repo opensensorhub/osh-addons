@@ -1,0 +1,302 @@
+[
+  {
+    "objClass": "org.sensorhub.impl.service.HttpServerConfig",
+    "httpPort": 8181,
+    "httpsPort": 0,
+    "staticDocsRootDir": "web",
+    "servletsRootUrl": "/sensorhub",
+    "authMethod": "BASIC",
+    "keyStorePath": ".keystore/ssl_keys",
+    "trustStorePath": ".keystore/ssl_trust",
+    "enableCORS": true,
+    "id": "5cb05c9c-9e08-4fa1-8731-ffaa5846bdc1",
+    "moduleClass": "org.sensorhub.impl.service.HttpServer",
+    "name": "HTTP Server",
+    "autoStart": true
+  },
+  {
+    "objClass": "org.sensorhub.ui.AdminUIConfig",
+    "widgetSet": "org.sensorhub.ui.SensorHubWidgetSet",
+    "customPanels": [],
+    "customForms": [],
+    "id": "5cb05c9c-9123-4fa1-8731-ffaa51489678",
+    "moduleClass": "org.sensorhub.ui.AdminUIModule",
+    "name": "Admin UI",
+    "autoStart": true
+  },
+  {
+    "objClass": "org.sensorhub.impl.security.BasicSecurityRealmConfig",
+    "users": [
+      {
+        "objClass": "org.sensorhub.impl.security.BasicSecurityRealmConfig$UserConfig",
+        "id": "admin",
+        "password": "test",
+        "roles": [
+          "admin"
+        ]
+      },
+      {
+        "objClass": "org.sensorhub.impl.security.BasicSecurityRealmConfig$UserConfig",
+        "id": "anonymous",
+        "name": "Anonymous User",
+        "password": "",
+        "roles": [
+          "anon"
+        ]
+      },
+      {
+        "objClass": "org.sensorhub.impl.security.BasicSecurityRealmConfig$UserConfig",
+        "id": "sensor01",
+        "password": "test1",
+        "roles": [
+          "sensors"
+        ]
+      },
+      {
+        "objClass": "org.sensorhub.impl.security.BasicSecurityRealmConfig$UserConfig",
+        "id": "sensor02",
+        "password": "test2",
+        "roles": [
+          "sensors"
+        ]
+      }
+    ],
+    "roles": [
+      {
+        "objClass": "org.sensorhub.impl.security.BasicSecurityRealmConfig$RoleConfig",
+        "id": "admin",
+        "allow": [
+          "*",
+          "webadmin[*]"
+        ],
+        "deny": [
+          "webadmin[*]/shutdown"
+        ]
+      },
+      {
+        "objClass": "org.sensorhub.impl.security.BasicSecurityRealmConfig$RoleConfig",
+        "id": "anon",
+        "allow": [
+          "sos[*]/get/*",
+          "stapi[*]/get/*",
+          "csapi[*]/get/*",
+          "csapi[*]/stream/*"
+        ],
+        "deny": [
+          "csapi[*]/insert/*"
+        ]
+      },
+      {
+        "objClass": "org.sensorhub.impl.security.BasicSecurityRealmConfig$RoleConfig",
+        "id": "sensors",
+        "allow": [
+          "sos[*]/get/*",
+          "sos[*]/insert/*",
+          "sos[*]/update/*"
+        ],
+        "deny": []
+      }
+    ],
+    "id": "bd112969-8838-4f62-8d10-1edf1baa6669",
+    "moduleClass": "org.sensorhub.impl.security.BasicSecurityRealm",
+    "name": "Users",
+    "autoStart": true
+  },
+  {
+    "objClass": "org.sensorhub.impl.sensor.fakegps.FakeGpsConfig",
+    "googleApiUrl": "https://maps.googleapis.com/maps/api/directions/json",
+    "googleApiKey": "{GOOGLE_API_KEY}",
+    "centerLatitude": 34.7304,
+    "centerLongitude": -86.5861,
+    "areaSize": 0.1,
+    "minSpeed": 200.0,
+    "maxSpeed": 200.0,
+    "walkingMode": false,
+    "samplingPeriodSeconds": 1.0,
+    "apiRequestPeriodMinutes": 720,
+    "lastUpdated": "2020-10-01T11:00:04.437+0200",
+    "id": "d136b6ea-3950-4691-bf56-c84ec7d89d72",
+    "moduleClass": "org.sensorhub.impl.sensor.fakegps.FakeGpsSensor",
+    "name": "Simulated GPS Sensor",
+    "autoStart": false
+  },
+  {
+    "objClass": "org.sensorhub.impl.sensor.fakegps.FakeGpsNetworkConfig",
+    "numRoutes": 10,
+    "numAssetsPerRoute": 10,
+    "googleApiUrl": "https://maps.googleapis.com/maps/api/directions/json",
+    "googleApiKey": "{GOOGLE_API_KEY}",
+    "centerLatitude": 34.7304,
+    "centerLongitude": -86.5861,
+    "areaSize": 0.25,
+    "minSpeed": 50.0,
+    "maxSpeed": 100.0,
+    "walkingMode": false,
+    "samplingPeriodSeconds": 1.0,
+    "apiRequestPeriodMinutes": 30,
+    "lastUpdated": "2020-10-01T11:00:04.437+0200",
+    "id": "cea2c3ab-6edb-4947-b62b-a73d583b4849",
+    "moduleClass": "org.sensorhub.impl.sensor.fakegps.FakeGpsNetwork",
+    "name": "Simulated GPS Network",
+    "autoStart": false
+  },
+  {
+    "objClass": "org.sensorhub.impl.sensor.fakeweather.FakeWeatherConfig",
+    "serialNumber": "0123456879",
+    "location": {
+      "objClass": "org.sensorhub.api.sensor.PositionConfig$LLALocation",
+      "lat": 34.8038,
+      "lon": -86.7228,
+      "alt": 0.0
+    },
+    "sensorML": "base_description.xml",
+    "lastUpdated": "2020-10-01T11:00:04.443+0200",
+    "id": "d136b6ea-3950-4691-bf56-c84ec7d89d73",
+    "moduleClass": "org.sensorhub.impl.sensor.fakeweather.FakeWeatherSensor",
+    "name": "Simulated Weather Sensor",
+    "autoStart": false
+  },
+  {
+    "objClass": "org.sensorhub.impl.sensor.fakeweather.FakeWeatherNetworkConfig",
+    "networkID": "001",
+    "numStations": 50,
+    "centerLocation": {
+      "objClass": "org.sensorhub.api.sensor.PositionConfig$LLALocation",
+      "lat": 46.373184,
+      "lon": 6.479491,
+      "alt": 0.0
+    },
+    "areaSize": 0.2,
+    "lastUpdated": "2021-01-28T16:44:00.000+0100",
+    "id": "1cd03573-98ef-476f-898c-b3b98cd97063",
+    "moduleClass": "org.sensorhub.impl.sensor.fakeweather.FakeWeatherNetwork",
+    "name": "Simulated Weather Network",
+    "autoStart": false
+  },
+  {
+    "objClass": "org.sensorhub.impl.database.system.SystemDriverDatabaseConfig",
+    "dbConfig": {
+      "objClass": "org.sensorhub.impl.datastore.h2.MVObsSystemDatabaseConfig",
+      "indexObsLocation": false,
+      "storagePath": "sim_obs_h2.dat",
+      "memoryCacheSize": 1024,
+      "autoCommitBufferSize": 1024,
+      "useCompression": false,
+      "idProviderType": "UID_HASH",
+      "readOnly": false,
+      "moduleClass": "org.sensorhub.impl.datastore.h2.MVObsSystemDatabase",
+      "autoStart": false
+    },
+    "systemUIDs": [
+      "urn:osh:sensor:simweather:0123456879",
+      "urn:osh:sensor:simweathernetwork:001",
+      "urn:osh:sensor:simgps:*"
+    ],
+    "autoPurgeConfig": [{
+      "objClass": "org.sensorhub.impl.database.system.MaxAgeAutoPurgeConfig",
+      "maxRecordAge": 3600.0,
+      "enabled": true,
+      "purgePeriod": 60.0
+    }],
+    "minCommitPeriod": 10000,
+    "processEvents": true,
+    "databaseNum": 1,
+    "id": "d6592d73-f4be-402f-b2cd-48e39fa904c5",
+    "moduleClass": "org.sensorhub.impl.database.system.SystemDriverDatabase",
+    "name": "Simulated Obs Database",
+    "autoStart": true
+  },
+  {
+    "objClass": "org.sensorhub.impl.database.system.SystemDriverDatabaseConfig",
+    "dbConfig": {
+      "objClass": "org.sensorhub.impl.datastore.h2.MVObsSystemDatabaseConfig",
+      "indexObsLocation": false,
+      "storagePath": "all_obs_h2.dat",
+      "memoryCacheSize": 1024,
+      "autoCommitBufferSize": 1024,
+      "useCompression": false,
+      "idProviderType": "UID_HASH",
+      "readOnly": false,
+      "moduleClass": "org.sensorhub.impl.datastore.h2.MVObsSystemDatabase",
+      "autoStart": false
+    },
+    "systemUIDs": [
+      "*"
+    ],
+    "minCommitPeriod": 10000,
+    "processEvents": true,
+    "databaseNum": 2,
+    "id": "d6592d73-f4be-402f-b2cd-48e39fa90123",
+    "moduleClass": "org.sensorhub.impl.database.system.SystemDriverDatabase",
+    "name": "All Other Obs Database",
+    "autoStart": true
+  },
+  {
+    "objClass": "org.sensorhub.impl.usgs.water.USGSWaterDataConfig",
+    "exposeFilter": {
+      "objClass": "org.sensorhub.impl.usgs.water.USGSDataFilter",
+      "siteIds": [],
+      "stateCodes": [
+        "MD"
+      ],
+      "countyCodes": [],
+      "siteTypes": [],
+      "paramCodes": [],
+      "otherParamCodes": []
+    },
+    "databaseNum": 20,
+    "id": "86e2a6f1-5260-481b-a7e2-15247ee9c288",
+    "moduleClass": "org.sensorhub.impl.usgs.water.USGSWaterDataArchive",
+    "name": "USGS Water Database",
+    "autoStart": false
+  },
+  {
+    "objClass": "org.sensorhub.impl.service.consys.ConSysApiServiceConfig",
+    "databaseID": "d6592d73-f4be-402f-b2cd-48e39fa90123",
+    "customFormats": [],
+    "security": {
+      "objClass": "org.sensorhub.api.security.SecurityConfig",
+      "enableAccessControl": false,
+      "requireAuth": false
+    },
+    "enableTransactional": false,
+    "maxObsCount": 100,
+    "maxResponseLimit": 100000,
+    "defaultLiveTimeout": 600.0,
+    "ogcCapabilitiesInfo": {
+      "objClass": "org.sensorhub.impl.service.ogc.OGCServiceConfig$CapabilitiesInfo",
+      "serviceProvider": {
+        "objClass": "org.vast.util.ResponsibleParty",
+        "voiceNumbers": [],
+        "faxNumbers": [],
+        "deliveryPoints": [],
+        "emails": [],
+        "hrefPresent": false
+      }
+    },
+    "enableHttpGET": true,
+    "enableHttpPOST": true,
+    "enableSOAP": true,
+    "endPoint": "/api",
+    "id": "9d23a6a7-7455-41d1-9f1d-494be4e2463c",
+    "moduleClass": "org.sensorhub.impl.service.consys.ConSysApiService",
+    "name": "ConSys API HTTP Service",
+    "autoStart": true
+  },
+  {
+    "objClass": "org.sensorhub.impl.service.consys.mqtt.ConSysApiMqttServiceConfig",
+    "id": "07e346e7-7fa3-4d65-8538-0df566ce726b",
+    "moduleClass": "org.sensorhub.impl.service.consys.mqtt.ConSysApiMqttService",
+    "name": "ConSys API MQTT Service",
+    "autoStart": true
+  },
+  {
+    "objClass": "org.sensorhub.impl.service.hivemq.MqttServerConfig",
+    "requireAuth": false,
+    "enableWebSocketProxy": true,
+    "id": "80c477d2-f223-4b4b-88a6-0e2b413568ec",
+    "moduleClass": "org.sensorhub.impl.service.hivemq.MqttServer",
+    "name": "MQTT Server",
+    "autoStart": true
+  }
+]

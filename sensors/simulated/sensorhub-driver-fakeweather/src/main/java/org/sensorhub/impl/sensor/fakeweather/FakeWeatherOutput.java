@@ -61,7 +61,7 @@ public class FakeWeatherOutput extends AbstractSensorOutput<FakeWeatherSensor>
         // create output data structure
         dataStruct = fac.createRecord()
             .name(getName())
-            .definition("urn:osh:data:weather")
+            .definition("urn:osh:data:georobotix:weather")
             .description("Weather measurements")
             
             .addField("time", fac.createTime()

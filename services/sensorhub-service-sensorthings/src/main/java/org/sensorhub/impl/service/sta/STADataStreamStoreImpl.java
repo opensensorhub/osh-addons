@@ -278,7 +278,7 @@ class STADataStreamStoreImpl implements ISTADataStreamStore
     }
 
 
-    public void commit()
+    public void commit() throws DataStoreException
     {
         delegateStore.commit();
     }

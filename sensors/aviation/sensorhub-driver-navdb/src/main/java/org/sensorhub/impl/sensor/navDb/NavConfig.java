@@ -19,11 +19,7 @@ import org.sensorhub.api.sensor.SensorConfig;
 
 
 public class NavConfig extends SensorConfig
-{
-    
-    @DisplayInfo(desc="Directory to search for NAV database files in AIRINC 424 format")
-    public String navDbPath;
-    
+{   
     
     @DisplayInfo(desc="Path of CSV file containing a subset of airports to expose data for")
     public String airportFilterPath;

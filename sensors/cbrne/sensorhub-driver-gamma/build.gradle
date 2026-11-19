@@ -1,6 +1,6 @@
 description = 'Gamma Sensor'
 ext.details = 'Driver for gamma sensor model 2070 by Health Physics Instruments'
-version = '0.1-SNAPSHOT'
+version = '0.1.1'
 
 dependencies {
   implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion

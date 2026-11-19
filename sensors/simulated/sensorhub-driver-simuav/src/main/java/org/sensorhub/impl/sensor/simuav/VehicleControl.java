@@ -24,6 +24,7 @@ import org.sensorhub.api.command.ICommandStatus;
 import org.sensorhub.api.command.ICommandStatus.CommandStatusCode;
 import org.sensorhub.api.command.ICommandData;
 import org.sensorhub.impl.sensor.simuav.task.AutoTakeOffTask;
+import org.sensorhub.impl.sensor.simuav.task.LoiterTimeTask;
 import org.sensorhub.impl.sensor.simuav.task.UavTask;
 import org.sensorhub.impl.sensor.simuav.task.WaypointTask;
 import org.vast.data.DataBlockMixed;
@@ -58,6 +59,9 @@ public class VehicleControl extends UavControl<SimUavDriver>
         // goto waypoint
         commandData.addItem(WAYPOINT.toString(), WaypointTask.getParams());
         
+        // loiter
+        commandData.addItem(LOITER.toString(), LoiterTimeTask.getParams());
+            
         /*// loiter
         commandData.addItem(LOITER.toString(), swe.createRecord()
             .definition(SimUavDriver.CMD_URI_PREFIX + "LoiterCommand")
@@ -132,6 +136,7 @@ public class VehicleControl extends UavControl<SimUavDriver>
                     return submitTask(new WaypointTask(this, command));
                     
                 case LOITER:
+                    return submitTask(new LoiterTimeTask(this, command));
                 
                 default:
                     var status = CommandStatus.rejected(command.getID(), "Unsupported command type");
@@ -152,8 +157,8 @@ public class VehicleControl extends UavControl<SimUavDriver>
         
         if (parentSensor.taskQueue.size() > 100)
             initStatus = CommandStatus.rejected(task.getCommand().getID(), "Too many commands received");
-        
-        initStatus = task.init();
+        else
+            initStatus = task.init();
         
         if (initStatus.getStatusCode() != CommandStatusCode.REJECTED)
             parentSensor.queueTask(task);

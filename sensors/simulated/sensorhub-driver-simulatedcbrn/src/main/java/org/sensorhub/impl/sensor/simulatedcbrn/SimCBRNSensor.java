@@ -50,7 +50,7 @@ public class SimCBRNSensor extends AbstractSensorModule<SimCBRNConfig>
         super.doInit();
 
         // generate ID
-        generateUniqueID("urn:osh:sensor:simcbrn:", config.serialNumber);
+        generateUniqueID("urn:osh:sensor:georobotix:simcbrn:", config.serialNumber);
         generateXmlID("CBRN_SENSOR_", config.serialNumber);
 
         // Create output interfaces

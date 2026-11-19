@@ -13,16 +13,13 @@
  ******************************* END LICENSE BLOCK ***************************/
 package org.sensorhub.impl.sensor.uas.outputs;
 
-import java.awt.Point;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map.Entry;
-
+import net.opengis.swe.v20.DataArray;
+import net.opengis.swe.v20.DataBlock;
 import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.impl.sensor.uas.UasSensorBase;
 import org.sensorhub.impl.sensor.uas.config.UasConfig;
-import org.sensorhub.impl.sensor.uas.klv.UasDataLinkSet;
-import org.sensorhub.impl.sensor.uas.klv.VmtiLocalSet;
+import org.sensorhub.misb.stanag4609.klv.codec.misb0601.UasDataLinkSet;
+import org.sensorhub.misb.stanag4609.klv.codec.misb0903.VmtiLocalSet;
 import org.sensorhub.misb.stanag4609.tags.Tag;
 import org.sensorhub.misb.stanag4609.tags.TagSet;
 import org.slf4j.Logger;
@@ -31,8 +28,10 @@ import org.vast.data.DataBlockList;
 import org.vast.data.DataBlockMixed;
 import org.vast.swe.SWEConstants;
 
-import net.opengis.swe.v20.DataArray;
-import net.opengis.swe.v20.DataBlock;
+import java.awt.*;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map.Entry;
 
 /**
  * Output specification and provider for moving target indicator (VMTI) data

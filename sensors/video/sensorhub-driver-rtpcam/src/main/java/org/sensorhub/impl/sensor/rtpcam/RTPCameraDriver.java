@@ -48,7 +48,7 @@ public class RTPCameraDriver extends AbstractSensorModule<RTPCameraConfig>
         dataInterface = null;
         
         // generate identifiers
-        generateUniqueID("urn:osh:sensor:rtpcam:", config.cameraID);
+        generateUniqueID("urn:osh:sensor:georobotix:rtpcam:", config.cameraID);
         generateXmlID("RTP_CAM_", config.cameraID);
         
         // create connection handler
@@ -69,7 +69,7 @@ public class RTPCameraDriver extends AbstractSensorModule<RTPCameraConfig>
     
     
     @Override
-    protected synchronized void doStart() throws SensorHubException
+    protected void doStart() throws SensorHubException
     {
         // wait for valid connection to camera
         connection.waitForConnection();
@@ -80,7 +80,7 @@ public class RTPCameraDriver extends AbstractSensorModule<RTPCameraConfig>
     
     
     @Override
-    protected synchronized void doStop()
+    protected void doStop()
     {
         if (connection != null)
             connection.cancel();

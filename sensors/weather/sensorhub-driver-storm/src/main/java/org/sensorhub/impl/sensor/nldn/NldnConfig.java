@@ -15,14 +15,25 @@ Copyright (C) 2018 Delta Air Lines, Inc. All Rights Reserved.
 package org.sensorhub.impl.sensor.nldn;
 
 import org.sensorhub.api.config.DisplayInfo;
+import org.sensorhub.api.config.DisplayInfo.Required;
 import org.sensorhub.api.sensor.SensorConfig;
 
 
 public class NldnConfig extends SensorConfig
 {
     
-    @DisplayInfo(desc="Directory to search for NLDN data files")
+    @Required
+    @DisplayInfo(desc="Directory to watch for NLDN data files")
     public String dataPath;
+    
+    
+    @Required
+    @DisplayInfo(desc="File name pattern for NLDN data files")
+    public String fileNamePattern = ".*NLDN.*\\.grb2";
+    
+    
+    @DisplayInfo(desc="Name of file containing the path of the latest available data file (null if no such file is available)")
+    public String latestPointerFileName;
     
     
 }
