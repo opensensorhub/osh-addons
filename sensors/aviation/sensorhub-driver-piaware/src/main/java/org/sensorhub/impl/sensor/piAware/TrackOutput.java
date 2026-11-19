@@ -1,0 +1,159 @@
+/***************************** BEGIN LICENSE BLOCK ***************************
+
+ The contents of this file are subject to the Mozilla Public License, v. 2.0.
+ If a copy of the MPL was not distributed with this file, You can obtain one
+ at http://mozilla.org/MPL/2.0/.
+
+ Software distributed under the License is distributed on an "AS IS" basis,
+ WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+ for the specific language governing rights and limitations under the License.
+
+ Copyright (C) 2026 Botts Innovative Research, Inc. All Rights Reserved.
+
+ ******************************* END LICENSE BLOCK ***************************/
+
+package org.sensorhub.impl.sensor.piAware;
+
+import org.sensorhub.api.data.DataEvent;
+import org.sensorhub.impl.sensor.AbstractSensorOutput;
+import org.slf4j.Logger;
+import org.vast.swe.SWEConstants;
+import org.vast.swe.SWEHelper;
+import org.vast.swe.SWEBuilders.DataRecordBuilder;
+import org.vast.swe.helper.GeoPosHelper;
+
+import net.opengis.swe.v20.DataBlock;
+import net.opengis.swe.v20.DataComponent;
+import net.opengis.swe.v20.DataEncoding;
+import net.opengis.swe.v20.DataRecord;
+import net.opengis.swe.v20.Vector;
+
+public class TrackOutput extends AbstractSensorOutput<PiAwareSensor> { 
+	private static final int AVERAGE_SAMPLING_PERIOD = 1;
+	DataRecord recordStruct;
+	DataEncoding recordEncoding;
+	static final String NAME = "trackOutput";
+	
+	Logger logger;
+
+	public TrackOutput(PiAwareSensor parentSensor) {
+		super(NAME, parentSensor);
+		logger = parentSensor.getLogger();
+		init();
+	}
+
+	protected void init() {
+		SWEHelper fac = new SWEHelper();
+        GeoPosHelper geoFac = new GeoPosHelper();
+		// SWE Common data structure
+		DataRecordBuilder builder = fac.createRecord()
+			.addField("time", geoFac.createTime()
+		        .asSamplingTimeIsoUTC()
+		        .description(""))
+			.addField("hexIdent", fac.createText()
+				.label("hexIdent")
+				.description("Aircraft Mode S hexadecimal code")
+				.definition(PiAwareSensor.DEF_HEX_ID)
+				.build())
+			.addField("flightId", fac.createText()
+				.description("Database Flight record number")
+				.definition(PiAwareSensor.DEF_FLIGHT_ID)
+				.build())
+			.addField("category", fac.createText()
+					.description("ADS-B emitter category set")
+					.definition("")
+					.build())
+			.addField("callSign", fac.createText()
+				.description("")
+				.definition("")
+				.build())
+            .addField("groundSpeed", fac.createQuantity()
+                    .description("Speed over ground (not indicated airspeed)")
+                    .definition("")
+                    .build())
+            .addField("track", fac.createQuantity()  // Using this as proxy for actual heading
+                    .description("Track of aircraft (not heading). Derived from the velocity E/W and velocity N/S")
+                    .definition("")
+                    .uomCode("deg")
+                    .build())
+            .addField("verticalRate", fac.createQuantity()
+                    .description("64 foot resolution")
+                    .definition("")
+                    .uomCode("[ft_i]/s")
+                    .build());
+			
+		recordStruct = builder.build();
+		recordStruct.setName("Track Record");
+		recordStruct.setLabel("Track Record");
+		recordStruct.setDefinition(SWEConstants.SWE_PROP_URI_PREFIX + "Track");
+			
+		// default encoding is text
+		recordEncoding = fac.newTextEncoding(",", "\n");
+	}
+
+	private DataBlock recordToDataBlock(SbsPojo rec) {
+		DataBlock dataBlock = recordStruct.createDataBlock();
+
+		int index = 0;
+		Double time = (rec.timeMessageGenerated.doubleValue())/1000.;
+		setDoubleValue(dataBlock, index++, time);
+		setStringValue(dataBlock, index++, rec.hexIdent);	
+		setStringValue(dataBlock, index++, rec.flightID);
+		setStringValue(dataBlock, index++, rec.category);
+		setStringValue(dataBlock, index++, rec.callsign);
+        setDoubleValue(dataBlock, index++, rec.groundSpeed);
+        setDoubleValue(dataBlock, index++, rec.track);
+        setDoubleValue(dataBlock, index++, rec.verticalRate);
+		return dataBlock;
+	}
+
+	public void publishRecord(SbsPojo rec, String foiUid) {
+		try {
+			latestRecord = recordToDataBlock(rec);
+			latestRecordTime = System.currentTimeMillis();
+			eventHandler
+				.publish(new DataEvent(latestRecordTime, PiAwareSensor.SENSOR_UID, NAME, foiUid, latestRecord));
+
+		} catch (Exception e) {
+			logger.error("", e);
+		}
+	}
+
+	private void setDoubleValue(DataBlock block, int index, Double value) {
+		if(value != null)
+			block.setDoubleValue(index, value);
+		else
+			block.setDoubleValue(index, Double.NaN); // will this work?
+	}
+	
+	private void setStringValue(DataBlock block, int index, String value) {
+		if(value == null)  
+			value = "";
+		block.setStringValue(index, value); 
+	}
+	
+	private void setIntValue(DataBlock block, int index, Integer value) {
+		if (value != null)
+			block.setIntValue(index, value);
+		index++;
+	}
+
+	protected void stop() {
+		
+	}
+
+	@Override
+	public double getAverageSamplingPeriod() {
+		return AVERAGE_SAMPLING_PERIOD;
+	}
+
+	@Override
+	public DataComponent getRecordDescription() {
+		return recordStruct;
+	}
+
+	@Override
+	public DataEncoding getRecommendedEncoding() {
+		return recordEncoding;
+	}
+}
