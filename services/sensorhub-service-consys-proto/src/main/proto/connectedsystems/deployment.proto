@@ -1,0 +1,62 @@
+// OGC Connected Systems API — Deployment resource (Part 1, clause 10)
+//
+// Models the `Deployment` resource — describes an arrangement of one or
+// more `System` instances deployed for a specific purpose at a place
+// and time. Maps to `sosa:Deployment`.
+//
+// Subdeployment: per spec, a Subdeployment IS a Deployment (the
+// parent-child relationship is the new thing). Modeled by carrying a
+// parent-deployment link in the `links` array with
+// `rel = "ogc-rel:parentDeployment"`.
+//
+// Field-number layout mirrors `system.proto`.
+
+syntax = "proto3";
+
+package georobotix.csapi;
+
+option java_package = "com.georobotix.csapi";
+option java_outer_classname = "DeploymentProto";
+option go_package = "github.com/georobotix/csapi";
+
+import "connectedsystems/cs_common.proto";
+import "swecommon/geometry.proto";
+import "sml/sml.proto";
+import "geojson/geojson.proto";
+
+// Deployment resource — a deployment of one or more systems for a
+// specific purpose at a specific place/time.
+message Deployment {
+  // ─── Identity (1–9) ───────────────────────────────────────────────
+  string          id          = 1;
+  string          unique_id   = 2;  // globally unique URI (required)
+  string          name        = 3;  // required
+  optional string description = 4;
+
+  reserved 5 to 9;
+
+  // ─── Type, lifecycle, location (10–19) ────────────────────────────
+  string                        deployment_type = 10;  // URI / CURIE
+  TimePeriod                    valid_time      = 12;  // required per spec
+  georobotix.swecommon.GeoJsonGeometry location        = 13;
+
+  reserved 11, 14 to 19;
+
+  // ─── Links / associations (20–29) ─────────────────────────────────
+  //
+  // Notable rel types for Deployment:
+  //   * `ogc-rel:deployedSystem`    — list of deployed Systems
+  //   * `ogc-rel:platform`          — platform link
+  //   * `ogc-rel:parentDeployment`  — parent deployment (for Subdeployment)
+  //   * `ogc-rel:subdeployment`     — child deployments
+  repeated Link links = 20;
+
+  reserved 21 to 29;
+
+  // ─── Typed encoding-form payloads (30–49) ─────────────────────────
+  georobotix.sensorml.AnyProcess sensorml = 30;
+  georobotix.geojson.Feature     feature  = 31;
+
+  reserved 32 to 49;
+  reserved 50 to 99;
+}

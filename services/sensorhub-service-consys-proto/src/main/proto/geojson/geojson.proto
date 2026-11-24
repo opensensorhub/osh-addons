@@ -1,0 +1,53 @@
+// GeoJSON — Protocol Buffers Schema (Draft)
+//
+// Reference: RFC 7946 (https://datatracker.ietf.org/doc/html/rfc7946)
+//
+// **Draft scope.** This file is a minimum-viable rendering of the
+// GeoJSON `Feature` / `FeatureCollection` types in protobuf, intended
+// to let CS API resources (notably `System`) carry a typed GeoJSON
+// payload alongside their SensorML form. Geometry itself is not
+// redefined here — it reuses `georobotix.swecommon.GeoJsonGeometry` from
+// the SWE Common geometry bundle.
+//
+// The `type` discriminator from RFC 7946 (e.g., `"Feature"`,
+// `"FeatureCollection"`) is implicit in the proto message type and
+// is not emitted as a separate field. Round-tripping through GeoJSON
+// text requires re-adding it on the serialization boundary.
+
+syntax = "proto3";
+
+package georobotix.geojson;
+
+option java_package = "com.georobotix.geojson";
+option java_outer_classname = "GeoJsonProto";
+option go_package = "github.com/georobotix/geojson";
+
+import "google/protobuf/struct.proto";
+import "swecommon/geometry.proto";  // GeoJsonGeometry
+
+// GeoJSON Feature — a spatial feature with geometry and free-form
+// properties. RFC 7946 §3.2.
+message Feature {
+  string                        id         = 1;  // optional feature ID
+                                                  // (RFC 7946 allows
+                                                  // string or number;
+                                                  // we standardize on
+                                                  // string)
+  georobotix.swecommon.GeoJsonGeometry geometry   = 2;  // may be unset (null
+                                                  // geometry is permitted
+                                                  // by RFC 7946)
+  google.protobuf.Struct        properties = 3;  // free-form JSON object
+                                                  // (RFC 7946 §3.2 allows
+                                                  // any JSON object or
+                                                  // null)
+  repeated double               bbox       = 4;  // [west, south, east,
+                                                  // north] or with min/max
+                                                  // elevation per RFC 7946
+                                                  // §5
+}
+
+// GeoJSON FeatureCollection. RFC 7946 §3.3.
+message FeatureCollection {
+  repeated Feature features = 1;
+  repeated double  bbox     = 2;  // bounding box of the collection
+}
