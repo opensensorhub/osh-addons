@@ -181,13 +181,17 @@ public class OAuthAuthenticator extends LoginAuthenticator {
             }
 
             // check for cached session
-            HttpSession session = request.getSession(true);
-            var cachedSession = session.getAttribute(SessionAuthentication.__J_AUTHENTICATED);
-            if (cachedSession != null && cachedSession instanceof User) {
-                if (!_loginService.validate(((User) cachedSession).getUserIdentity()))
-                    session.removeAttribute(SessionAuthentication.__J_AUTHENTICATED);
-                else
-                    return (User) cachedSession;
+            // do not create a session here: requests that carry their own credentials
+            // (bearer token, basic auth) or no credentials must stay stateless
+            HttpSession session = request.getSession(false);
+            if (session != null) {
+                var cachedSession = session.getAttribute(SessionAuthentication.__J_AUTHENTICATED);
+                if (cachedSession instanceof User) {
+                    if (!_loginService.validate(((User) cachedSession).getUserIdentity()))
+                        session.removeAttribute(SessionAuthentication.__J_AUTHENTICATED);
+                    else
+                        return (User) cachedSession;
+                }
             }
 
 
@@ -375,10 +379,13 @@ public class OAuthAuthenticator extends LoginAuthenticator {
                     UserIdentity user = login(userId, "", req);
                     if (user != null) {
                         UserAuthentication userAuth = new UserAuthentication(getAuthMethod(), user);
-                        session.setAttribute(SessionAuthentication.__J_AUTHENTICATED, userAuth);
                         if (postLoginRedirectUrl != null) {
+                            // browser login (authorization code callback): keep the login in a session
+                            request.getSession(true).setAttribute(SessionAuthentication.__J_AUTHENTICATED, userAuth);
                             setCorsHeaders(request, response);
-                            response.sendRedirect(response.encodeRedirectURL(postLoginRedirectUrl));
+                            // no URL encoding here: the session is new in this request, so encoding
+                            // would add the session ID to the URL. The session cookie carries it.
+                            response.sendRedirect(postLoginRedirectUrl);
                             return Authentication.SEND_CONTINUE;
                         } else
                             return userAuth;
