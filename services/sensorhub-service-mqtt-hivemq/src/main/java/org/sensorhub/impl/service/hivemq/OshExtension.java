@@ -92,6 +92,11 @@ public class OshExtension implements ExtensionMain, EmbeddedExtension, IMqttServ
     }
     
     
+    // true when the login check and the topic checks are in place. HiveMQ
+    // accepts all clients if the extension did not start.
+    volatile boolean started;
+
+
     @Override
     public void extensionStart(ExtensionStartInput extensionStartInput, ExtensionStartOutput extensionStartOutput)
     {
@@ -216,6 +221,8 @@ public class OshExtension implements ExtensionMain, EmbeddedExtension, IMqttServ
                 }
             }
         }
+
+        started = true;
     }
     
     

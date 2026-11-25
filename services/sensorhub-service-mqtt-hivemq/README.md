@@ -98,7 +98,7 @@ You need this data from the administrator of Keycloak:
 - The realm URL, for example `https://keycloak.example.org/realms/osh`.
 - The names of the realm roles that the users have.
 
-The OAuth module (`sensorhub-security-oauth`, **OAuth2 Authentication** in the Admin UI) checks the tokens. The node must have this module, and the module must be started. Its token settings apply to HTTP and to MQTT, so a token gives the same user and the same roles on the two protocols.
+The OAuth module (`sensorhub-security-oauth`, **OAuth2 Authentication** in the Admin UI) checks the tokens. For token login, the node must have this module, and the module must be started. A node that uses only password login (mode 1) does not need it. Its token settings apply to HTTP and to MQTT, so a token gives the same user and the same roles on the two protocols.
 
 Steps:
 
@@ -166,7 +166,7 @@ The client gets the answer `Bad user name or password` for each refused login. L
 - Mode 2, and the client sent a password that is not a token. Use a token, or use mode 3.
 - The token expired. Get a new token. Keycloak tokens are valid for a short time (frequently 5 to 15 minutes).
 - The user name is not the user name in the token. The server reads it from the claim that the user ID field of the OAuth module gives.
-- The OAuth module is not on the node, is not started, or has no JSON Web Key Set Endpoint.
+- The OAuth module is not on the node, is not started, or has no JSON Web Key Set Endpoint. If the jar of the module is not on the node (or is older than 2.0.0), the log shows an error when the MQTT server starts and at each token login.
 - **Token Issuer** is not exactly the `iss` value of the token. A different host name, port or `http`/`https` is sufficient to fail.
 - The token does not have the audience that **Token Audience** gives, or **Token Audience** is empty. The OAuth module refuses all tokens when this field is empty.
 - The token has no expiry time (`exp`), or **Token Issuer** is empty.

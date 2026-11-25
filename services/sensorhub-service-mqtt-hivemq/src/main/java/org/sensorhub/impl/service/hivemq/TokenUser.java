@@ -16,6 +16,7 @@ package org.sensorhub.impl.service.hivemq;
 
 import java.math.BigInteger;
 import java.security.SecureRandom;
+import org.sensorhub.api.security.IUserInfo;
 import org.sensorhub.impl.security.oauth.OAuthUser;
 
 
@@ -34,7 +35,7 @@ final class TokenUser extends OAuthUser
     final String password = new BigInteger(256, RANDOM).toString(36);
 
 
-    TokenUser(OAuthUser tokenUser)
+    TokenUser(IUserInfo tokenUser)
     {
         super(tokenUser.getId(), tokenUser.getRoles());
     }

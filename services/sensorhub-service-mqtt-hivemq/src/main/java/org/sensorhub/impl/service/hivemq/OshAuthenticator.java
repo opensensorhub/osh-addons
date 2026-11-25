@@ -23,10 +23,9 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.function.Supplier;
 import org.eclipse.jetty.util.security.Credential;
+import org.sensorhub.api.module.IModule;
 import org.sensorhub.api.security.ISecurityManager;
 import org.sensorhub.api.security.IUserInfo;
-import org.sensorhub.impl.security.oauth.OAuthClient;
-import org.sensorhub.impl.security.oauth.OAuthUser;
 import org.slf4j.Logger;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -42,10 +41,13 @@ public class OshAuthenticator implements SimpleAuthenticator
     final static String MQTT_USER_PROP = "MQTT_USER";
     final static String TOKEN_CONN_PROP = "TOKEN_CONN";
     final static int AUTH_TIMEOUT_MS = 5000;
+    final static String NO_OAUTH_JAR_MSG = "Token login is on, but the node does not have the OAuth module "
+        + "(the jar sensorhub-security-oauth, version 2.0.0 or later). The server refuses all token logins. "
+        + "Add this jar to the node and start the node again, or set Token Login > Enabled to off. Cause: {}";
     
     final ISecurityManager securityMgr;
     final MqttServerConfig config;
-    final Supplier<OAuthClient> oauthModule;
+    final Supplier<IModule<?>> oauthModule;
     final Logger log;
     volatile TokenExpiryMonitor expiryMonitor;
     
@@ -83,16 +85,17 @@ public class OshAuthenticator implements SimpleAuthenticator
     OshAuthenticator(OshExtension oshExt)
     {
         this(oshExt.service.getParentHub().getSecurityManager(), oshExt.service.getConfiguration(),
-            () -> oshExt.service.getParentHub().getModuleRegistry().getModuleByType(OAuthClient.class), oshExt.log);
+            () -> OAuthTokenCheck.module(oshExt.service.getParentHub()), oshExt.log);
     }
 
 
     /**
      * @param oauthModule gives the OAuth module of the node, or null if the
      * node has none. It is read at each token login, because the OAuth module
-     * can start after the MQTT server.
+     * can start after the MQTT server. It gives a LinkageError if the node
+     * does not have the jar of the OAuth module.
      */
-    OshAuthenticator(ISecurityManager securityMgr, MqttServerConfig config, Supplier<OAuthClient> oauthModule, Logger log)
+    OshAuthenticator(ISecurityManager securityMgr, MqttServerConfig config, Supplier<IModule<?>> oauthModule, Logger log)
     {
         this.securityMgr = securityMgr;
         this.config = config;
@@ -106,6 +109,19 @@ public class OshAuthenticator implements SimpleAuthenticator
             log.warn("MQTT login: token and password (allowPasswordLogin is on). The OAuth module checks the tokens{}", anon);
         else
             log.info("MQTT login: password{}", anon);
+
+        // tell the operator at start, not only at the first token login
+        if (isTokenLoginOn())
+        {
+            try
+            {
+                OAuthTokenCheck.checkAvailable();
+            }
+            catch (LinkageError e)
+            {
+                log.error(NO_OAUTH_JAR_MSG, e.toString());
+            }
+        }
     }
 
 
@@ -175,7 +191,7 @@ public class OshAuthenticator implements SimpleAuthenticator
             var tokenUser = checkToken(pwd);
             if (tokenUser == null)
             {
-                log.debug("Token login refused for user {}: the OAuth module refused the token", userID);
+                log.debug("Token login refused for user {}: the OAuth module did not accept the token (see the log of the OAuth module, or the error above)", userID);
                 return null;
             }
 
@@ -261,16 +277,25 @@ public class OshAuthenticator implements SimpleAuthenticator
      * is refused or the OAuth module cannot check it (it is not on the node
      * or it is not started)
      */
-    OAuthUser checkToken(String token)
+    IUserInfo checkToken(String token)
     {
-        var oauth = oauthModule.get();
-        if (oauth == null)
+        try
         {
-            // all token logins fail, so tell the operator
-            log.warn("Token login refused: the node has no OAuth module");
+            var oauth = oauthModule.get();
+            if (oauth == null)
+            {
+                // all token logins fail, so tell the operator
+                log.warn("Token login refused: the node has no OAuth module");
+                return null;
+            }
+            return OAuthTokenCheck.checkToken(oauth, token);
+        }
+        catch (LinkageError e)
+        {
+            // the jar of the OAuth module is not on the node, or it is too old
+            log.error(NO_OAUTH_JAR_MSG, e.toString());
             return null;
         }
-        return oauth.checkBearerToken(token);
     }
 
 
@@ -280,8 +305,15 @@ public class OshAuthenticator implements SimpleAuthenticator
      */
     boolean autoAddUser()
     {
-        var oauth = oauthModule.get();
-        return oauth != null && oauth.getConfiguration().autoAddUser;
+        try
+        {
+            var oauth = oauthModule.get();
+            return oauth != null && OAuthTokenCheck.autoAddUser(oauth);
+        }
+        catch (LinkageError e)
+        {
+            return false;
+        }
     }
 
 
@@ -351,7 +383,7 @@ public class OshAuthenticator implements SimpleAuthenticator
      * @param tokenUser the user that the OAuth module made from the token
      * @return false to refuse the login
      */
-    boolean registerTokenUser(String connId, OAuthUser tokenUser)
+    boolean registerTokenUser(String connId, IUserInfo tokenUser)
     {
         // a connection without a user name gets this user: a token must not set its roles
         var userID = tokenUser.getId();
@@ -366,12 +398,12 @@ public class OshAuthenticator implements SimpleAuthenticator
 
             // a user that a token login added earlier is not a user of OSH
             if (!autoAddUser())
-                return user != null && !(user instanceof OAuthUser);
+                return user != null && !OAuthTokenCheck.isTokenLoginUser(user);
 
             if (ownUser)
             {
                 // the user in the registry must not have the empty password of an OAuth user
-                var newUser = new TokenUser(tokenUser);
+                var newUser = OAuthTokenCheck.newTokenUser(tokenUser);
                 users.put(userID, newUser);
                 tokenUsers.put(userID, newUser);
                 tokenConnUsers.put(connId, userID);

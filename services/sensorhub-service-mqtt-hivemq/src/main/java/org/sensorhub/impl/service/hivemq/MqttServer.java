@@ -101,6 +101,22 @@ public class MqttServer extends AbstractModule<MqttServerConfig> implements IMqt
         {
             throw new SensorHubException("Cannot start embedded HiveMQ server", e);
         }
+
+        // HiveMQ starts also if the extension failed, and then accepts all
+        // clients without a login check: do not leave the server open
+        if (!oshExtension.started)
+        {
+            try
+            {
+                hiveMQ.close();
+            }
+            catch (Exception e)
+            {
+                getLogger().error("Error closing embedded HiveMQ server", e);
+            }
+            hiveMQ = null;
+            throw new SensorHubException("The MQTT server is stopped: its login check did not start (see the HiveMQ error in the log)");
+        }
     }
     
     

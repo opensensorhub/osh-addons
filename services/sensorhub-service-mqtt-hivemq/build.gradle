@@ -6,8 +6,10 @@ version = '0.3.1'
 dependencies {
   implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
   implementation project(':sensorhub-comm-mqtt')
-  // token login uses the token check of the OAuth module
-  implementation project(':sensorhub-security-oauth')
+  // token login uses the token check of the OAuth module. The module is
+  // optional: a node needs it only when token login is on
+  compileOnly project(':sensorhub-security-oauth')
+  testImplementation project(':sensorhub-security-oauth')
   embeddedImpl 'org.eclipse.jetty:jetty-util:9.4.19.v20190610'
   embeddedImpl('com.hivemq:hivemq-community-edition-embedded:2023.8') {
     exclude group: 'com.google.guava', module: 'guava'
