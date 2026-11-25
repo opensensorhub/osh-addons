@@ -370,8 +370,10 @@ public class OshAuthenticator implements SimpleAuthenticator
 
             if (ownUser)
             {
-                users.put(userID, tokenUser);
-                tokenUsers.put(userID, tokenUser);
+                // the user in the registry must not have the empty password of an OAuth user
+                var newUser = new TokenUser(tokenUser);
+                users.put(userID, newUser);
+                tokenUsers.put(userID, newUser);
                 tokenConnUsers.put(connId, userID);
                 tokenUserConns.merge(userID, 1, Integer::sum);
             }

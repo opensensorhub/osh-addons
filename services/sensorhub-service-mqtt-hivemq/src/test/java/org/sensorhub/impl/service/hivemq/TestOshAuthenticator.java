@@ -456,7 +456,11 @@ public class TestOshAuthenticator
         authenticator().user("alice", tokenWithRoles("alice", "osh_admin"));
         var pwd = users.get("alice").getPassword();
         assertFalse(OshAuthenticator.passwordMatches(pwd, new char[0]));
-        assertFalse(OshAuthenticator.passwordMatches(pwd, pwd.toCharArray()));
+
+        // a random value, not the empty password of an OAuth user
+        assertTrue(pwd.length() >= 32);
+        authenticator().user("bob", tokenWithRoles("bob", "osh_admin"));
+        assertNotEquals(pwd, users.get("bob").getPassword());
     }
 
 

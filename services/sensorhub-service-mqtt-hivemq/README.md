@@ -246,7 +246,7 @@ A user that the server did not add stays as it is, and the server does not remov
 
 The server refuses a token for the user name `anonymous`. Connections without a user name use this user.
 
-A user that the OAuth module added has no password. It cannot log in with a password on MQTT, because the server refuses an empty password.
+A user that the MQTT server added has a random password that nobody knows. It cannot log in with a password, on MQTT or on HTTP. A user that the OAuth module added for an HTTP login has no password. It cannot log in with a password on MQTT, because the server refuses an empty password.
 
 Known limits:
 
