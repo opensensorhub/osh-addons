@@ -17,6 +17,10 @@ package org.sensorhub.impl.service.hivemq;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
+import java.time.Clock;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.UUID;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -50,6 +54,8 @@ import com.hivemq.extension.sdk.api.parameter.ExtensionStartInput;
 import com.hivemq.extension.sdk.api.parameter.ExtensionStartOutput;
 import com.hivemq.extension.sdk.api.parameter.ExtensionStopInput;
 import com.hivemq.extension.sdk.api.parameter.ExtensionStopOutput;
+import com.hivemq.extension.sdk.api.packets.connect.ConnackReasonCode;
+import com.hivemq.extension.sdk.api.packets.disconnect.DisconnectReasonCode;
 import com.hivemq.extension.sdk.api.services.Services;
 import com.hivemq.extension.sdk.api.services.builder.Builders;
 import com.hivemq.extension.sdk.api.services.intializer.ClientInitializer;
@@ -60,12 +66,20 @@ public class OshExtension implements ExtensionMain, EmbeddedExtension, IMqttServ
 {
     static final String LOG_SUBSCRIBE_MSG = "Received SUBSCRIBE clientId={}, topic={}: ";
     static final String LOG_UNSUBSCRIBE_MSG = "Received UNSUBSCRIBE clientId={}, topic={}: ";
+    static final String CONN_PROP = "OSH_CONN";
     
     MqttServer service;
     MapWithWildcards<IMqttHandler> handlers = new MapWithWildcards<>();
     Map<String, Set<String>> clientTopics = new ConcurrentHashMap<>();
     Map<String, String> clientUsers = new ConcurrentHashMap<>();
+    // client ID -> ID of the connection that owns the subscriptions of the client.
+    // Only this connection can remove them when it closes.
+    Map<String, String> clientConns = new ConcurrentHashMap<>();
+    // locks for the changes of owner and the work that depends on the owner
+    final Object[] clientLocks = new Object[64];
     volatile WebSocketProxyServlet webSocketProxy;
+    volatile TokenExpiryMonitor tokenExpiryMonitor;
+    volatile OshAuthenticator authenticator;
     Logger log;
     
     
@@ -73,14 +87,27 @@ public class OshExtension implements ExtensionMain, EmbeddedExtension, IMqttServ
     {
         this.service = service;
         this.log = service.getLogger();
+        for (int i = 0; i < clientLocks.length; i++)
+            clientLocks[i] = new Object();
     }
     
     
+    // true when the login check and the topic checks are in place. HiveMQ
+    // accepts all clients if the extension did not start.
+    volatile boolean started;
+
+
     @Override
     public void extensionStart(ExtensionStartInput extensionStartInput, ExtensionStartOutput extensionStartOutput)
     {
         // set authenticator to validate credentials on CONNECT
+        // token logins are disconnected when the token expires
+        tokenExpiryMonitor = new TokenExpiryMonitor(
+            (task, delayMs) -> Services.extensionExecutorService().schedule(task, delayMs, TimeUnit.MILLISECONDS),
+            this::disconnectExpiredClient, Clock.systemUTC(), log);
         var oshAuth = new OshAuthenticator(this);
+        oshAuth.expiryMonitor = tokenExpiryMonitor;
+        authenticator = oshAuth;
         Services.securityRegistry().setAuthenticatorProvider(authProviderInput -> {
             return oshAuth;
         });
@@ -123,6 +150,10 @@ public class OshExtension implements ExtensionMain, EmbeddedExtension, IMqttServ
                     @Override
                     public void onAuthenticationSuccessful(AuthenticationSuccessfulInput authenticationSuccessfulInput)
                     {
+                        // this connection now owns the subscriptions of the client ID
+                        var connId = connectionStarted(authenticationSuccessfulInput.getClientInformation().getClientId());
+                        authenticationSuccessfulInput.getConnectionInformation()
+                            .getConnectionAttributeStore().putAsString(CONN_PROP, connId);
                     }
 
                     @Override
@@ -131,27 +162,49 @@ public class OshExtension implements ExtensionMain, EmbeddedExtension, IMqttServ
                         var clientId = disconnectEventInput.getClientInformation().getClientId();
                         log.debug("Client {} disconnected", clientId);
                         
-                        clientUsers.remove(clientId);
-                        var topicList = clientTopics.remove(clientId);
-                        if (topicList != null)
-                        {
-                            for (var topic: topicList)
-                            {
-                                var handler = handlers.get(topic);
-                                if (handler != null)
-                                {
-                                    log.debug("Unsubscribing {} from {}", clientId, topic);
-                                    try {
-                                        handler.onUnsubscribe("anon", topic, OshExtension.this);
-                                    }
-                                    catch (MqttException e)
-                                    {
-                                    }
-                                }
-                            }
-                        }
+                        // cancel the token expiry timer of this connection only, and
+                        // remove its token user if this was the last connection of the user
+                        var connId = disconnectEventInput.getConnectionInformation()
+                            .getConnectionAttributeStore().getAsString(OshAuthenticator.TOKEN_CONN_PROP).orElse(null);
+                        tokenExpiryMonitor.onDisconnect(connId);
+                        oshAuth.releaseTokenUser(connId);
+                        
+                        connectionClosed(clientId, disconnectEventInput.getConnectionInformation()
+                            .getConnectionAttributeStore().getAsString(CONN_PROP).orElse(null));
                     }
                 };
+            }
+        });
+
+        // start the subscriptions of a persistent session again when its client connects again.
+        // The broker keeps them, but the handlers stopped when the earlier connection closed
+        Services.interceptorRegistry().setConnackOutboundInterceptorProvider(providerInput -> (connackIn, connackOut) -> {
+            var connack = connackIn.getConnackPacket();
+            if (connack.getReasonCode() != ConnackReasonCode.SUCCESS)
+                return;
+
+            var clientId = connackIn.getClientInformation().getClientId();
+            var attrs = connackIn.getConnectionInformation().getConnectionAttributeStore();
+            var userId = attrs.getAsString(OshAuthenticator.MQTT_USER_PROP).orElse(ISecurityManager.ANONYMOUS_USER);
+            var connId = attrs.getAsString(CONN_PROP).orElse(null);
+
+            // subscriptions of an earlier connection that did not close yet (takeover)
+            sessionStarted(clientId);
+
+            if (connack.getSessionPresent() && connId != null)
+            {
+                Services.subscriptionStore().getSubscriptions(clientId).whenCompleteAsync((subs, e) -> {
+                    if (e != null)
+                    {
+                        log.error("Cannot read the session subscriptions of client {}", clientId, e);
+                        return;
+                    }
+
+                    var topics = new ArrayList<String>();
+                    for (var sub: subs)
+                        topics.add(sub.getTopicFilter());
+                    restoreSession(userId, clientId, connId, topics);
+                }, Services.extensionExecutorService());
             }
         });
         
@@ -167,6 +220,188 @@ public class OshExtension implements ExtensionMain, EmbeddedExtension, IMqttServ
                     break;
                 }
             }
+        }
+
+        started = true;
+    }
+    
+    
+    /**
+     * A client logged in: its connection now owns the subscriptions of the
+     * client ID
+     * @return the ID of the connection
+     */
+    String connectionStarted(String clientId)
+    {
+        var connId = UUID.randomUUID().toString();
+        synchronized (clientLock(clientId))
+        {
+            clientConns.put(clientId, connId);
+        }
+        return connId;
+    }
+
+
+    /**
+     * The server accepted a connection: remove the subscriptions that an
+     * earlier connection with the same client ID left (takeover). The client
+     * has not sent a SUBSCRIBE on the new connection yet.
+     */
+    void sessionStarted(String clientId)
+    {
+        synchronized (clientLock(clientId))
+        {
+            releaseClient(clientId);
+        }
+    }
+
+
+    Object clientLock(String clientId)
+    {
+        return clientLocks[Math.floorMod(clientId.hashCode(), clientLocks.length)];
+    }
+
+
+    /**
+     * A connection closed: stop the subscriptions of its client.
+     * Nothing is done if the connection does not own them. This is a
+     * connection that did not log in (for example a wrong password with the
+     * client ID of a connected client), or a connection that a new connection
+     * with the same client ID replaced.
+     * @param connId ID of the connection, or null if it did not log in
+     */
+    void connectionClosed(String clientId, String connId)
+    {
+        if (connId == null)
+            return;
+
+        synchronized (clientLock(clientId))
+        {
+            if (clientConns.remove(clientId, connId))
+                releaseClient(clientId);
+        }
+    }
+
+
+    /** Stop the handler subscriptions of a client and forget its topics */
+    void releaseClient(String clientId)
+    {
+        clientUsers.remove(clientId);
+        var topicList = clientTopics.remove(clientId);
+        if (topicList != null)
+        {
+            for (var topic: topicList)
+            {
+                var handler = handlers.get(topic);
+                if (handler != null)
+                {
+                    log.debug("Unsubscribing {} from {}", clientId, topic);
+                    try {
+                        handler.onUnsubscribe("anon", topic, OshExtension.this);
+                    }
+                    catch (MqttException e)
+                    {
+                    }
+                }
+            }
+        }
+    }
+
+
+    /**
+     * Start the subscriptions of a persistent session again. The broker
+     * keeps them while the client is not connected, but the handlers stop
+     * when the connection closes.
+     * Each topic is checked as a new SUBSCRIBE of the user of the new
+     * connection. A subscription that is refused now is removed from the
+     * session in the broker.
+     * Nothing is done if the connection does not own the client ID now: it
+     * closed, or a new connection replaced it. That connection does its own
+     * restore, with the check of its own user.
+     * @param connId ID of the connection that asks for the restore
+     * @param topics topic filters of the session in the broker
+     */
+    void restoreSession(String userId, String clientId, String connId, Collection<String> topics)
+    {
+        synchronized (clientLock(clientId))
+        {
+            if (!connId.equals(clientConns.get(clientId)))
+            {
+                log.debug("Session of client {} not restored: its connection closed", clientId);
+                return;
+            }
+
+            doRestoreSession(userId, clientId, topics);
+        }
+    }
+
+
+    private void doRestoreSession(String userId, String clientId, Collection<String> topics)
+    {
+        int restored = 0, removed = 0;
+
+        for (var topic: topics)
+        {
+            try
+            {
+                if (subscribeToTopic(userId, clientId, topic))
+                {
+                    restored++;
+                    log.debug("Restored session subscription of {} to {}", clientId, topic);
+                }
+                else
+                {
+                    // no handler now: keep the topic, registerHandler() starts it
+                    // when the handler comes back (see restoreSubscriptions)
+                    clientTopics.computeIfAbsent(clientId, k -> ConcurrentHashMap.newKeySet()).add(topic);
+                    clientUsers.put(clientId, userId);
+                    log.debug("Session subscription of {} to {} waits for its handler", clientId, topic);
+                }
+            }
+            catch (Exception e)
+            {
+                // for example, the resource is gone or this user does not have the permission
+                log.debug("Cannot restore session subscription of {} to {}: {}", clientId, topic, e.getMessage());
+                removeBrokerSubscription(clientId, topic);
+                removed++;
+            }
+        }
+
+        if (restored + removed > 0)
+            log.info("Restored {} session subscription(s) of client {}, removed {}", restored, clientId, removed);
+    }
+
+
+    void disconnectExpiredClient(String clientId)
+    {
+        Services.clientService()
+            .disconnectClient(clientId, false, DisconnectReasonCode.NOT_AUTHORIZED, "The access token expired")
+            .whenComplete((found, e) -> {
+                if (e != null)
+                    log.error("Cannot disconnect client {} with an expired token", clientId, e);
+                else if (!Boolean.TRUE.equals(found))
+                    log.debug("Client {} with an expired token is not connected", clientId);
+            });
+    }
+    
+    
+    /**
+     * Remove the users that token logins added to the OSH user registry.
+     * They must not stay when the server stops.
+     */
+    void removeTokenUsers()
+    {
+        var oshAuth = authenticator;
+        if (oshAuth == null)
+            return;
+        
+        try
+        {
+            oshAuth.removeTokenUsers();
+        }
+        catch (RuntimeException e)
+        {
+            log.error("Cannot remove the token users from the OSH users", e);
         }
     }
     
@@ -296,6 +531,10 @@ public class OshExtension implements ExtensionMain, EmbeddedExtension, IMqttServ
     @Override
     public void extensionStop(ExtensionStopInput extensionStopInput, ExtensionStopOutput extensionStopOutput)
     {
+        if (tokenExpiryMonitor != null)
+            tokenExpiryMonitor.stop();
+        removeTokenUsers();
+        
         // stop websocket proxy if enabled
         if (webSocketProxy != null)
         {

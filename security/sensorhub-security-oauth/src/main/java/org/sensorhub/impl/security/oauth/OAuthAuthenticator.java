@@ -13,14 +13,15 @@
 
 package org.sensorhub.impl.security.oauth;
 
-import com.auth0.jwk.Jwk;
 import com.auth0.jwk.JwkException;
 import com.auth0.jwk.JwkProvider;
 import com.auth0.jwk.JwkProviderBuilder;
+import com.auth0.jwk.NetworkException;
+import com.auth0.jwk.RateLimitReachedException;
 import com.auth0.jwt.JWT;
-import com.auth0.jwt.JWTVerifier;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.exceptions.JWTVerificationException;
+import com.auth0.jwt.interfaces.DecodedJWT;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.ImmutableList;
 import com.google.common.net.HttpHeaders;
@@ -60,6 +61,8 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.security.PublicKey;
+import java.security.interfaces.ECPublicKey;
 import java.security.interfaces.RSAPublicKey;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
@@ -71,6 +74,10 @@ public class OAuthAuthenticator extends LoginAuthenticator {
     private static final String AUTH_METHOD_OAUTH2 = "OAUTH2";
     private static final String OAUTH_CODE_CALLBACK_PATH = "/oauthcode";
     private static final String LOGOUT_PATH = "/logout";
+
+    // time limit to get the public keys of the issuer, so that a slow key
+    // server does not block a login for long
+    static final int JWKS_TIMEOUT_MS = 2000;
 
     private final Logger log;
     private final OAuthClientConfig config;
@@ -111,17 +118,21 @@ public class OAuthAuthenticator extends LoginAuthenticator {
                 .<String, OAuthState>build()
                 .asMap();
 
-        try {
+        var jwksUri = config.bearerTokenConfig.jwksUri;
+        if (jwksUri != null && !jwksUri.isBlank()) {
+            try {
 
-            this.jwkProvider =
-                    new JwkProviderBuilder(new URL(config.bearerTokenConfig.jwksUri))
-                            .cached(config.bearerTokenConfig.cacheSize,
-                                    Duration.of(config.bearerTokenConfig.cacheDuration, ChronoUnit.MINUTES))
-                            .build();
+                this.jwkProvider =
+                        new JwkProviderBuilder(new URL(jwksUri))
+                                .cached(config.bearerTokenConfig.cacheSize,
+                                        Duration.of(config.bearerTokenConfig.cacheDuration, ChronoUnit.MINUTES))
+                                .timeouts(JWKS_TIMEOUT_MS, JWKS_TIMEOUT_MS)
+                                .build();
 
-        } catch (MalformedURLException e) {
+            } catch (MalformedURLException e) {
 
-            log.error("Malformed JWK URI: {}", config.bearerTokenConfig.jwksUri, e);
+                log.error("Malformed JWK URI: {}", jwksUri, e);
+            }
         }
     }
 
@@ -170,13 +181,17 @@ public class OAuthAuthenticator extends LoginAuthenticator {
             }
 
             // check for cached session
-            HttpSession session = request.getSession(true);
-            var cachedSession = session.getAttribute(SessionAuthentication.__J_AUTHENTICATED);
-            if (cachedSession != null && cachedSession instanceof User) {
-                if (!_loginService.validate(((User) cachedSession).getUserIdentity()))
-                    session.removeAttribute(SessionAuthentication.__J_AUTHENTICATED);
-                else
-                    return (User) cachedSession;
+            // do not create a session here: requests that carry their own credentials
+            // (bearer token, basic auth) or no credentials must stay stateless
+            HttpSession session = request.getSession(false);
+            if (session != null) {
+                var cachedSession = session.getAttribute(SessionAuthentication.__J_AUTHENTICATED);
+                if (cachedSession instanceof User) {
+                    if (!_loginService.validate(((User) cachedSession).getUserIdentity()))
+                        session.removeAttribute(SessionAuthentication.__J_AUTHENTICATED);
+                    else
+                        return (User) cachedSession;
+                }
             }
 
 
@@ -255,33 +270,12 @@ public class OAuthAuthenticator extends LoginAuthenticator {
 
                             log.debug("Client Credentials Token: {}", clientCredentialsToken);
 
-                            String[] chunks = clientCredentialsToken.split("\\.");
-
                             // In validation we do not need to decode the entire token, just the header to perform validation
                             // the userInfo will be extracted further below as we assign this token if valid as the accessToken
                             // and idToken
-                            Base64.Decoder decoder = Base64.getUrlDecoder();
-
-                            String header = new String(decoder.decode(chunks[0]));
-
-                            JsonElement headerData = JsonParser.parseString(header);
-
                             try {
 
-                                String kid = parseKidFromJson(headerData);
-
-                                Jwk jwk = jwkProvider.get(kid);
-
-                                RSAPublicKey publicKey = (RSAPublicKey) jwk.getPublicKey();
-                                Algorithm algorithm = Algorithm.RSA256(publicKey);
-
-                                JWTVerifier verifier = JWT.require(algorithm)
-                                        // specify any specific claim validations
-                                        .withIssuer(config.bearerTokenConfig.issuer)
-                                        .withAudience(config.bearerTokenConfig.audience)
-                                        .build();
-
-                                verifier.verify(clientCredentialsToken);
+                                verifyBearerToken(clientCredentialsToken);
 
                                 accessToken = idToken = clientCredentialsToken;
 
@@ -295,7 +289,14 @@ public class OAuthAuthenticator extends LoginAuthenticator {
 
                             } catch (JwkException e) {
 
-                                log.error("Cannot complete authentication at endpoint: {}", e.getMessage());
+                                // the token names a key that the issuer does not have
+                                if (!isKeyServerError(e)) {
+                                    log.error("Failed to verify client credentials token: {}", e.getMessage());
+                                    response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
+                                    return Authentication.SEND_FAILURE;
+                                }
+
+                                log.error("Cannot complete authentication at endpoint: {}", rootMessage(e));
                                 response.sendError(HttpServletResponse.SC_FORBIDDEN, e.getMessage());
                                 return Authentication.SEND_FAILURE;
                             }
@@ -378,10 +379,13 @@ public class OAuthAuthenticator extends LoginAuthenticator {
                     UserIdentity user = login(userId, "", req);
                     if (user != null) {
                         UserAuthentication userAuth = new UserAuthentication(getAuthMethod(), user);
-                        session.setAttribute(SessionAuthentication.__J_AUTHENTICATED, userAuth);
                         if (postLoginRedirectUrl != null) {
+                            // browser login (authorization code callback): keep the login in a session
+                            request.getSession(true).setAttribute(SessionAuthentication.__J_AUTHENTICATED, userAuth);
                             setCorsHeaders(request, response);
-                            response.sendRedirect(response.encodeRedirectURL(postLoginRedirectUrl));
+                            // no URL encoding here: the session is new in this request, so encoding
+                            // would add the session ID to the URL. The session cookie carries it.
+                            response.sendRedirect(postLoginRedirectUrl);
                             return Authentication.SEND_CONTINUE;
                         } else
                             return userAuth;
@@ -441,6 +445,123 @@ public class OAuthAuthenticator extends LoginAuthenticator {
     }
 
 
+    /*
+     * Verifies a bearer token: signature with the public keys of the issuer
+     * (JWKS), issuer, audience and expiry time
+     * @return the verified token
+     * @throws JWTVerificationException if the token is not valid
+     * @throws JwkException if the public key cannot be found
+     */
+    DecodedJWT verifyBearerToken(String token) throws JwkException {
+
+        var tokenConfig = config.bearerTokenConfig;
+        if (jwkProvider == null)
+            throw new JwkException("No JSON Web Key Set endpoint is configured");
+        if (isBlank(tokenConfig.issuer))
+            throw new JWTVerificationException("No token issuer is configured");
+        if (isBlank(tokenConfig.audience))
+            throw new JWTVerificationException("No token audience is configured");
+
+        DecodedJWT jwt = JWT.decode(token);
+        var jwk = jwkProvider.get(jwt.getKeyId());
+
+        var verification = JWT.require(algorithm(jwt.getAlgorithm(), jwk.getPublicKey()))
+                .withIssuer(tokenConfig.issuer)
+                .withAudience(tokenConfig.audience)
+                // a token must have an expiry time
+                .withClaimPresence("exp");
+
+        return verification.build().verify(jwt);
+    }
+
+
+    /*
+     * Only signatures with a public key of the issuer are accepted. The key
+     * type must match the algorithm of the token.
+     */
+    static Algorithm algorithm(String alg, PublicKey key) {
+        try {
+            switch (alg != null ? alg : "") {
+                case "RS256": return Algorithm.RSA256((RSAPublicKey) key, null);
+                case "RS384": return Algorithm.RSA384((RSAPublicKey) key, null);
+                case "RS512": return Algorithm.RSA512((RSAPublicKey) key, null);
+                case "ES256": return Algorithm.ECDSA256((ECPublicKey) key, null);
+                case "ES384": return Algorithm.ECDSA384((ECPublicKey) key, null);
+                case "ES512": return Algorithm.ECDSA512((ECPublicKey) key, null);
+                default: throw new JWTVerificationException("Token algorithm not supported: " + alg);
+            }
+        } catch (ClassCastException e) {
+            throw new JWTVerificationException("Token algorithm " + alg + " does not match the key type");
+        }
+    }
+
+
+    /*
+     * Returns true if the error comes from the key server (network error or
+     * rate limit), not from the token. The key cache wraps network errors in
+     * a SigningKeyNotFoundException, so the causes are checked too.
+     */
+    static boolean isKeyServerError(Throwable e) {
+        for (var t = e; t != null; t = t.getCause()) {
+            if (t instanceof NetworkException || t instanceof RateLimitReachedException)
+                return true;
+        }
+        return false;
+    }
+
+
+    /*
+     * Returns the message of the deepest cause that has one
+     */
+    static String rootMessage(Throwable e) {
+        var msg = e.getMessage();
+        for (var t = e.getCause(); t != null; t = t.getCause()) {
+            if (t.getMessage() != null)
+                msg = t.getMessage();
+        }
+        return msg;
+    }
+
+
+    static boolean isBlank(String s) {
+        return s == null || s.isBlank();
+    }
+
+
+    /*
+     * Checks a bearer token as the HTTP login does, for the modules that
+     * accept tokens on other protocols (for example MQTT). It does not add
+     * the user to the user registry.
+     * Returns the user ID and the roles of the token, or null if the token
+     * is refused or cannot be checked.
+     */
+    OAuthUser checkBearerToken(String token) {
+        try {
+            DecodedJWT jwt = verifyBearerToken(token);
+
+            String payload = new String(Base64.getUrlDecoder().decode(jwt.getPayload()), StandardCharsets.UTF_8);
+            JsonElement userInfo = JsonParser.parseString(payload);
+            String userId = parseUserInfoJson(userInfo);
+            if (userId == null) {
+                log.debug("Bearer token refused: no {} claim", config.userIdField);
+                return null;
+            }
+
+            return new OAuthUser(userId, parseRolesFromJson(userInfo));
+        } catch (JwkException e) {
+            // the operator must know when the key server does not answer
+            if (isKeyServerError(e) || jwkProvider == null)
+                log.error("Cannot check bearer token: {}", rootMessage(e));
+            else
+                log.debug("Bearer token refused: {}", e.toString());
+            return null;
+        } catch (IOException | RuntimeException e) {
+            log.debug("Bearer token refused: {}", e.toString());
+            return null;
+        }
+    }
+
+
     private String getCallbackBaseUrl(HttpServletRequest request) {
         if (serverBaseUrl == null) {
             var requestUrl = request.getRequestURL();
@@ -468,16 +589,6 @@ public class OAuthAuthenticator extends LoginAuthenticator {
         }
 
         return new String[] {};
-    }
-
-    String parseKidFromJson(JsonElement json) throws IOException {
-
-        var kid = goToJsonPath(json, "kid");
-
-        if (kid != null)
-            return kid.getAsString();
-        else
-            return null;
     }
 
     private String parseBearerToken(String credentials) {

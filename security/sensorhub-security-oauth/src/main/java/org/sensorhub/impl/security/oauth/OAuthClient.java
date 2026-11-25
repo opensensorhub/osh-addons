@@ -70,6 +70,20 @@ public class OAuthClient extends AbstractModule<OAuthClientConfig>
     }
 
 
+    /**
+     * Checks a bearer token with the settings of this module, as the HTTP
+     * login does. Other modules use this to accept the same tokens on other
+     * protocols (for example MQTT).
+     * @return the user ID and the roles of the token, or null if the token
+     * is refused or this module is not started
+     */
+    public OAuthUser checkBearerToken(String token)
+    {
+        var auth = authenticator;
+        return auth instanceof OAuthAuthenticator ? ((OAuthAuthenticator)auth).checkBearerToken(token) : null;
+    }
+
+
     @Override
     public void cleanup() throws SensorHubException
     {
